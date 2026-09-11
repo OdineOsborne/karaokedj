@@ -26,6 +26,11 @@ public partial class MainWindow : Window
         };
         PreviewKeyDown += MainWindow_PreviewKeyDown;
         Closing += MainWindow_Closing;
+        Loaded += async (_, _) =>
+        {
+            await Task.Delay(4000);
+            if (IsLoaded && Vm.ShouldShowSupportReminder()) new SupportWindow(Vm) { Owner = this }.ShowDialog();
+        };
     }
 
     private MainViewModel Vm => (MainViewModel)DataContext;
@@ -175,6 +180,8 @@ public partial class MainWindow : Window
     }
 
     // ------------------------------------------------------------ impostazioni
+
+    private void Support_Click(object sender, RoutedEventArgs e) => new SupportWindow(Vm) { Owner = this }.ShowDialog();
 
     private AnimationWindow? _animation;
 

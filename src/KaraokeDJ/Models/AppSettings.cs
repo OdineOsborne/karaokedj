@@ -15,6 +15,9 @@ public sealed class AppSettings
     public bool BpmMatch { get; set; } = true;
     /// <summary>Chiave API Anthropic, protetta con DPAPI (utente corrente).</summary>
     public string? AnthropicApiKeyProtected { get; set; }
+    /// <summary>Chiave licenza donationware (legata alla macchina).</summary>
+    public string? LicenseCode { get; set; }
+    public DateTime? LastSupportReminder { get; set; }
     public int CdgOffsetMs { get; set; } = 0;
     public double MasterVolume { get; set; } = 1.0;
     public string IdleTitle { get; set; } = "KARAOKE NIGHT";

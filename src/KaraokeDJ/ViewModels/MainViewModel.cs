@@ -145,6 +145,7 @@ public sealed partial class MainViewModel : ObservableObject
         };
         WireStems();
         StartAnimation();
+        LoadLicense();
         Midi.LoadMappings(Settings.MidiMappings);
         if (!string.IsNullOrEmpty(Settings.MidiDeviceName) && !Midi.Open(Settings.MidiDeviceName))
             StatusText = "Controller MIDI non trovato: " + Settings.MidiDeviceName;
@@ -1297,6 +1298,43 @@ public sealed partial class MainViewModel : ObservableObject
         var title = t?.DedicationTitle ?? "";
         if (text != DedicationText) DedicationText = text;
         if (title != DedicationTitle) DedicationTitle = title;
+    }
+
+    // ---------------------------------------------------------------- licenza donationware (legata alla macchina)
+
+    /// <summary>Link donazione: vuoto finché non c'è.</summary>
+    public const string DonationUrl = "";
+    public LicenseService.LicenseInfo? License { get; private set; }
+    public bool IsLicensed => License != null;
+    public string SupportLabel => IsLicensed ? $"❤ {License!.Name}" : "❤ Sostieni VOXA";
+
+    private void LoadLicense()
+    {
+        License = LicenseService.Verify(Settings.LicenseCode);
+        OnPropertyChanged(nameof(IsLicensed)); OnPropertyChanged(nameof(SupportLabel));
+    }
+
+    public bool ActivateLicense(string? code)
+    {
+        var info = LicenseService.Verify(code);
+        if (info == null) return false;
+        Settings.LicenseCode = code!.Trim();
+        License = info;
+        SaveSettings();
+        OnPropertyChanged(nameof(IsLicensed)); OnPropertyChanged(nameof(SupportLabel));
+        StatusText = $"Grazie {info.Name}! Licenza attiva.";
+        return true;
+    }
+
+    /// <summary>Promemoria discreto, al massimo una volta al giorno, solo senza licenza.</summary>
+    public bool ShouldShowSupportReminder()
+    {
+        if (IsLicensed) return false;
+        var last = Settings.LastSupportReminder;
+        if (last != null && (DateTime.UtcNow - last.Value).TotalHours < 20) return false;
+        Settings.LastSupportReminder = DateTime.UtcNow;
+        SaveSettings();
+        return true;
     }
 
     // ---------------------------------------------------------------- MIDI

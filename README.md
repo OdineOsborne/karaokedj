@@ -61,6 +61,7 @@ publish.cmd
 | **Rinomina intelligente** | Menu destro → "Rinomina intelligente": toglie dal titolo l'artista ripetuto e il rumore ("Official Video", "Remastered 2012"…), e se l'artista è un canale (…VEVO, "Karaoke Academy") lo sostituisce con quello vero preso dal titolo. Scrive i tag ID3; i nomi dei file non cambiano. Applicata automaticamente ai download. |
 | **🎉 Animazione (festeggiato)** | Pulsante in barra: nome, occasione, messaggi "Parlaci di lui/lei/loro" (a mano ora, dal QR in futuro). **Genera testo con AI** (Claude, chiave API in Impostazioni; senza chiave i messaggi diventano strofe così come sono) → **Copia e apri Suno** (testo in clipboard, si apre suno.com/create: Custom → incolla → stile → genera). Il file scaricato nella cartella `Musica\KaraokeDJ Downloads\Suno` entra da solo in libreria con titolo e **dedica**, mostrata sul proiettore mentre il brano suona. |
 | **Sicurezza deck** | Caricare un brano su un deck che sta suonando chiede conferma (i caricamenti automatici vanno sempre sul deck fermo). Pulsante **⬆ vX.Y.Z** in barra per cercare aggiornamenti. |
+| **Licenza donationware** | Pulsante **❤ Sostieni VOXA**: tutte le funzioni sono libere; con una donazione si riceve una chiave legata all'**ID macchina** (mostrato nella finestra) che toglie il promemoria giornaliero all'avvio. Chiavi firmate ECDSA P-256: le emette solo l'autore con `tools\LicenseTool` (`keygen` una volta, poi `issue <pem> <ID> "<Nome>"`); la chiave privata sta fuori dal repo (`KaraokeDJ-private\`). Testo in `LICENSE.md`. |
 
 ## Scorciatoie
 
