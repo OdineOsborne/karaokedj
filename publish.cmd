@@ -4,6 +4,7 @@ rem Uso: publish.cmd [versione]   es. publish.cmd 1.2.0
 set VER=%1
 if "%VER%"=="" set VER=1.0.0
 echo === Publish self-contained ===
+if exist build\publish rmdir /s /q build\publish
 dotnet publish src\KaraokeDJ\KaraokeDJ.csproj -c Release -r win-x64 --self-contained true -p:Version=%VER% -o build\publish
 if errorlevel 1 exit /b 1
 echo === Velopack pack (installer + pacchetti update) ===
