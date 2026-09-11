@@ -1,6 +1,6 @@
-# KaraokeDJ
+# VOXA — Mix · Sing · Together
 
-App Windows (WPF / .NET 8) per serate di intrattenimento e karaoke: due deck con cambio
+VOXA (già KaraokeDJ) è un'app Windows (WPF / .NET 8) per serate di intrattenimento e karaoke: due deck con cambio
 tonalità, coda dei cantanti, secondo schermo per i testi (CDG o video), jingle su tasti F1–F12,
 download da YouTube/Spotify.
 

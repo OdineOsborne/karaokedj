@@ -16,9 +16,19 @@
     <Version>1.0.0</Version>
     <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
     <StartupObject>KaraokeDJ.Program</StartupObject>
-    <Company>KaraokeDJ</Company>
-    <Product>KaraokeDJ</Product>
+    <Company>VOXA</Company>
+    <Product>VOXA</Product>
+    <AssemblyTitle>VOXA</AssemblyTitle>
+    <ApplicationIcon>Assets/voxa.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets/wordmark.png" />
+    <Resource Include="Assets/logo-ext.png" />
+    <Resource Include="Assets/logo-v.png" />
+    <Resource Include="Assets/icon-256.png" />
+    <Resource Include="Assets/Fonts/*.ttf" />
+  </ItemGroup>
 
   <ItemGroup>
     <Using Remove="System.Windows.Forms" />

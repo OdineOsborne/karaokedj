@@ -4,7 +4,7 @@
         xmlns:v="clr-namespace:KaraokeDJ.Views"
         xmlns:vm="clr-namespace:KaraokeDJ.ViewModels"
         xmlns:m="clr-namespace:KaraokeDJ.Models"
-        Title="KaraokeDJ" Width="1500" Height="960" MinWidth="1100" MinHeight="760"
+        Title="VOXA" Width="1500" Height="960" MinWidth="1100" MinHeight="760"
         Background="{StaticResource WindowBgBrush}" WindowStartupLocation="CenterScreen"
         d:DataContext="{d:DesignInstance vm:MainViewModel}"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -21,12 +21,9 @@
         <!-- ═══════════ barra strumenti ═══════════ -->
         <DockPanel Grid.Row="0" Margin="0,0,0,10">
             <StackPanel Orientation="Horizontal">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,18,0">
-                    <TextBlock Text="KARAOKE" Style="{StaticResource Wordmark}"/>
-                    <TextBlock Text="DJ" Style="{StaticResource Wordmark}" Foreground="{StaticResource AccentBrush}">
-                        <TextBlock.Effect><DropShadowEffect Color="{StaticResource AccentColor}" BlurRadius="16" ShadowDepth="0" Opacity="0.8"/></TextBlock.Effect>
-                    </TextBlock>
-                </StackPanel>
+                <Image Source="pack://application:,,,/Assets/wordmark.png" Height="34" Margin="0,0,18,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" ToolTip="VOXA – Mix · Sing · Together">
+                    <Image.Effect><DropShadowEffect Color="{StaticResource VioletColor}" BlurRadius="18" ShadowDepth="0" Opacity="0.6"/></Image.Effect>
+                </Image>
                 <Button Content="📁 Aggiungi cartella" Command="{Binding AddFolderCommand}" Margin="0,0,6,0"/>
                 <Button Content="🔄 Riscansiona" Command="{Binding RescanCommand}" Margin="0,0,6,0" IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBool}}"/>
                 <Button Content="⚙ Impostazioni" Click="Settings_Click" Margin="0,0,6,0"/>
@@ -197,11 +194,11 @@
                             <DataGridTextColumn Header="Artista" Binding="{Binding Artist}" Width="2*"/>
                             <DataGridTextColumn Header="Titolo" Binding="{Binding Title}" Width="3*"/>
                             <DataGridTextColumn Header="Tipo" Binding="{Binding KindLabel}" Width="60"/>
-                            <DataGridTextColumn Header="Durata" Binding="{Binding DurationLabel}" Width="60"/>
+                            <DataGridTextColumn Header="Durata" Binding="{Binding DurationLabel}" Width="66"/>
                             <DataGridTextColumn Header="BPM" Binding="{Binding BpmLabel}" Width="50"/>
-                            <DataGridTextColumn Header="Tonalità" Binding="{Binding KeyLabel}" Width="80"/>
-                            <DataGridTextColumn Header="Match" Binding="{Binding MatchLabel}" Width="55"/>
-                            <DataGridTextColumn Header="Suonato" Binding="{Binding PlayedLabel}" Width="62"/>
+                            <DataGridTextColumn Header="Tonalità" Binding="{Binding KeyLabel}" Width="86"/>
+                            <DataGridTextColumn Header="Match" Binding="{Binding MatchLabel}" Width="62"/>
+                            <DataGridTextColumn Header="Suonato" Binding="{Binding PlayedLabel}" Width="74"/>
                         </DataGrid.Columns>
                         <DataGrid.ContextMenu>
                             <ContextMenu>

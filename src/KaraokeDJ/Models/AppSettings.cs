@@ -20,7 +20,7 @@ public sealed class AppSettings
     public DateTime? LastSupportReminder { get; set; }
     public int CdgOffsetMs { get; set; } = 0;
     public double MasterVolume { get; set; } = 1.0;
-    public string IdleTitle { get; set; } = "KARAOKE NIGHT";
+    public string IdleTitle { get; set; } = "MIX · SING · TOGETHER";
     public string IdleSubtitle { get; set; } = "Prenota la tua canzone al DJ";
     public bool ShowNextSingersOnProjector { get; set; } = true;
     public List<PadDto> Pads { get; set; } = new();

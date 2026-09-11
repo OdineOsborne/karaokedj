@@ -39,7 +39,7 @@ public partial class MainWindow : Window
     {
         if (Vm.DeckA.IsPlaying || Vm.DeckB.IsPlaying)
         {
-            if (MessageBox.Show("C'è musica in riproduzione. Chiudere comunque?", "KaraokeDJ", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            if (MessageBox.Show("C'è musica in riproduzione. Chiudere comunque?", "VOXA", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
                 e.Cancel = true;
                 return;

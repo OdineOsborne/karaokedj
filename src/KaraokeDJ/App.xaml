@@ -5,15 +5,18 @@
              ShutdownMode="OnMainWindowClose">
     <Application.Resources>
         <!-- ═══════════ palette "urban" ═══════════ -->
+        <!-- palette VOXA: viola primario, cyan secondario, rosa accento karaoke -->
         <Color x:Key="AccentColor">#FF00E5FF</Color>
-        <Color x:Key="AccentAColor">#FF39FF14</Color>
-        <Color x:Key="AccentBColor">#FFFF6A00</Color>
-        <Color x:Key="MagentaColor">#FFFF2D95</Color>
-        <SolidColorBrush x:Key="BgBrush" Color="#FF0A0A0E"/>
+        <Color x:Key="VioletColor">#FF8A2BFF</Color>
+        <Color x:Key="AccentAColor">#FF8A2BFF</Color>
+        <Color x:Key="AccentBColor">#FFFF2D6D</Color>
+        <Color x:Key="MagentaColor">#FFFF2D6D</Color>
+        <SolidColorBrush x:Key="BgBrush" Color="#FF0B0B0F"/>
+        <SolidColorBrush x:Key="VioletBrush" Color="{StaticResource VioletColor}"/>
         <SolidColorBrush x:Key="PanelBrush" Color="#FF121218"/>
         <SolidColorBrush x:Key="PanelAltBrush" Color="#FF1B1B24"/>
         <SolidColorBrush x:Key="BorderBrush" Color="#FF2A2A38"/>
-        <SolidColorBrush x:Key="TextBrush" Color="#FFF2F2F7"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#FFF4F4F8"/>
         <SolidColorBrush x:Key="MutedBrush" Color="#FF8A8AA0"/>
         <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
         <SolidColorBrush x:Key="AccentABrush" Color="{StaticResource AccentAColor}"/>
@@ -23,22 +26,24 @@
         <SolidColorBrush x:Key="WarnBrush" Color="#FFFFD60A"/>
 
         <LinearGradientBrush x:Key="WindowBgBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#FF15151F" Offset="0"/>
-            <GradientStop Color="#FF0A0A0E" Offset="0.55"/>
-            <GradientStop Color="#FF0D0A12" Offset="1"/>
+            <GradientStop Color="#FF17122A" Offset="0"/>
+            <GradientStop Color="#FF0B0B0F" Offset="0.5"/>
+            <GradientStop Color="#FF160B1C" Offset="1"/>
         </LinearGradientBrush>
         <LinearGradientBrush x:Key="PanelGradient" StartPoint="0,0" EndPoint="0,1">
             <GradientStop Color="#FF17171F" Offset="0"/>
             <GradientStop Color="#FF0F0F14" Offset="1"/>
         </LinearGradientBrush>
         <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#FF00E5FF" Offset="0"/>
-            <GradientStop Color="#FF0077FF" Offset="1"/>
+            <GradientStop Color="#FF8A2BFF" Offset="0"/>
+            <GradientStop Color="#FF00E5FF" Offset="1"/>
         </LinearGradientBrush>
         <LinearGradientBrush x:Key="ButtonGradient" StartPoint="0,0" EndPoint="0,1">
             <GradientStop Color="#FF242430" Offset="0"/>
             <GradientStop Color="#FF17171F" Offset="1"/>
         </LinearGradientBrush>
+
+        <FontFamily x:Key="BrandFont">pack://application:,,,/Assets/Fonts/#Montserrat</FontFamily>
 
         <conv:InverseBoolConverter x:Key="InverseBool"/>
         <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
@@ -51,7 +56,7 @@
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI"/>
+            <Setter Property="FontFamily" Value="{StaticResource BrandFont}"/>
         </Style>
         <Style x:Key="Muted" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
             <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
@@ -62,12 +67,12 @@
             <Setter Property="FontWeight" Value="Black"/>
             <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
             <Setter Property="Margin" Value="0,0,0,6"/>
-            <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI Black, Segoe UI"/>
+            <Setter Property="FontFamily" Value="{StaticResource BrandFont}"/>
         </Style>
         <Style x:Key="Wordmark" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
             <Setter Property="FontSize" Value="26"/>
             <Setter Property="FontWeight" Value="Black"/>
-            <Setter Property="FontFamily" Value="Segoe UI Variable Display, Segoe UI Black, Segoe UI"/>
+            <Setter Property="FontFamily" Value="{StaticResource BrandFont}"/>
         </Style>
 
         <!-- ═══════════ pulsanti ═══════════ -->
@@ -105,11 +110,11 @@
         <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background" Value="{StaticResource AccentGradient}"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#FF06131A"/>
+            <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="Black"/>
             <Setter Property="Effect">
                 <Setter.Value>
-                    <DropShadowEffect Color="{StaticResource AccentColor}" BlurRadius="18" ShadowDepth="0" Opacity="0.55"/>
+                    <DropShadowEffect Color="{StaticResource VioletColor}" BlurRadius="18" ShadowDepth="0" Opacity="0.6"/>
                 </Setter.Value>
             </Setter>
         </Style>
@@ -146,7 +151,7 @@
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="bd" Property="Background" Value="{StaticResource AccentGradient}"/>
                                 <Setter TargetName="bd" Property="BorderBrush" Value="Transparent"/>
-                                <Setter Property="Foreground" Value="#FF06131A"/>
+                                <Setter Property="Foreground" Value="White"/>
                                 <Setter TargetName="bd" Property="Effect">
                                     <Setter.Value>
                                         <DropShadowEffect Color="{StaticResource AccentColor}" BlurRadius="14" ShadowDepth="0" Opacity="0.5"/>
@@ -178,7 +183,7 @@
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="bd" Property="Background" Value="{StaticResource AccentGradient}"/>
                                 <Setter TargetName="bd" Property="BorderBrush" Value="Transparent"/>
-                                <Setter Property="Foreground" Value="#FF06131A"/>
+                                <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>

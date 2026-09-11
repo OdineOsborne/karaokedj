@@ -22,7 +22,7 @@
             <!-- intestazione -->
             <DockPanel Grid.Row="0" Margin="0,0,0,6">
                 <Border DockPanel.Dock="Left" Background="{Binding Accent, ElementName=Root}" CornerRadius="6" Padding="10,3">
-                    <TextBlock Text="{Binding Name, StringFormat=DECK {0}}" FontWeight="Black" Foreground="#FF0A0A0E" FontSize="13"/>
+                    <TextBlock Text="{Binding Name, StringFormat=DECK {0}}" FontWeight="Black" Foreground="White" FontSize="13"/>
                 </Border>
                 <Border DockPanel.Dock="Left" Margin="6,0,0,0" Background="{StaticResource PanelAltBrush}" CornerRadius="4" Padding="6,2"
                         Visibility="{Binding HasTrack, Converter={StaticResource BoolToVis}}">
@@ -89,7 +89,7 @@
                 <Button Style="{StaticResource IconButton}" Content="⏹" ToolTip="Stop (torna a inizio)" Command="{Binding StopCommand}" Margin="2"/>
                 <Button Style="{StaticResource IconButton}" Content="«10" FontSize="13" ToolTip="Indietro 10 s" Command="{Binding Back10Command}" Margin="2"/>
                 <Button x:Name="PlayBtn" FontSize="22" ToolTip="Play / Pausa" Command="{Binding TogglePlayCommand}" Margin="2"
-                        IsEnabled="{Binding HasTrack}" Background="{Binding Accent, ElementName=Root}" Foreground="#FF0A0A0E" BorderBrush="Transparent">
+                        IsEnabled="{Binding HasTrack}" Background="{Binding Accent, ElementName=Root}" Foreground="White" BorderBrush="Transparent">
                     <Button.Effect>
                         <DropShadowEffect Color="{Binding Accent.Color, ElementName=Root}" BlurRadius="16" ShadowDepth="0" Opacity="0.6"/>
                     </Button.Effect>
@@ -138,7 +138,7 @@
                                 ToolTip="Porta il tempo ai BPM dell'altro deck (o ai BPM bloccati)"/>
                         <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding KeyLock}" Content="🔒 KEY" Padding="6,0" FontSize="10" Margin="0,0,4,0"
                                       ToolTip="Key lock (master tempo): acceso = cambiare velocità non cambia la tonalità; spento = il tono segue la velocità come un vinile"/>
-                        <TextBlock Text="{Binding TempoLabel}" HorizontalAlignment="Right" Margin="0,0,6,0" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding TempoLabel}" HorizontalAlignment="Right" Margin="8,0,6,0" FontWeight="Bold"/>
                     </DockPanel>
                     <Slider Minimum="-25" Maximum="25" Value="{Binding TempoPercent}" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,4,0,0"/>
                 </StackPanel>

@@ -53,7 +53,7 @@ public partial class ProjectorWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show("Impossibile avviare il player video: " + ex.Message, "KaraokeDJ", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Impossibile avviare il player video: " + ex.Message, "VOXA", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         _sync.Start();
         UpdateLayers();
