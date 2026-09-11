@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sostieni VOXA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root { --violet:#8A2BFF; --cyan:#00E5FF; --pink:#FF2D6D; --bg:#0B0B0F; --text:#F4F4F8; --muted:#8A8AA0; }
+  * { box-sizing:border-box }
+  body { margin:0; min-height:100vh; background: radial-gradient(1200px 700px at 20% 0%, #2A1560 0%, var(--bg) 55%), var(--bg); color:var(--text); font-family:Montserrat, system-ui, sans-serif; display:flex; align-items:center; justify-content:center; padding:20px }
+  .card { width:100%; max-width:520px; background:linear-gradient(180deg,#17171F,#0F0F14); border:1px solid #2A2A38; border-radius:18px; padding:28px; box-shadow:0 0 60px rgba(138,43,255,.25) }
+  h1 { margin:0 0 6px; font-size:34px; font-weight:900; letter-spacing:2px; background:linear-gradient(90deg,var(--violet),var(--cyan),var(--pink)); -webkit-background-clip:text; background-clip:text; color:transparent }
+  .tag { color:var(--muted); letter-spacing:4px; font-size:11px; font-weight:600; margin-bottom:18px }
+  p { line-height:1.5; margin:0 0 14px }
+  .id { font-family:Consolas, monospace; font-size:20px; font-weight:800; color:#FFD60A; background:#0D0D12; border-radius:10px; padding:10px 12px; margin:6px 0 16px; text-align:center; letter-spacing:1px }
+  .amounts { display:flex; gap:8px; margin:6px 0 16px; flex-wrap:wrap }
+  .amounts button { flex:1; min-width:70px; background:#1B1B24; color:var(--text); border:1px solid #2A2A38; border-radius:10px; padding:10px 8px; font:inherit; font-weight:800; cursor:pointer }
+  .amounts button.on { background:linear-gradient(135deg,var(--violet),var(--cyan)); border-color:transparent; color:#fff }
+  .amounts input { width:96px; background:#0D0D12; color:var(--text); border:1px solid #2A2A38; border-radius:10px; padding:10px; font:inherit; font-weight:800; text-align:center }
+  .muted { color:var(--muted); font-size:12px }
+  #done { display:none; margin-top:16px; background:#0D0D12; border-radius:12px; padding:14px }
+  #key { font-family:Consolas, monospace; font-size:11px; word-break:break-all; background:#15151C; padding:10px; border-radius:8px; margin:8px 0 }
+  .btn { background:linear-gradient(135deg,var(--violet),var(--cyan)); color:#fff; border:0; border-radius:10px; padding:10px 16px; font:inherit; font-weight:800; cursor:pointer }
+  .err { color:var(--pink); font-weight:600; margin-top:10px }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>VOXA</h1>
+  <div class="tag">MIX · SING · TOGETHER</div>
+  <p>VOXA è <b>donationware</b>: tutte le funzioni sono libere. Con una donazione ricevi subito la chiave personale per questa macchina, che toglie il promemoria all'avvio.</p>
+  <div class="muted">ID MACCHINA</div>
+  <div class="id" id="machine">—</div>
+  <div class="muted">IMPORTO (€)</div>
+  <div class="amounts" id="amounts">
+    <button data-v="5">5 €</button><button data-v="10" class="on">10 €</button><button data-v="20">20 €</button><button data-v="50">50 €</button>
+    <input id="custom" type="number" min="2" step="1" placeholder="altro">
+  </div>
+  <div id="paypal-button-container"></div>
+  <div class="err" id="err"></div>
+  <div id="done">
+    <b>Grazie <span id="name"></span>! 🎉</b>
+    <p class="muted" style="margin:6px 0 0">VOXA si attiva da sola entro pochi secondi. Se l'app era chiusa, incolla questa chiave in <b>❤ Sostieni VOXA → Attiva</b>:</p>
+    <div id="key"></div>
+    <button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('key').textContent)">📋 Copia chiave</button>
+  </div>
+  <p class="muted" style="margin-top:18px">La chiave vale solo per l'ID indicato. Pagamento gestito da PayPal; VOXA non vede i dati della carta.</p>
+</div>
+<script>
+  const params = new URLSearchParams(location.search);
+  const machine = (params.get("m") || "").toUpperCase();
+  document.getElementById("machine").textContent = machine || "manca l'ID: apri questa pagina da VOXA (❤ Sostieni)";
+  let amount = 10;
+  const amounts = document.getElementById("amounts");
+  amounts.querySelectorAll("button").forEach(b => b.onclick = () => { amounts.querySelectorAll("button").forEach(x => x.classList.remove("on")); b.classList.add("on"); amount = Number(b.dataset.v); document.getElementById("custom").value = ""; });
+  document.getElementById("custom").oninput = e => { const v = Number(e.target.value); if (v >= 2) { amount = v; amounts.querySelectorAll("button").forEach(x => x.classList.remove("on")); } };
+  const err = m => document.getElementById("err").textContent = m || "";
+
+  fetch("/api/config").then(r => r.json()).then(cfg => {
+    if (!cfg.clientId) { err("Pagamenti non ancora configurati."); return; }
+    const s = document.createElement("script");
+    s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(cfg.clientId)}&currency=${cfg.currency || "EUR"}&intent=capture&disable-funding=credit`;
+    s.onload = () => paypal.Buttons({
+      style: { layout: "vertical", color: "black", shape: "pill", label: "donate" },
+      createOrder: async () => {
+        err("");
+        const r = await fetch("/api/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ machine, amount }) });
+        const j = await r.json(); if (!r.ok) throw new Error(j.error); return j.id;
+      },
+      onApprove: async data => {
+        const r = await fetch("/api/capture", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: data.orderID }) });
+        const j = await r.json(); if (!r.ok) { err(j.error || "errore"); return; }
+        document.getElementById("name").textContent = j.name || "";
+        document.getElementById("key").textContent = j.key;
+        document.getElementById("done").style.display = "block";
+        document.getElementById("paypal-button-container").style.display = "none";
+      },
+      onError: e => err("Errore PayPal: " + (e?.message || e)),
+    }).render("#paypal-button-container");
+    document.head.appendChild(s);
+  }).catch(() => err("Servizio non raggiungibile."));
+</script>
+</body>
+</html>

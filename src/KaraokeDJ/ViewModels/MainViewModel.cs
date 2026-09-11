@@ -1302,8 +1302,35 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ---------------------------------------------------------------- licenza donationware (legata alla macchina)
 
-    /// <summary>Link donazione: vuoto finché non c'è.</summary>
-    public const string DonationUrl = "";
+    /// <summary>Servizio cloud VOXA (Vercel): donazioni → licenza istantanea, richieste canzoni.</summary>
+    public const string CloudBaseUrl = "https://voxa-cloud.vercel.app";
+    public static string DonationUrl => $"{CloudBaseUrl}/dona?m={LicenseService.MachineId}";
+    private static readonly System.Net.Http.HttpClient CloudHttp = new() { Timeout = TimeSpan.FromSeconds(10) };
+
+    /// <summary>Chiede al cloud se esiste già una licenza per questa macchina (dopo una donazione). Ritorna la chiave o null.</summary>
+    public async Task<string?> FetchLicenseFromCloudAsync()
+    {
+        try
+        {
+            using var r = await CloudHttp.GetAsync($"{CloudBaseUrl}/api/license?m={LicenseService.MachineId}");
+            if (!r.IsSuccessStatusCode) return null;
+            using var doc = System.Text.Json.JsonDocument.Parse(await r.Content.ReadAsStringAsync());
+            return doc.RootElement.TryGetProperty("key", out var k) ? k.GetString() : null;
+        }
+        catch { return null; }
+    }
+
+    /// <summary>Dopo l'apertura della pagina di donazione: attende la chiave e attiva da solo (max 15 minuti).</summary>
+    public async Task<bool> WaitForCloudLicenseAsync(CancellationToken ct)
+    {
+        for (int i = 0; i < 180 && !ct.IsCancellationRequested; i++)
+        {
+            var key = await FetchLicenseFromCloudAsync();
+            if (key != null && ActivateLicense(key)) return true;
+            try { await Task.Delay(5000, ct); } catch { break; }
+        }
+        return false;
+    }
     public LicenseService.LicenseInfo? License { get; private set; }
     public bool IsLicensed => License != null;
     public string SupportLabel => IsLicensed ? $"❤ {License!.Name}" : "❤ Sostieni VOXA";
@@ -1312,6 +1339,8 @@ public sealed partial class MainViewModel : ObservableObject
     {
         License = LicenseService.Verify(Settings.LicenseCode);
         OnPropertyChanged(nameof(IsLicensed)); OnPropertyChanged(nameof(SupportLabel));
+        // donazione fatta da un altro dispositivo o app reinstallata: recupero silenzioso
+        if (!IsLicensed) _ = Task.Run(async () => { var k = await FetchLicenseFromCloudAsync(); if (k != null) Application.Current?.Dispatcher.BeginInvoke(() => ActivateLicense(k)); });
     }
 
     public bool ActivateLicense(string? code)
