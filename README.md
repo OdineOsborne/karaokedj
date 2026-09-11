@@ -4,6 +4,12 @@ App Windows (WPF / .NET 8) per serate di intrattenimento e karaoke: due deck con
 tonalità, coda dei cantanti, secondo schermo per i testi (CDG o video), jingle su tasti F1–F12,
 download da YouTube/Spotify.
 
+## Installare
+
+Scarica **KaraokeDJ-win-Setup.exe** dall'ultima [Release su GitHub](https://github.com/OdineOsborne/karaokedj/releases): installa in `%LocalAppData%KaraokeDJ` con collegamento sul desktop, senza diritti di amministratore. L'app controlla gli aggiornamenti all'avvio (Velopack): quando c'è una versione nuova compare il pulsante "⬆ installa e riavvia" in alto a destra (oppure Impostazioni → *Cerca aggiornamenti*). La versione portable è `KaraokeDJ-win-Portable.zip`.
+
+Per pubblicare una nuova versione: `publish.cmd 1.0.1` e poi il comando `vpk upload github …` stampato alla fine (serve un token GitHub).
+
 ## Compilare ed eseguire
 
 ```bash
