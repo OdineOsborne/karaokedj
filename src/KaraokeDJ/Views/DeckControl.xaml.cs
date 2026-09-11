@@ -59,6 +59,20 @@ public partial class DeckControl : UserControl
         }
     }
 
+    private double _rightClickFraction = -1;
+
+    private void SeekBar_RightDown(object sender, MouseButtonEventArgs e)
+    {
+        _rightClickFraction = SeekBar.ActualWidth > 0 ? Math.Clamp(e.GetPosition(SeekBar).X / SeekBar.ActualWidth, 0, 1) : -1;
+    }
+
+    private DeckViewModel? Vm => DataContext as DeckViewModel;
+    private void IntroHere_Click(object sender, RoutedEventArgs e) => Vm?.SetIntroAt(_rightClickFraction >= 0 ? _rightClickFraction : null);
+    private void OutroHere_Click(object sender, RoutedEventArgs e) => Vm?.SetOutroAt(_rightClickFraction >= 0 ? _rightClickFraction : null);
+    private void IntroNow_Click(object sender, RoutedEventArgs e) => Vm?.SetIntroAt(null);
+    private void OutroNow_Click(object sender, RoutedEventArgs e) => Vm?.SetOutroAt(null);
+    private void ClearCues_Click(object sender, RoutedEventArgs e) => Vm?.ClearCues();
+
     private void Seek(double x)
     {
         if (DataContext is DeckViewModel vm && SeekBar.ActualWidth > 0)

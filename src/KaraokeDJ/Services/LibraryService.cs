@@ -34,6 +34,8 @@ public sealed class LibraryService
 
     public Track? FindById(string id) => _byPath.Values.FirstOrDefault(t => t.Id == id);
 
+    public void Remove(Track t) => _byPath.Remove(t.FilePath);
+
     public Track? FindByPath(string path) => _byPath.TryGetValue(path, out var t) ? t : null;
 
     /// <summary>Aggiunge (o aggiorna) un singolo file, es. dopo un download.</summary>
@@ -91,6 +93,10 @@ public sealed class LibraryService
                     if (t.Bpm <= 0) t.Bpm = existing.Bpm;
                     if (string.IsNullOrEmpty(t.Key)) t.Key = existing.Key;
                     t.Analyzed = existing.Analyzed;
+                    t.IntroEndSec = existing.IntroEndSec; t.OutroStartSec = existing.OutroStartSec; t.CuesManual = existing.CuesManual;
+                    t.PlayCount = existing.PlayCount; t.LastPlayedUtc = existing.LastPlayedUtc;
+                    t.Dedication = existing.Dedication; t.DedicationTitle = existing.DedicationTitle;
+                    t.InstrumentalPath = existing.InstrumentalPath; t.VocalsPath = existing.VocalsPath; t.IsSuno = existing.IsSuno;
                 }
                 _byPath[f] = t;
                 added.Add(t);

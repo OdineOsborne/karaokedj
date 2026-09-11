@@ -18,6 +18,8 @@ public sealed class Deck : ISampleProvider
     private float _volume = 1f;
     private float _crossGain = 1f;
     private float _lastGain = 1f;
+    /// <summary>Picco dell'ultimo buffer (post volume/crossfader), per il VU meter.</summary>
+    public volatile float PeakL, PeakR;
     private int _keyShift;
     private double _tempo = 1.0;
     private bool _keyLock = true;
@@ -370,6 +372,7 @@ public sealed class Deck : ISampleProvider
             {
                 Array.Clear(buffer, offset, count);
                 _lastGain = EffectiveGain;
+                PeakL = PeakR = 0;
                 return count;
             }
 
@@ -390,6 +393,9 @@ public sealed class Deck : ISampleProvider
                     break;
             }
             ApplyGain(buffer, offset, n);
+            float pl = 0, pr = 0;
+            for (int i = 0; i + 1 < n; i += 2) { float a = Math.Abs(buffer[offset + i]); if (a > pl) pl = a; float b = Math.Abs(buffer[offset + i + 1]); if (b > pr) pr = b; }
+            PeakL = pl; PeakR = pr;
 
             if (n < count)
             {

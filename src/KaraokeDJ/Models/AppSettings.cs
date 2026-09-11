@@ -17,6 +17,8 @@ public sealed class AppSettings
     public string? AnthropicApiKeyProtected { get; set; }
     /// <summary>Chiave licenza donationware (legata alla macchina).</summary>
     public string? LicenseCode { get; set; }
+    /// <summary>Cartella dove salvare i download (vuota = MusicaKaraokeDJ Downloads).</summary>
+    public string? DownloadFolder { get; set; }
     public DateTime? LastSupportReminder { get; set; }
     public int CdgOffsetMs { get; set; } = 0;
     public double MasterVolume { get; set; } = 1.0;

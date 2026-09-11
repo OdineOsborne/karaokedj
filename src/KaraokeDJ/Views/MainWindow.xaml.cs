@@ -181,6 +181,8 @@ public partial class MainWindow : Window
 
     // ------------------------------------------------------------ impostazioni
 
+    private void Duplicates_Click(object sender, RoutedEventArgs e) => new DuplicatesWindow(Vm) { Owner = this }.ShowDialog();
+
     private void Support_Click(object sender, RoutedEventArgs e) => new SupportWindow(Vm) { Owner = this }.ShowDialog();
 
     private AnimationWindow? _animation;

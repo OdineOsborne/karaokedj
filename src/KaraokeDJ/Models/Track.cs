@@ -30,6 +30,8 @@ public sealed class Track
     public double IntroEndSec { get; set; }
     /// <summary>Inizio dell'uscita (s). 0 = sconosciuto.</summary>
     public double OutroStartSec { get; set; }
+    /// <summary>Intro/uscita impostate a mano: l'analisi automatica non le sovrascrive.</summary>
+    public bool CuesManual { get; set; }
     public int PlayCount { get; set; }
     /// <summary>Versione senza voce (Demucs), se generata.</summary>
     public string? InstrumentalPath { get; set; }

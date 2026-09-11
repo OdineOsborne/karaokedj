@@ -15,8 +15,9 @@ public static class AppPaths
     public static string CelebrationFile => Path.Combine(Root, "celebration.json");
     public static string ToolsDir => Path.Combine(Root, "tools");
     public static string CacheDir => Path.Combine(Path.GetTempPath(), "KaraokeDJ");
-    public static string DownloadsDir => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "KaraokeDJ Downloads");
+    public static string DefaultDownloadsDir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "KaraokeDJ Downloads");
+    /// <summary>Cartella download scelta dall'utente (Impostazioni); default in Musica.</summary>
+    public static string DownloadsDir { get; set; } = DefaultDownloadsDir;
 
     public static void EnsureDirs()
     {

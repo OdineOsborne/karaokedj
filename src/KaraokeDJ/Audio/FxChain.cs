@@ -19,7 +19,10 @@ public sealed class FxChain
 
     // ---------------- filtro DJ: -1 = low-pass chiuso … 0 = neutro … +1 = high-pass chiuso
     public float Filter;
-    private float _filterApplied = 999;
+    public volatile bool FilterOn = true;
+    /// <summary>0..1 risonanza (Q da 0.7 a ~6): più alta = filtro più "cantato".</summary>
+    public float FilterResonance = 0.15f;
+    private float _filterApplied = 999, _resApplied = 999;
     private readonly BiQuadFilter[] _lp = { BiQuadFilter.LowPassFilter(Fs, 20000, 0.9f), BiQuadFilter.LowPassFilter(Fs, 20000, 0.9f) };
     private readonly BiQuadFilter[] _hp = { BiQuadFilter.HighPassFilter(Fs, 10, 0.9f), BiQuadFilter.HighPassFilter(Fs, 10, 0.9f) };
 
@@ -91,7 +94,7 @@ public sealed class FxChain
     }
 
     public bool AnyActive => VocalRemove || FlangerOn || EchoOn || ReverbOn || PhaserOn || CrushOn || GateOn
-        || Math.Abs(Filter) > 0.01f || Dry < 0.999f || Math.Abs(EqLow) > 0.05f || Math.Abs(EqMid) > 0.05f || Math.Abs(EqHigh) > 0.05f;
+        || (FilterOn && Math.Abs(Filter) > 0.01f) || Dry < 0.999f || Math.Abs(EqLow) > 0.05f || Math.Abs(EqMid) > 0.05f || Math.Abs(EqHigh) > 0.05f;
 
     public void Reset()
     {
@@ -110,7 +113,7 @@ public sealed class FxChain
 
         if (VocalRemove) ProcessVocal(buf, offset, frames);
         ProcessEq(buf, offset, frames);
-        if (Math.Abs(Filter) > 0.01f || Math.Abs(_filterApplied) > 0.01f) ProcessFilter(buf, offset, frames);
+        if (FilterOn && Math.Abs(Filter) > 0.01f) ProcessFilter(buf, offset, frames); else _filterApplied = 999;
         if (CrushOn) ProcessCrush(buf, offset, frames);
         if (PhaserOn) ProcessPhaser(buf, offset, frames);
         if (FlangerOn) ProcessFlanger(buf, offset, frames);
@@ -143,16 +146,18 @@ public sealed class FxChain
     private void ProcessFilter(float[] buf, int o, int frames)
     {
         float f = Math.Clamp(Filter, -1f, 1f);
-        if (Math.Abs(f - _filterApplied) > 0.005f)
+        float res = Math.Clamp(FilterResonance, 0f, 1f);
+        if (Math.Abs(f - _filterApplied) > 0.005f || Math.Abs(res - _resApplied) > 0.01f)
         {
-            _filterApplied = f;
+            _filterApplied = f; _resApplied = res;
+            float q = 0.7f + res * 5.5f;
             // mappa esponenziale: LP da 20 kHz a 150 Hz, HP da 20 Hz a 6 kHz
             float lpFreq = f < 0 ? (float)(20000 * Math.Pow(150.0 / 20000, -f)) : 20000f;
             float hpFreq = f > 0 ? (float)(20 * Math.Pow(6000.0 / 20, f)) : 10f;
             for (int ch = 0; ch < 2; ch++)
             {
-                _lp[ch].SetLowPassFilter(Fs, lpFreq, 1.0f);
-                _hp[ch].SetHighPassFilter(Fs, hpFreq, 1.0f);
+                _lp[ch].SetLowPassFilter(Fs, lpFreq, q);
+                _hp[ch].SetHighPassFilter(Fs, hpFreq, q);
             }
         }
         if (Math.Abs(f) < 0.01f) return;

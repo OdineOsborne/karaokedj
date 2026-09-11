@@ -46,6 +46,11 @@
                             <TextBlock Text="Uscita audio" Width="140" VerticalAlignment="Center"/>
                             <ComboBox x:Name="DeviceCombo" DisplayMemberPath="Name" SelectedValuePath="Id"/>
                         </DockPanel>
+                        <DockPanel Margin="0,0,0,8">
+                            <TextBlock Text="Cartella download" Width="140" VerticalAlignment="Center" ToolTip="Dove salvare MP3/video scaricati (sottocartelle per playlist e Suno)"/>
+                            <Button DockPanel.Dock="Right" Content="Sfoglia…" Click="BrowseDownload_Click" Margin="6,0,0,0"/>
+                            <TextBox x:Name="DownloadFolderBox"/>
+                        </DockPanel>
                         <DockPanel>
                             <TextBlock Text="Chiave API Anthropic" Width="140" VerticalAlignment="Center" ToolTip="Per generare i testi delle canzoni (Animazione). Salvata cifrata per l'utente Windows."/>
                             <PasswordBox x:Name="ApiKeyBox" Background="#FF0D0D12" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource BorderBrush}" Padding="6,4"/>

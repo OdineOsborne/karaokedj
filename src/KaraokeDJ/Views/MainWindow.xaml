@@ -26,6 +26,7 @@
                 </Image>
                 <Button Content="📁 Aggiungi cartella" Command="{Binding AddFolderCommand}" Margin="0,0,6,0"/>
                 <Button Content="🔄 Riscansiona" Command="{Binding RescanCommand}" Margin="0,0,6,0" IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBool}}"/>
+                <Button Content="🧹 Doppioni" Click="Duplicates_Click" Margin="0,0,6,0" ToolTip="Trova e rimuove i brani doppi (nel Cestino)"/>
                 <Button Content="⚙ Impostazioni" Click="Settings_Click" Margin="0,0,6,0"/>
                 <Button Content="🎉 Animazione" Click="Animation_Click" Margin="0,0,6,0" ToolTip="Festeggiato, messaggi degli invitati, canzone con Suno, dedica sul proiettore"/>
                 <Button Content="{Binding SupportLabel}" Click="Support_Click" Margin="0,0,6,0" ToolTip="VOXA è donationware: sostienilo o attiva la tua chiave">
@@ -116,6 +117,7 @@
 
                     <StackPanel Grid.Row="4">
                         <TextBlock Text="MASTER" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                        <v:LevelMeter Left="{Binding MasterL}" Right="{Binding MasterR}" Height="14" Margin="0,0,0,6" ToolTip="Uscita master: se non si muove, non sta uscendo audio"/>
                         <Slider Minimum="0" Maximum="1.2" Value="{Binding MasterVolume}"/>
                     </StackPanel>
                 </Grid>

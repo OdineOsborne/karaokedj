@@ -72,7 +72,20 @@
                 <local:WaveformView Grid.Column="1" x:Name="SeekBar" Height="56" Cursor="Hand"
                         Data="{Binding Waveform}" Progress="{Binding Progress}" IntroFraction="{Binding IntroFraction}" OutroFraction="{Binding OutroFraction}" LoopStart="{Binding LoopStartFraction}" LoopEnd="{Binding LoopEndFraction}"
                         Accent="{Binding Accent, ElementName=Root}"
-                        MouseLeftButtonDown="SeekBar_MouseDown" MouseMove="SeekBar_MouseMove"/>
+                        MouseLeftButtonDown="SeekBar_MouseDown" MouseMove="SeekBar_MouseMove" MouseRightButtonDown="SeekBar_RightDown"
+                        ToolTip="Click: vai al punto. Tasto destro: sposta qui la fine dell'intro o l'inizio dell'uscita.">
+                    <local:WaveformView.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="⏩ Fine intro qui" Click="IntroHere_Click"/>
+                            <MenuItem Header="⏪ Inizio uscita qui" Click="OutroHere_Click"/>
+                            <Separator/>
+                            <MenuItem Header="Fine intro = posizione attuale" Click="IntroNow_Click"/>
+                            <MenuItem Header="Inizio uscita = posizione attuale" Click="OutroNow_Click"/>
+                            <Separator/>
+                            <MenuItem Header="Azzera intro/uscita" Click="ClearCues_Click"/>
+                        </ContextMenu>
+                    </local:WaveformView.ContextMenu>
+                </local:WaveformView>
                 <TextBlock Grid.Column="2" Text="{Binding RemainingLabel}" FontFamily="Consolas" FontSize="16" VerticalAlignment="Center" Margin="8,0,0,0"
                            Foreground="{StaticResource MutedBrush}"/>
                 <DockPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,3,0,0">
@@ -144,7 +157,10 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2">
-                    <TextBlock Text="VOLUME" Style="{StaticResource SectionTitle}" Margin="0"/>
+                    <DockPanel>
+                        <TextBlock Text="VOLUME" Style="{StaticResource SectionTitle}" Margin="0"/>
+                        <local:LevelMeter Left="{Binding LevelL}" Right="{Binding LevelR}" Height="12" Margin="8,0,0,4" VerticalAlignment="Center" ToolTip="Uscita del deck (dopo volume e crossfader)"/>
+                    </DockPanel>
                     <Slider Minimum="0" Maximum="1" Value="{Binding Volume}" Margin="0,4,0,0"/>
                 </StackPanel>
             </Grid>
@@ -227,8 +243,10 @@
                     <DockPanel Margin="0,0,0,6">
                         <ToggleButton Style="{StaticResource FxToggle}" IsChecked="{Binding VocalRemove}" Content="🎤 VOCE OFF" ToolTip="Rimozione voce (cancellazione del centro). Funziona bene sui mix con voce al centro."/>
                         <Slider Style="{StaticResource FxSlider}" Minimum="0" Maximum="1" Value="{Binding VocalStrength}" ToolTip="Intensità rimozione"/>
-                        <TextBlock Style="{StaticResource FxLabel}" Text="FILTER"/>
+                        <ToggleButton Style="{StaticResource FxToggle}" IsChecked="{Binding FilterOn}" Content="FILTER" Margin="8,0,0,0" ToolTip="Filtro come effetto: acceso/spento senza perdere la posizione della manopola"/>
                         <TextBlock Style="{StaticResource FxLabel}" Text="{Binding FilterLabel}" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" MinWidth="44"/>
+                        <TextBlock Style="{StaticResource FxLabel}" Text="RES"/>
+                        <Slider Style="{StaticResource FxSlider}" Minimum="0" Maximum="1" Value="{Binding FilterResonance}" Width="44" ToolTip="Risonanza del filtro"/>
                         <Button DockPanel.Dock="Right" Content="ECHO OUT" Style="{StaticResource AccentButton}" Padding="10,3" FontSize="11" Margin="8,0,0,0"
                                 Command="{Binding EchoOutCommand}" ToolTip="Taglia il brano lasciando ripetere la coda dell'eco, poi mette in pausa"/>
                         <ToggleButton DockPanel.Dock="Right" Style="{StaticResource FxToggle}" IsChecked="{Binding FlangerOn}" Content="FLANGER" Margin="6,0,0,0"/>

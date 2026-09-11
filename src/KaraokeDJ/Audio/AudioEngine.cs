@@ -12,6 +12,9 @@ public sealed class AudioEngine : IDisposable
     private readonly MixingSampleProvider _mixer;
     private readonly VolumeSampleProvider _master;
     private IWavePlayer? _output;
+    private readonly PeakMeter _meter;
+    public float MasterPeakL => _meter.PeakL;
+    public float MasterPeakR => _meter.PeakR;
     private double _crossfader; // -1 = tutto A, +1 = tutto B
 
     public AudioEngine()
@@ -23,6 +26,7 @@ public sealed class AudioEngine : IDisposable
         _mixer.AddMixerInput(DeckB);
         Pads = new PadPlayer(_mixer);
         _master = new VolumeSampleProvider(_mixer);
+        _meter = new PeakMeter(_master);
         Crossfader = 0;
     }
 
@@ -83,7 +87,7 @@ public sealed class AudioEngine : IDisposable
             player = new WaveOutEvent { DesiredLatency = 150 };
             OutputDescription = "WaveOut (fallback)";
         }
-        player.Init(_master);
+        player.Init(_meter);
         player.Play();
         _output = player;
         CurrentDeviceId = deviceId;
@@ -94,6 +98,23 @@ public sealed class AudioEngine : IDisposable
         if (_output == null) return;
         try { _output.Stop(); _output.Dispose(); } catch { }
         _output = null;
+    }
+
+    /// <summary>Passa il segnale inalterato misurando il picco per canale.</summary>
+    private sealed class PeakMeter : ISampleProvider
+    {
+        private readonly ISampleProvider _src;
+        public volatile float PeakL, PeakR;
+        public PeakMeter(ISampleProvider src) => _src = src;
+        public WaveFormat WaveFormat => _src.WaveFormat;
+        public int Read(float[] buffer, int offset, int count)
+        {
+            int n = _src.Read(buffer, offset, count);
+            float pl = 0, pr = 0;
+            for (int i = 0; i + 1 < n; i += 2) { float a = Math.Abs(buffer[offset + i]); if (a > pl) pl = a; float b = Math.Abs(buffer[offset + i + 1]); if (b > pr) pr = b; }
+            PeakL = pl; PeakR = pr;
+            return n;
+        }
     }
 
     public void Dispose()

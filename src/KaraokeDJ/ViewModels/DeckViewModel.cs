@@ -64,12 +64,18 @@ public sealed partial class DeckViewModel : ObservableObject
     [ObservableProperty] private double _outroFraction = 1;
     [ObservableProperty] private string _introOutroLabel = "";
     [ObservableProperty] private bool _inOutro;
+    [ObservableProperty] private double _levelL;
+    [ObservableProperty] private double _levelR;
 
     // ---------------------------------------------------------------- effetti
     [ObservableProperty] private bool _fxVisible;
     [ObservableProperty] private bool _vocalRemove;
     [ObservableProperty] private double _vocalStrength = 1.0;
     [ObservableProperty] private double _filterValue;
+    [ObservableProperty] private bool _filterOn = true;
+    [ObservableProperty] private double _filterResonance = 0.15;
+    partial void OnFilterOnChanged(bool v) => Deck.Fx.FilterOn = v;
+    partial void OnFilterResonanceChanged(double v) => Deck.Fx.FilterResonance = (float)v;
     [ObservableProperty] private bool _echoOn;
     [ObservableProperty] private double _echoBeats = 0.5;   // frazione di battuta
     [ObservableProperty] private double _echoFeedback = 0.45;
@@ -232,7 +238,7 @@ public sealed partial class DeckViewModel : ObservableObject
     }
 
     public string EchoBeatsLabel => EchoBeats switch { 0.25 => "1/4", 0.5 => "1/2", 0.75 => "3/4", 1 => "1/1", 2 => "2/1", _ => EchoBeats.ToString("0.##") };
-    public string FilterLabel => Math.Abs(FilterValue) < 0.01 ? "OFF" : FilterValue < 0 ? $"LP {(-FilterValue * 100):0}%" : $"HP {(FilterValue * 100):0}%";
+    public string FilterLabel => Math.Abs(FilterValue) < 0.01 ? "—" : FilterValue < 0 ? $"LP {(-FilterValue * 100):0}%" : $"HP {(FilterValue * 100):0}%";
 
     partial void OnVocalRemoveChanged(bool value) => Deck.Fx.VocalRemove = value;
     partial void OnVocalStrengthChanged(double value) => Deck.Fx.VocalStrength = (float)value;
@@ -262,7 +268,7 @@ public sealed partial class DeckViewModel : ObservableObject
     [RelayCommand]
     private void FxReset()
     {
-        VocalRemove = false; FilterValue = 0; EchoOn = false; ReverbOn = false; FlangerOn = false;
+        VocalRemove = false; FilterValue = 0; FilterOn = true; EchoOn = false; ReverbOn = false; FlangerOn = false;
         PhaserOn = false; CrushOn = false; GateOn = false; Deck.CancelSpin();
         Deck.Fx.Dry = 1f;
         EchoOutRunning = false;
@@ -338,7 +344,7 @@ public sealed partial class DeckViewModel : ObservableObject
         double dur = Math.Max(1, DurationSec > 0 ? DurationSec : t.DurationSec);
         IntroFraction = t.IntroEndSec > 0 ? Math.Clamp(t.IntroEndSec / dur, 0, 1) : 0;
         OutroFraction = t.OutroStartSec > 0 ? Math.Clamp(t.OutroStartSec / dur, 0, 1) : 1;
-        IntroOutroLabel = t.Analyzed
+        IntroOutroLabel = t.Analyzed || t.CuesManual
             ? (t.IntroEndSec > 0 ? "Intro " + TimeSpan.FromSeconds(t.IntroEndSec).ToString(@"m\:ss") : "Nessuna intro")
               + (t.OutroStartSec > 0 && t.OutroStartSec < dur - 0.5 ? " · Uscita da " + TimeSpan.FromSeconds(t.OutroStartSec).ToString(@"m\:ss") : "")
             : "";
@@ -439,11 +445,47 @@ public sealed partial class DeckViewModel : ObservableObject
         Tick();
     }
 
+    /// <summary>Imposta la fine dell'intro alla frazione indicata della forma d'onda (o alla posizione attuale).</summary>
+    public void SetIntroAt(double? fraction)
+    {
+        if (Track == null || DurationSec <= 0) return;
+        double sec = fraction is double f ? f * DurationSec : Deck.PositionSec;
+        Track.IntroEndSec = Math.Round(Math.Clamp(sec, 0, Math.Max(0, (Track.OutroStartSec > 0 ? Track.OutroStartSec : DurationSec) - 1)), 1);
+        Track.CuesManual = true;
+        RefreshAnalysisLabels();
+        CuesChanged?.Invoke(this);
+    }
+
+    public void SetOutroAt(double? fraction)
+    {
+        if (Track == null || DurationSec <= 0) return;
+        double sec = fraction is double f ? f * DurationSec : Deck.PositionSec;
+        Track.OutroStartSec = Math.Round(Math.Clamp(sec, Track.IntroEndSec + 1, DurationSec), 1);
+        Track.CuesManual = true;
+        RefreshAnalysisLabels();
+        CuesChanged?.Invoke(this);
+    }
+
+    public void ClearCues()
+    {
+        if (Track == null) return;
+        Track.IntroEndSec = 0; Track.OutroStartSec = 0; Track.CuesManual = false;
+        RefreshAnalysisLabels();
+        CuesChanged?.Invoke(this);
+    }
+
+    /// <summary>Intro/uscita modificate a mano: il MainViewModel salva la libreria.</summary>
+    public event Action<DeckViewModel>? CuesChanged;
+
     /// <summary>Aggiornamento periodico dal timer UI.</summary>
     public void Tick()
     {
         IsPlaying = Deck.IsPlaying;
         PositionSec = Deck.PositionSec;
+        // VU: sale subito, scende con decadimento
+        double tl = Views.LevelMeter.ToScale(Deck.PeakL), tr = Views.LevelMeter.ToScale(Deck.PeakR);
+        LevelL = tl > LevelL ? tl : Math.Max(0, LevelL - 0.06);
+        LevelR = tr > LevelR ? tr : Math.Max(0, LevelR - 0.06);
         if (!_playedMarked && IsPlaying && PositionSec > 10 && Track != null) { _playedMarked = true; Played?.Invoke(this, Track); }
         var dur = Deck.DurationSec;
         if (Math.Abs(dur - DurationSec) > 0.01) DurationSec = dur;

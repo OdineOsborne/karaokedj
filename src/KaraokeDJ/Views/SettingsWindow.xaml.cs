@@ -47,6 +47,7 @@ public partial class SettingsWindow : Window
         FoldersList.ItemsSource = _folders;
         InfoLabel.Text = "Dati in: " + AppPaths.Root;
         ApiKeyBox.Password = Secret.Unprotect(vm.Settings.AnthropicApiKeyProtected) ?? "";
+        DownloadFolderBox.Text = AppPaths.DownloadsDir;
 
         // MIDI
         var midiDevices = new List<string> { "(nessuno)" };
@@ -97,6 +98,12 @@ public partial class SettingsWindow : Window
     private void OffsetSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (OffsetLabel != null) OffsetLabel.Text = (int)e.NewValue + " ms";
+    }
+
+    private void BrowseDownload_Click(object sender, RoutedEventArgs e)
+    {
+        using var dlg = new System.Windows.Forms.FolderBrowserDialog { Description = "Cartella per i download", UseDescriptionForTitle = true, SelectedPath = DownloadFolderBox.Text };
+        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK) DownloadFolderBox.Text = dlg.SelectedPath;
     }
 
     private void AddFolder_Click(object sender, RoutedEventArgs e)
@@ -155,6 +162,15 @@ public partial class SettingsWindow : Window
         if (midi != _vm.Settings.MidiDeviceName) _vm.ApplyMidiDevice(midi);
 
         _vm.SetAnthropicApiKey(ApiKeyBox.Password);
+        var dl = DownloadFolderBox.Text.Trim();
+        if (dl.Length > 0 && !string.Equals(dl, AppPaths.DownloadsDir, StringComparison.OrdinalIgnoreCase))
+        {
+            try { Directory.CreateDirectory(dl); } catch { }
+            _vm.Settings.DownloadFolder = dl;
+            AppPaths.DownloadsDir = dl;
+            if (!_folders.Contains(dl, StringComparer.OrdinalIgnoreCase)) { _folders.Add(dl); foldersChanged = true; }
+            InfoLabel.Text = "Cartella download aggiornata (la cartella Suno monitorata cambia al prossimo avvio)";
+        }
         _vm.SaveSettings();
         if (foldersChanged) _vm.RescanCommand.Execute(null);
         DialogResult = true;

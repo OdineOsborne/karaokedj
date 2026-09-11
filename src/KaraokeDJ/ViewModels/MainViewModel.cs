@@ -27,6 +27,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         AppPaths.EnsureDirs();
         Settings = JsonStore.Load<AppSettings>(AppPaths.SettingsFile);
+        if (!string.IsNullOrWhiteSpace(Settings.DownloadFolder)) AppPaths.DownloadsDir = Settings.DownloadFolder;
         Engine = new AudioEngine();
         Library = new LibraryService();
         Downloader = new DownloadService();
@@ -40,6 +41,7 @@ public sealed partial class MainViewModel : ObservableObject
             d.TrackEnded += OnDeckEnded;
             d.TrackLoaded += dv => { if (_autoMixTriggeredFor == dv) _autoMixTriggeredFor = null; UpdateProjectorState(); UpdateSuggestions(); };
             d.Played += OnTrackPlayed;
+            d.CuesChanged += _ => { Library.Save(); LibraryView.Refresh(); };
             d.CdgOffsetMs = Settings.CdgOffsetMs;
         }
 
@@ -114,6 +116,8 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private double _downloadPercent;
     [ObservableProperty] private string _downloadStatus = "";
     [ObservableProperty] private bool _isEditingPads;
+    [ObservableProperty] private double _masterL;
+    [ObservableProperty] private double _masterR;
 
     public string QueueKeyLabel => QueueKeyShift == 0 ? "0" : (QueueKeyShift > 0 ? $"+{QueueKeyShift}" : QueueKeyShift.ToString());
     partial void OnQueueKeyShiftChanged(int value) => OnPropertyChanged(nameof(QueueKeyLabel));
@@ -209,6 +213,9 @@ public sealed partial class MainViewModel : ObservableObject
 
         DeckA.Tick();
         DeckB.Tick();
+        double ml = Views.LevelMeter.ToScale(Engine.MasterPeakL), mr = Views.LevelMeter.ToScale(Engine.MasterPeakR);
+        MasterL = ml > MasterL ? ml : Math.Max(0, MasterL - 0.06);
+        MasterR = mr > MasterR ? mr : Math.Max(0, MasterR - 0.06);
 
         if (_crossfadeTarget is double target)
         {
@@ -821,8 +828,7 @@ public sealed partial class MainViewModel : ObservableObject
             var r = await Task.Run(() => AudioAnalyzer.Analyze(audioPath, ct), ct);
             track.Bpm = r.Bpm;
             track.Key = r.Key;
-            track.IntroEndSec = r.IntroEndSec;
-            track.OutroStartSec = r.OutroStartSec;
+            if (!track.CuesManual) { track.IntroEndSec = r.IntroEndSec; track.OutroStartSec = r.OutroStartSec; }
             track.Analyzed = true;
             if (r.Waveform.Length > 0) WaveformStore.Save(track.Id, r.Waveform);
         }
@@ -1364,6 +1370,28 @@ public sealed partial class MainViewModel : ObservableObject
         Settings.LastSupportReminder = DateTime.UtcNow;
         SaveSettings();
         return true;
+    }
+
+    // ---------------------------------------------------------------- rimozione brani (pulizia doppioni)
+
+    /// <summary>Toglie un brano dalla libreria; coda e playlist puntano al brano sostitutivo (se dato).</summary>
+    public void RemoveTrackFromLibrary(Track t, Track? replaceWith = null)
+    {
+        Library.Remove(t);
+        Tracks.Remove(t);
+        SunoTracks.Remove(t);
+        foreach (var q in Queue.Where(q => q.Track == t).ToList())
+        {
+            if (replaceWith != null) q.Track = replaceWith; else Queue.Remove(q);
+        }
+        foreach (var p in Playlists)
+        {
+            for (int i = 0; i < p.TrackIds.Count; i++)
+                if (p.TrackIds[i] == t.Id) { if (replaceWith != null) p.TrackIds[i] = replaceWith.Id; else p.TrackIds.RemoveAt(i--); }
+            p.NotifyCountChanged();
+        }
+        LibraryCount = Tracks.Count;
+        Library.Save(); SavePlaylists(); SaveQueue();
     }
 
     // ---------------------------------------------------------------- MIDI
