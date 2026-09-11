@@ -93,13 +93,24 @@ public sealed class StemService
     // ------------------------------------------------------------------ separazione
 
     /// <summary>Separa voce e base. Ritorna (base senza voce, sola voce) in mp3.</summary>
-    public async Task<(string instrumental, string vocals)> SeparateAsync(string trackId, string audioPath, CancellationToken ct)
+    /// <summary>Cartella degli stem di un brano (vocals/drums/bass/other.mp3), o null se non ancora separati.</summary>
+    public string? StemsDirFor(string trackId)
+    {
+        var d = Path.Combine(StemsDir, trackId);
+        return Audio.StemMixReader.HasAll(d) ? d : null;
+    }
+
+    /// <summary>
+    /// Separa il brano nei 4 stem (voce, batteria, basso, altro) e genera anche la base senza voce (somma degli altri 3).
+    /// Ritorna (base senza voce, voce, cartella stem).
+    /// </summary>
+    public async Task<(string instrumental, string vocals, string stemsDir)> SeparateAsync(string trackId, string audioPath, CancellationToken ct)
     {
         await EnsureInstalledAsync(ct);
         var outDir = Path.Combine(StemsDir, trackId);
         var inst = Path.Combine(outDir, "no_vocals.mp3");
         var voc = Path.Combine(outDir, "vocals.mp3");
-        if (File.Exists(inst) && File.Exists(voc)) return (inst, voc);
+        if (File.Exists(inst) && File.Exists(voc) && Audio.StemMixReader.HasAll(outDir)) return (inst, voc, outDir);
 
         await Gate.WaitAsync(ct);
         try
@@ -108,7 +119,7 @@ public sealed class StemService
             var work = Path.Combine(outDir, "work");
             Directory.CreateDirectory(work);
             Report("Separazione voce con Demucs (può richiedere qualche minuto)…", 0);
-            var args = $"-m demucs --two-stems=vocals -n htdemucs --mp3 --mp3-bitrate 192 -j 2 -o \"{work}\" \"{audioPath}\"";
+            var args = $"-m demucs -n htdemucs --mp3 --mp3-bitrate 192 -j 2 -o \"{work}\" \"{audioPath}\"";
             var (code, output) = await RunAsync(VenvPython, args, line =>
             {
                 var m = Regex.Match(line, @"(\d{1,3})%\|");
@@ -117,17 +128,46 @@ public sealed class StemService
             }, ct, 3600000);
             if (code != 0) throw new InvalidOperationException("Demucs fallito: " + Tail(output));
 
-            // work\htdemucs\<nome>\no_vocals.mp3
-            var produced = Directory.EnumerateFiles(work, "no_vocals.mp3", SearchOption.AllDirectories).FirstOrDefault();
-            var producedV = Directory.EnumerateFiles(work, "vocals.mp3", SearchOption.AllDirectories).FirstOrDefault();
-            if (produced == null || producedV == null) throw new InvalidOperationException("Demucs non ha prodotto i file attesi.\n" + Tail(output));
-            File.Move(produced, inst, true);
-            File.Move(producedV, voc, true);
+            // work\htdemucs\<nome>\{vocals,drums,bass,other}.mp3
+            foreach (var name in Audio.StemMixReader.Names)
+            {
+                var produced = Directory.EnumerateFiles(work, name + ".mp3", SearchOption.AllDirectories).FirstOrDefault()
+                    ?? throw new InvalidOperationException($"Demucs non ha prodotto {name}.mp3.\n" + Tail(output));
+                File.Move(produced, Path.Combine(outDir, name + ".mp3"), true);
+            }
             try { Directory.Delete(work, true); } catch { }
+            Report("Creo la base senza voce…", 95);
+            await Task.Run(() => RenderNoVocals(outDir, inst), ct);
             Report("Separazione completata", 100);
-            return (inst, voc);
+            return (inst, voc, outDir);
         }
         finally { Gate.Release(); }
+    }
+
+    /// <summary>Somma batteria+basso+altro in no_vocals.mp3 (AAC/MP3 via Media Foundation; fallback WAV rinominato).</summary>
+    private static void RenderNoVocals(string stemsDir, string outPath)
+    {
+        using var mix = new Audio.StemMixReader(stemsDir);
+        mix.SetGain(0, 0f); // voce muta
+        var wav = Path.ChangeExtension(outPath, ".wav");
+        using (var w = new NAudio.Wave.WaveFileWriter(wav, mix.WaveFormat))
+        {
+            var buf = new float[Audio.SourceFactory.SampleRate * 2];
+            int n;
+            while ((n = mix.Read(buf, 0, buf.Length)) > 0) w.WriteSamples(buf, 0, n);
+        }
+        try
+        {
+            NAudio.MediaFoundation.MediaFoundationApi.Startup();
+            using var r = new NAudio.Wave.WaveFileReader(wav);
+            NAudio.Wave.MediaFoundationEncoder.EncodeToMp3(r, outPath, 192000);
+            File.Delete(wav);
+        }
+        catch
+        {
+            // nessun encoder MP3 disponibile: teniamo il WAV col nome atteso
+            File.Move(wav, outPath, true);
+        }
     }
 
     private static string Tail(string s) => string.Join('\n', s.Split('\n').Where(l => l.Trim().Length > 0).TakeLast(4));

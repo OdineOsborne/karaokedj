@@ -13,6 +13,13 @@ public sealed class AppSettings
     public bool BpmLock { get; set; }
     public double BpmLockValue { get; set; } = 120;
     public bool BpmMatch { get; set; } = true;
+    /// <summary>Coerenza dei suggerimenti: "" libero, "decade" stessa decade, "genre" stesso genere.</summary>
+    public string SuggestBy { get; set; } = "";
+    /// <summary>Stile del passaggio automatico: fade · glide · bass · echo.</summary>
+    public string TransitionStyle { get; set; } = "bass";
+    /// <summary>Automix senza fine: coda vuota → pesca dai suggerimenti (mai silenzio).</summary>
+    public bool AutoMixEndless { get; set; } = true;
+    public bool MixViewVisible { get; set; } = true;
     /// <summary>Chiave API Anthropic, protetta con DPAPI (utente corrente).</summary>
     public string? AnthropicApiKeyProtected { get; set; }
     /// <summary>Chiave licenza donationware (legata alla macchina).</summary>

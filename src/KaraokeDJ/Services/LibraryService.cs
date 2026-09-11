@@ -19,6 +19,9 @@ public sealed class LibraryService
         public List<Track> Tracks { get; set; } = new();
     }
 
+    /// <summary>Alzare quando ReadTags legge campi nuovi: forza la rilettura dei tag di tutta la libreria.</summary>
+    public const int TagsVersion = 1;
+
     private readonly Dictionary<string, Track> _byPath = new(StringComparer.OrdinalIgnoreCase);
 
     public IReadOnlyCollection<Track> Tracks => _byPath.Values;
@@ -78,7 +81,9 @@ public sealed class LibraryService
                 var info = new FileInfo(f);
                 if (_byPath.TryGetValue(f, out var existing)
                     && existing.FileSize == info.Length
-                    && existing.FileModified == info.LastWriteTimeUtc)
+                    && existing.FileModified == info.LastWriteTimeUtc
+                    && existing.DurationSec > 0
+                    && existing.TagsVersion >= TagsVersion)
                 {
                     // aggiorna solo l'associazione cdg (potrebbe essere stato aggiunto)
                     RefreshCdgLink(existing);
@@ -86,17 +91,17 @@ public sealed class LibraryService
                 }
 
                 var t = BuildTrack(f);
-                if (t == null) continue;
+                if (t == null) { if (existing != null) _byPath.Remove(f); continue; }
                 if (existing != null)
                 {
                     t.Id = existing.Id;
                     if (t.Bpm <= 0) t.Bpm = existing.Bpm;
                     if (string.IsNullOrEmpty(t.Key)) t.Key = existing.Key;
                     t.Analyzed = existing.Analyzed;
-                    t.IntroEndSec = existing.IntroEndSec; t.OutroStartSec = existing.OutroStartSec; t.CuesManual = existing.CuesManual;
+                    t.IntroEndSec = existing.IntroEndSec; t.OutroStartSec = existing.OutroStartSec; t.CuesManual = existing.CuesManual; t.CueSec = existing.CueSec; t.BeatOffsetSec = existing.BeatOffsetSec; t.BeatManual = existing.BeatManual;
                     t.PlayCount = existing.PlayCount; t.LastPlayedUtc = existing.LastPlayedUtc;
                     t.Dedication = existing.Dedication; t.DedicationTitle = existing.DedicationTitle;
-                    t.InstrumentalPath = existing.InstrumentalPath; t.VocalsPath = existing.VocalsPath; t.IsSuno = existing.IsSuno;
+                    t.InstrumentalPath = existing.InstrumentalPath; t.VocalsPath = existing.VocalsPath; t.StemsDir = existing.StemsDir; t.IsSuno = existing.IsSuno;
                 }
                 _byPath[f] = t;
                 added.Add(t);
@@ -108,6 +113,11 @@ public sealed class LibraryService
 
     private static bool IsCandidate(string path)
     {
+        var name = Path.GetFileName(path);
+        if (name.StartsWith("._") || name.StartsWith(".")) return false; // AppleDouble / nascosti
+        // versioni strumentali (base senza voce, stem Demucs, ecc.): non sono brani da scaletta
+        if (System.Text.RegularExpressions.Regex.IsMatch(name, @"[(\[]\s*instrumental\s*[)\]]", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) return false;
+        try { if ((File.GetAttributes(path) & (FileAttributes.Hidden | FileAttributes.System)) != 0) return false; } catch { }
         var ext = Path.GetExtension(path).ToLowerInvariant();
         if (ext == ".cdg") return false;
         if (ext == ".zip") return true;
@@ -133,6 +143,7 @@ public sealed class LibraryService
                 FilePath = path,
                 FileSize = info.Length,
                 FileModified = info.LastWriteTimeUtc,
+                TagsVersion = TagsVersion,
             };
 
             if (ext == ".zip")
@@ -160,7 +171,7 @@ public sealed class LibraryService
             RefreshCdgLink(t);
             try { ReadTags(new TagLib.File.LocalFileAbstraction(path), t, keepFileNameTitle: false); } catch { }
 
-            if (t.DurationSec <= 0 && t.Kind != TrackKind.Video)
+            if (t.DurationSec <= 0)
             {
                 try
                 {
@@ -169,6 +180,8 @@ public sealed class LibraryService
                 }
                 catch { }
             }
+            // file non decodificabile (corrotto, formato non supportato, resource fork): fuori dalla libreria
+            if (t.DurationSec <= 0) return null;
             return t;
         }
         catch
@@ -191,6 +204,9 @@ public sealed class LibraryService
             t.DurationSec = tf.Properties.Duration.TotalSeconds;
         // BPM e tonalità dai tag (TBPM / TKEY), se presenti
         if (tf.Tag.BeatsPerMinute > 0) t.Bpm = tf.Tag.BeatsPerMinute;
+        if (tf.Tag.Year is > 1900 and < 2100) t.Year = (int)tf.Tag.Year;
+        var genre = tf.Tag.FirstGenre?.Trim();
+        if (!string.IsNullOrEmpty(genre)) t.Genre = genre;
         var key = NormalizeKey(tf.Tag.InitialKey);
         if (key != null) t.Key = key;
     }

@@ -13,6 +13,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -25,8 +26,9 @@
                     <Image.Effect><DropShadowEffect Color="{StaticResource VioletColor}" BlurRadius="18" ShadowDepth="0" Opacity="0.6"/></Image.Effect>
                 </Image>
                 <Button Content="📁 Aggiungi cartella" Command="{Binding AddFolderCommand}" Margin="0,0,6,0"/>
-                <Button Content="🔄 Riscansiona" Command="{Binding RescanCommand}" Margin="0,0,6,0" IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBool}}"/>
+                <Button Content="🔄 Riscansiona" Command="{Binding RescanCommand}" Margin="0,0,6,0" IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBool}}" ToolTip="Rilegge le cartelle: nuovi brani, tag (anno, genere), titoli/artisti sistemati, doppioni (chiede conferma), poi analisi BPM/tonalità di tutto ciò che manca"/>
                 <Button Content="🧹 Doppioni" Click="Duplicates_Click" Margin="0,0,6,0" ToolTip="Trova e rimuove i brani doppi (nel Cestino)"/>
+                <Button Content="🥁 Ritmi" Click="Rhythm_Click" Margin="0,0,6,0" ToolTip="Sequencer ritmico di supporto: batteria, percussioni o campioni tuoi agganciati ai BPM della serata"/>
                 <Button Content="⚙ Impostazioni" Click="Settings_Click" Margin="0,0,6,0"/>
                 <Button Content="🎉 Animazione" Click="Animation_Click" Margin="0,0,6,0" ToolTip="Festeggiato, messaggi degli invitati, canzone con Suno, dedica sul proiettore"/>
                 <Button Content="{Binding SupportLabel}" Click="Support_Click" Margin="0,0,6,0" ToolTip="VOXA è donationware: sostienilo o attiva la tua chiave">
@@ -47,14 +49,27 @@
                         Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVis}}"/>
                 <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisInv}}"/>
                 <Button Content="{Binding AppVersion, StringFormat=⬆ {0}}" Style="{StaticResource SmallButton}" Command="{Binding CheckUpdatesCommand}" Margin="0,0,10,0" ToolTip="Controlla se ci sono aggiornamenti su GitHub"/>
+                <ToggleButton IsChecked="{Binding MixViewVisible}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="〰 MIX" ToolTip="Mostra/nascondi le onde sovrapposte dei due deck (per allineare i beat)"/>
                 <ToggleButton IsChecked="{Binding IsProjectorOpen}" Padding="14,6" FontWeight="Bold" ToolTip="Ctrl+P">
                     <TextBlock Text="🖥 PROIETTORE"/>
                 </ToggleButton>
             </StackPanel>
         </DockPanel>
 
+        <!-- ═══════════ vista di mixaggio: onde sovrapposte ═══════════ -->
+        <Border Grid.Row="1" Style="{StaticResource Panel}" Padding="4" Margin="0,0,0,8" Visibility="{Binding MixViewVisible, Converter={StaticResource BoolToVis}}">
+            <v:MixWaveView Height="84"
+                           DataA="{Binding DeckA.FineWaveform}" DataB="{Binding DeckB.FineWaveform}"
+                           PosA="{Binding DeckA.PositionSec}" PosB="{Binding DeckB.PositionSec}"
+                           BpmA="{Binding DeckA.NativeBpm}" BpmB="{Binding DeckB.NativeBpm}"
+                           TempoA="{Binding DeckA.TempoFactor}" TempoB="{Binding DeckB.TempoFactor}"
+                           AnchorA="{Binding DeckA.GridAnchorSec}" AnchorB="{Binding DeckB.GridAnchorSec}"
+                           AccentA="{StaticResource AccentABrush}" AccentB="{StaticResource MagentaBrush}"
+                           ToolTip="Onde dei due deck sovrapposte (A sopra, B sotto) centrate sull'istante attuale, con la griglia dei battiti. Rotella = zoom. Metti il CUE su un battere per allineare la griglia."/>
+        </Border>
+
         <!-- ═══════════ deck + mixer ═══════════ -->
-        <Grid Grid.Row="1" Margin="0,0,0,8">
+        <Grid Grid.Row="2" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="260"/>
@@ -109,6 +124,19 @@
                             <TextBox Text="{Binding BpmLockValue, StringFormat={}{0:0}, UpdateSourceTrigger=LostFocus}" Width="66" Margin="6,0,0,0" TextAlignment="Center" FontWeight="Bold"/>
                         </DockPanel>
                         <DockPanel Margin="0,4">
+                            <TextBlock Text="Passaggio" Width="80" VerticalAlignment="Center"/>
+                            <ComboBox SelectedValue="{Binding TransitionStyle}" SelectedValuePath="Tag" FontSize="11" Padding="6,2"
+                                      ToolTip="Come viene fatto il passaggio automatico tra i due brani">
+                                <ComboBoxItem Tag="fade" Content="Dissolvenza semplice"/>
+                                <ComboBoxItem Tag="glide" Content="Cross-BPM (il tempo scivola al brano nuovo)"/>
+                                <ComboBoxItem Tag="bass" Content="Cross-BPM + scambio bassi (da DJ)"/>
+                                <ComboBoxItem Tag="echo" Content="Cross-BPM + bassi + filtro ed echo-out"/>
+                            </ComboBox>
+                        </DockPanel>
+                        <DockPanel Margin="0,4">
+                            <CheckBox IsChecked="{Binding AutoMixEndless}" Content="Mai fermarsi: coda vuota → suggeriti" ToolTip="Con l'auto-mix attivo, se la coda è vuota il prossimo brano viene preso dai suggeriti (compatibile, non ancora suonato stasera)"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,4">
                             <TextBlock Text="Dissolvenza" Width="80" VerticalAlignment="Center"/>
                             <TextBlock DockPanel.Dock="Right" Text="{Binding CrossfadeSeconds, StringFormat={}{0:0} s}" Width="34" TextAlignment="Right" VerticalAlignment="Center"/>
                             <Slider Minimum="1" Maximum="15" Value="{Binding CrossfadeSeconds}" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"/>
@@ -127,7 +155,7 @@
         </Grid>
 
         <!-- ═══════════ libreria + coda ═══════════ -->
-        <Grid Grid.Row="2" Margin="0,0,0,10">
+        <Grid Grid.Row="3" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="2*"/>
@@ -199,6 +227,8 @@
                             <DataGridTextColumn Header="Durata" Binding="{Binding DurationLabel}" Width="66"/>
                             <DataGridTextColumn Header="BPM" Binding="{Binding BpmLabel}" Width="50"/>
                             <DataGridTextColumn Header="Tonalità" Binding="{Binding KeyLabel}" Width="86"/>
+                            <DataGridTextColumn Header="Anno" Binding="{Binding YearLabel}" Width="52"/>
+                            <DataGridTextColumn Header="Genere" Binding="{Binding Genre}" Width="90"/>
                             <DataGridTextColumn Header="Match" Binding="{Binding MatchLabel}" Width="62"/>
                             <DataGridTextColumn Header="Suonato" Binding="{Binding PlayedLabel}" Width="74"/>
                         </DataGrid.Columns>
@@ -207,6 +237,8 @@
                                 <MenuItem Header="Carica su Deck A" Command="{Binding LoadSelectedToACommand}"/>
                                 <MenuItem Header="Carica su Deck B" Command="{Binding LoadSelectedToBCommand}"/>
                                 <MenuItem Header="Aggiungi alla coda" Command="{Binding AddToQueueCommand}"/>
+                                <MenuItem Header="⤒ In cima alla coda" Command="{Binding QueueToTopCommand}"/>
+                                <MenuItem Header="⚡ Mixa ora" Command="{Binding MixNowCommand}" ToolTip="Lo carica sul deck libero e sfuma subito"/>
                                 <MenuItem Header="Aggiungi alla playlist" ItemsSource="{Binding Playlists}">
                                     <MenuItem.ItemContainerStyle>
                                         <Style TargetType="MenuItem">
@@ -260,7 +292,7 @@
                             <TextBlock Text="{Binding QueueKeyLabel}" Width="30" TextAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" Foreground="{StaticResource WarnBrush}"/>
                             <Button Content="+" Width="28" Padding="0" Click="QueueKeyUp_Click"/>
                         </StackPanel>
-                        <Button Grid.Column="2" Content="＋ Coda" Style="{StaticResource AccentButton}" Command="{Binding AddToQueueCommand}" Margin="0,0,6,0" ToolTip="Ctrl+Invio"/>
+                        <Button Grid.Column="2" Content="＋ Coda" Style="{StaticResource AccentButton}" Command="{Binding AddToQueueCommand}" Margin="0,0,6,0" ToolTip="Ctrl+Invio. Tasto destro sul brano: in cima alla coda / mixa ora"/>
                         <Button Grid.Column="3" Content="→ A" Command="{Binding LoadSelectedToACommand}" Foreground="{StaticResource AccentABrush}" FontWeight="Bold" Margin="0,0,6,0"/>
                         <Button Grid.Column="4" Content="→ B" Command="{Binding LoadSelectedToBCommand}" Foreground="{StaticResource AccentBBrush}" FontWeight="Bold"/>
                     </Grid>
@@ -302,6 +334,10 @@
                                     </StackPanel>
                                     <TextBlock Grid.Column="2" Text="{Binding KeyLabel}" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" Margin="6,0" VerticalAlignment="Center"/>
                                     <StackPanel Grid.Column="3" Orientation="Horizontal">
+                                        <Button Content="⚡" Style="{StaticResource SmallButton}" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" ToolTip="Mixa ora"
+                                                Command="{Binding DataContext.QueueEntryMixNowCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="2,0"/>
+                                        <Button Content="⤒" Style="{StaticResource SmallButton}" ToolTip="In cima alla coda"
+                                                Command="{Binding DataContext.QueueEntryToTopCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="2,0"/>
                                         <Button Content="A" Style="{StaticResource SmallButton}" Foreground="{StaticResource AccentABrush}" FontWeight="Bold"
                                                 Command="{Binding DataContext.QueueEntryToACommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="2,0"/>
                                         <Button Content="B" Style="{StaticResource SmallButton}" Foreground="{StaticResource AccentBBrush}" FontWeight="Bold"
@@ -326,6 +362,12 @@
                             <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
                                 <TextBlock Text="🎯 SUGGERITI" Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center"/>
                                 <Button DockPanel.Dock="Right" Content="↻" Style="{StaticResource SmallButton}" Padding="6,1" Command="{Binding RefreshSuggestionsCommand}" ToolTip="Aggiorna"/>
+                                <ComboBox DockPanel.Dock="Right" SelectedValue="{Binding SuggestBy}" SelectedValuePath="Tag" FontSize="11" Padding="6,1" MinWidth="112" Margin="6,0"
+                                          ToolTip="Coerenza dei suggerimenti (vale anche per il filtro Compatibili)">
+                                    <ComboBoxItem Tag="" Content="Mix libero"/>
+                                    <ComboBoxItem Tag="decade" Content="Stessa decade"/>
+                                    <ComboBoxItem Tag="genre" Content="Stesso genere"/>
+                                </ComboBox>
                                 <TextBlock Text="{Binding SuggestionsLabel}" Style="{StaticResource Muted}" Margin="8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                             </DockPanel>
                             <ItemsControl ItemsSource="{Binding Suggestions}">
@@ -335,10 +377,13 @@
                                             <TextBlock Text="{Binding MatchLabel}" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" Width="38" VerticalAlignment="Center"/>
                                             <Button DockPanel.Dock="Right" Content="→ deck" Style="{StaticResource SmallButton}" Padding="6,1" FontSize="11" Margin="2,0"
                                                     Command="{Binding DataContext.SuggestionToFreeDeckCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                            <Button DockPanel.Dock="Right" Content="⚡ mix" Style="{StaticResource SmallButton}" Padding="6,1" FontSize="11" Margin="2,0" ToolTip="Mixa ora"
+                                                    Command="{Binding DataContext.MixNowCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                             <Button DockPanel.Dock="Right" Content="＋ coda" Style="{StaticResource SmallButton}" Padding="6,1" FontSize="11" Margin="2,0"
                                                     Command="{Binding DataContext.SuggestionToQueueCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                             <TextBlock Text="{Binding KeyLabel}" Style="{StaticResource Muted}" Width="60" VerticalAlignment="Center" Margin="4,0"/>
                                             <TextBlock Text="{Binding BpmLabel}" Style="{StaticResource Muted}" Width="28" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Decade}" Style="{StaticResource Muted}" Width="40" VerticalAlignment="Center" ToolTip="{Binding Genre}"/>
                                             <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                                         </DockPanel>
                                     </DataTemplate>
@@ -351,7 +396,7 @@
         </Grid>
 
         <!-- ═══════════ pad + download ═══════════ -->
-        <Grid Grid.Row="3" Margin="0,0,0,8">
+        <Grid Grid.Row="4" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="2*"/>
@@ -444,7 +489,7 @@
         </Grid>
 
         <!-- ═══════════ stato ═══════════ -->
-        <DockPanel Grid.Row="4">
+        <DockPanel Grid.Row="5">
             <ProgressBar DockPanel.Dock="Right" Width="160" Height="8" Minimum="0" Maximum="100" Value="{Binding ScanPercent}"
                          Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}" Margin="10,0,0,0"/>
             <TextBlock Text="{Binding NowSinging, StringFormat=🎤 {0}}" DockPanel.Dock="Right" Foreground="{StaticResource WarnBrush}" Margin="10,0,0,0"

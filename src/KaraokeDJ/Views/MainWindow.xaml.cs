@@ -185,6 +185,19 @@ public partial class MainWindow : Window
 
     private void Support_Click(object sender, RoutedEventArgs e) => new SupportWindow(Vm) { Owner = this }.ShowDialog();
 
+    private RhythmWindow? _rhythm;
+
+    private void Rhythm_Click(object sender, RoutedEventArgs e)
+    {
+        if (_rhythm == null || !_rhythm.IsLoaded)
+        {
+            _rhythm = new RhythmWindow(Vm.Rhythm) { Owner = this };
+            _rhythm.Closed += (_, _) => _rhythm = null;
+            _rhythm.Show();
+        }
+        else _rhythm.Activate();
+    }
+
     private AnimationWindow? _animation;
 
     private void Animation_Click(object sender, RoutedEventArgs e)

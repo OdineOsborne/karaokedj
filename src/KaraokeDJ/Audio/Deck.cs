@@ -40,11 +40,12 @@ public sealed class Deck : ISampleProvider
 
     public bool IsPlaying => _playing;
     public bool HasTrack => Track != null;
-    public double PositionSec => _positionSec;
+    public double PositionSec => _spin == SpinMode.Jog ? Math.Max(0, _positionSec - JogBehind() / SourceFactory.SampleRate * _tempo) : _positionSec;
     public double DurationSec => _durationSec;
     public double RemainingSec => Math.Max(0, _durationSec - _positionSec);
 
-    public float Volume { get => _volume; set => _volume = Math.Clamp(value, 0f, 1f); }
+    /// <summary>Gain lineare del deck (1 = unity). Fino a +12 dB.</summary>
+    public float Volume { get => _volume; set => _volume = Math.Clamp(value, 0f, 4f); }
     public float CrossGain { get => _crossGain; set => _crossGain = Math.Clamp(value, 0f, 1f); }
     public float EffectiveGain => _volume * _crossGain;
 
@@ -153,7 +154,7 @@ public sealed class Deck : ISampleProvider
         }
     }
 
-    public void Pause() { lock (_gate) _playing = false; }
+    public void Pause() { lock (_gate) { if (_spin == SpinMode.Jog) { SeekInternal(PositionSec); } _spin = SpinMode.None; _spinRate = 1; _playing = false; } }
 
     public void TogglePlay() { if (_playing) Pause(); else Play(); }
 
@@ -161,7 +162,7 @@ public sealed class Deck : ISampleProvider
     {
         lock (_gate)
         {
-            _playing = false;
+            _playing = false; _spin = SpinMode.None; _spinRate = 1;
             if (_reader != null) SeekInternal(0);
         }
         Seeked?.Invoke();
@@ -172,6 +173,7 @@ public sealed class Deck : ISampleProvider
         lock (_gate)
         {
             if (_reader == null) return;
+            _spin = SpinMode.None; _spinRate = 1;
             SeekInternal(Math.Clamp(seconds, 0, Math.Max(0, _durationSec - 0.1)));
         }
         Seeked?.Invoke();
@@ -210,13 +212,13 @@ public sealed class Deck : ISampleProvider
 
     // ------------------------------------------------------------------ brake / backspin
 
-    public enum SpinMode { None, Brake, Backspin }
+    public enum SpinMode { None, Brake, Backspin, Jog }
     private SpinMode _spin;
     private double _spinRate = 1, _spinStep;
     private double _srcFrac;
     private readonly float[] _spinLast = new float[2];
     private readonly float[] _spinScratch = new float[2];
-    private readonly float[] _hist = new float[2 * SourceFactory.SampleRate * 4]; // 4 s di uscita (post-FX, pre-gain)
+    private readonly float[] _hist = new float[2 * SourceFactory.SampleRate * HistSeconds]; // storia dell'uscita (post-FX, pre-gain): scratch/backspin
     private int _histPos;
     private double _histRead;
     private double _spunFrames;
@@ -246,12 +248,167 @@ public sealed class Deck : ISampleProvider
 
     public void CancelSpin() { lock (_gate) { _spin = SpinMode.None; _spinRate = 1; } }
 
+    // ------------------------------------------------------------------ jog: scratch, reverse, nudge, spin, slow
+
+    private double _jogRate, _jogTarget, _jogSmooth = 0.002; // rate attuale, obiettivo, coefficiente di inseguimento per frame
+    private bool _jogReleasing, _jogResume;
+    private readonly float[] _jogPull = new float[1024]; // 512 frame (~12 ms): è anche il salto massimo al rilascio
+    private const int HistSeconds = 8;
+
+    /// <summary>Frame di uscita "indietro" rispetto alla testa della storia (0 = live; negativo = oltre la testa).</summary>
+    private double JogBehind()
+    {
+        int len = _hist.Length / 2;
+        double b = _histPos - _histRead;
+        if (b < 0) b += len;
+        if (b > len / 2) b -= len; // oltre la testa (in avanti)
+        return b;
+    }
+
+    /// <summary>Entra in modalità jog: da qui la velocità la decide <see cref="JogRate"/> (anche negativa = all'indietro).</summary>
+    public void JogStart()
+    {
+        lock (_gate)
+        {
+            if (_reader == null || _st == null) return;
+            if (_spin == SpinMode.Jog) { _jogReleasing = false; return; }
+            _jogResume = _playing;
+            if (_spin != SpinMode.None) { _spin = SpinMode.None; _spinRate = 1; }
+            _spin = SpinMode.Jog;
+            _playing = true;
+            _jogRate = _jogResume ? 1 : 0;
+            _jogTarget = _jogRate;
+            _jogReleasing = false;
+            _histRead = _histPos; // partiamo dal live
+            _jogSmooth = SmoothCoef(0.03);
+        }
+    }
+
+    private static double SmoothCoef(double seconds) => 1 - Math.Exp(-1.0 / (Math.Max(0.005, seconds) * SourceFactory.SampleRate));
+
+    /// <summary>Velocità obiettivo (1 = normale, 0 = fermo, negativa = indietro) raggiunta in <paramref name="smoothSeconds"/>.</summary>
+    public void JogRate(double rate, double smoothSeconds = 0.03)
+    {
+        lock (_gate)
+        {
+            if (_spin != SpinMode.Jog) return;
+            _jogTarget = Math.Clamp(rate, -8, 8);
+            _jogSmooth = SmoothCoef(smoothSeconds);
+            _jogReleasing = false;
+        }
+    }
+
+    /// <summary>Rilascio: torna alla velocità normale (o si ferma se il deck era in pausa) e poi esce dal jog.</summary>
+    public void JogEnd(double smoothSeconds = 0.08)
+    {
+        lock (_gate)
+        {
+            if (_spin != SpinMode.Jog) return;
+            _jogTarget = _jogResume ? 1 : 0;
+            _jogSmooth = SmoothCoef(smoothSeconds);
+            _jogReleasing = true;
+        }
+    }
+
+    /// <summary>Girata secca del disco: la velocità salta a <paramref name="peak"/> (es. +3 avanti, −3 indietro) e torna normale in <paramref name="seconds"/>.</summary>
+    public void Spin(double peak, double seconds = 0.7)
+    {
+        JogStart();
+        lock (_gate)
+        {
+            if (_spin != SpinMode.Jog) return;
+            _jogRate = peak;
+            _jogTarget = _jogResume ? 1 : 0;
+            _jogSmooth = SmoothCoef(seconds / 3);
+            _jogReleasing = true;
+        }
+    }
+
+    public bool JogActive => _spin == SpinMode.Jog;
+    public string JogDebug => $"rate={_jogRate:0.00} target={_jogTarget:0.00} behind={JogBehind():0} head={_histPos} read={_histRead:0} pos={_positionSec:0.00}";
+
+    /// <summary>Lettura in jog: legge la storia dell'uscita (post-FX) alla velocità corrente, tirando nuovi frame dalla sorgente quando serve.</summary>
+    private int ReadJog(float[] buffer, int offset, int count)
+    {
+        int frames = count / 2;
+        int len = _hist.Length / 2;
+        bool stop = false;
+        for (int i = 0; i < frames; i++)
+        {
+            _jogRate += (_jogTarget - _jogRate) * _jogSmooth;
+            if (_jogReleasing && Math.Abs(_jogRate - _jogTarget) < 0.003) _jogRate = _jogTarget;
+            _histRead += _jogRate;
+            if (_histRead >= len) _histRead -= len;
+            if (_histRead < 0) _histRead += len;
+
+            double behind = JogBehind();
+            if (_jogRate > 0 && behind < 2)
+            {
+                // ho raggiunto (o superato) la testa: tiro un blocco nuovo dalla sorgente
+                int n = ReadStretched(_jogPull, 0, _jogPull.Length);
+                if (n < 2) { stop = true; _histRead = _histPos; break; }
+                Fx.Process(_jogPull, 0, n);
+                RecordHistory(_jogPull, 0, n);
+                if (JogBehind() < 0) { _histRead = _histPos - 1; if (_histRead < 0) _histRead += len; }
+            }
+            else if (_jogRate < 0 && behind > len / 2 - 4)
+            {
+                // fine della storia: non posso andare più indietro
+                _histRead = _histPos - (len / 2 - 4); if (_histRead < 0) _histRead += len;
+                _jogRate = 0;
+            }
+
+            int p = (int)_histRead;
+            double frac = _histRead - p;
+            int p2 = p + 1; if (p2 >= len) p2 = 0;
+            // a velocità quasi zero il vinile non suona: evita la componente continua
+            float g = (float)Math.Min(1, Math.Abs(_jogRate) * 6);
+            buffer[offset + 2 * i] = (float)(_hist[p * 2] * (1 - frac) + _hist[p2 * 2] * frac) * g;
+            buffer[offset + 2 * i + 1] = (float)(_hist[p * 2 + 1] * (1 - frac) + _hist[p2 * 2 + 1] * frac) * g;
+
+            if (_jogReleasing && _jogRate == _jogTarget)
+            {
+                if (_jogTarget == 0)
+                {
+                    // rilascio da fermo: torno in pausa esattamente dove sono
+                    double pos = Math.Max(0, _positionSec - JogBehind() / SourceFactory.SampleRate * _tempo);
+                    _spin = SpinMode.None; _playing = false;
+                    SeekInternal(pos);
+                    Array.Clear(buffer, offset + 2 * (i + 1), count - 2 * (i + 1));
+                    return count;
+                }
+                if (JogBehind() <= _jogPull.Length / 2) { _spin = SpinMode.None; }  // riagganciato al live (entro un blocco): si continua normalmente
+            }
+        }
+        if (stop)
+        {
+            _spin = SpinMode.None;
+            return 0; // sorgente finita: Read() gestisce la fine brano
+        }
+        return count;
+    }
+
     // ------------------------------------------------------------------ sorgente
 
     /// <summary>Sostituisce il file audio (es. versione senza voce) mantenendo posizione e stato.</summary>
     public void SwapSource(string audioPath)
     {
         var (reader, provider) = SourceFactory.Open(audioPath);
+        SwapSource(reader, provider, audioPath);
+    }
+
+    /// <summary>Passa ai 4 stem separati (voce/batteria/basso/altro) con guadagni regolabili.</summary>
+    public void SwapToStems(string stemsDir)
+    {
+        var mix = new StemMixReader(stemsDir);
+        SwapSource(mix, mix, stemsDir);
+    }
+
+    /// <summary>Mixer degli stem se la sorgente attuale è quella, altrimenti null.</summary>
+    public StemMixReader? Stems => _reader as StemMixReader;
+
+    public void SwapSource(WaveStream reader, ISampleProvider provider, string audioPath)
+    {
         var st = new SoundTouchSampleProvider(provider) { KeyLock = _keyLock, Semitones = _keyShift, Tempo = _tempo };
         WaveStream? old;
         lock (_gate)
@@ -385,6 +542,9 @@ public sealed class Deck : ISampleProvider
                     break;
                 case SpinMode.Backspin:
                     n = ReadBackspin(buffer, offset, count); // già post-FX (dalla storia)
+                    break;
+                case SpinMode.Jog:
+                    n = ReadJog(buffer, offset, count);      // già post-FX (dalla storia)
                     break;
                 default:
                     n = ReadStretched(buffer, offset, count);

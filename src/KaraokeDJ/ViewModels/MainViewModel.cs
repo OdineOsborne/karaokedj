@@ -29,6 +29,7 @@ public sealed partial class MainViewModel : ObservableObject
         Settings = JsonStore.Load<AppSettings>(AppPaths.SettingsFile);
         if (!string.IsNullOrWhiteSpace(Settings.DownloadFolder)) AppPaths.DownloadsDir = Settings.DownloadFolder;
         Engine = new AudioEngine();
+        Rhythm = new RhythmViewModel(Engine.Rhythm, CurrentSetBpm);
         Library = new LibraryService();
         Downloader = new DownloadService();
         Midi = new MidiService();
@@ -63,9 +64,13 @@ public sealed partial class MainViewModel : ObservableObject
         MasterVolume = Settings.MasterVolume;
         AutoMix = Settings.AutoMix;
         AutoMixUseCues = Settings.AutoMixUseCues;
+        AutoMixEndless = Settings.AutoMixEndless;
+        MixViewVisible = Settings.MixViewVisible;
         BpmLock = Settings.BpmLock;
         BpmLockValue = Settings.BpmLockValue;
         BpmMatch = Settings.BpmMatch;
+        TransitionStyle = string.IsNullOrEmpty(Settings.TransitionStyle) ? "bass" : Settings.TransitionStyle;
+        SuggestBy = Settings.SuggestBy ?? "";
         CrossfadeSeconds = Settings.CrossfadeSeconds;
         IdleTitle = Settings.IdleTitle;
         IdleSubtitle = Settings.IdleSubtitle;
@@ -78,6 +83,17 @@ public sealed partial class MainViewModel : ObservableObject
 
     public AppSettings Settings { get; }
     public AudioEngine Engine { get; }
+    /// <summary>Sequencer ritmico di supporto (finestra Ritmi).</summary>
+    public RhythmViewModel Rhythm { get; }
+
+    /// <summary>BPM "della serata": blocco BPM se attivo, altrimenti il deck che si sente di più; 0 se ignoti.</summary>
+    public double CurrentSetBpm()
+    {
+        if (BpmLock) return BpmLockValue;
+        var r = (DeckA.IsPlaying && DeckB.IsPlaying) ? (Crossfader <= 0 ? DeckA : DeckB)
+              : DeckA.IsPlaying ? DeckA : DeckB.IsPlaying ? DeckB : null;
+        return r == null ? 0 : EffectiveBpm(r);
+    }
     public LibraryService Library { get; }
     public DownloadService Downloader { get; }
     public MidiService Midi { get; }
@@ -100,6 +116,12 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private double _masterVolume = 1.0;
     [ObservableProperty] private bool _autoMix;
     [ObservableProperty] private bool _autoMixUseCues = true;
+    /// <summary>Automix senza fine: se la coda è vuota pesca dai suggeriti, poi da tutta la libreria. Non si ferma mai.</summary>
+    [ObservableProperty] private bool _autoMixEndless = true;
+    /// <summary>Vista di mixaggio (onde sovrapposte) visibile.</summary>
+    [ObservableProperty] private bool _mixViewVisible = true;
+    partial void OnMixViewVisibleChanged(bool value) => Settings.MixViewVisible = value;
+    partial void OnAutoMixEndlessChanged(bool value) => Settings.AutoMixEndless = value;
     [ObservableProperty] private double _crossfadeSeconds = 6;
     [ObservableProperty] private string _statusText = "Pronto";
     [ObservableProperty] private bool _isScanning;
@@ -166,6 +188,7 @@ public sealed partial class MainViewModel : ObservableObject
         _scanCts?.Cancel();
         _downloadCts?.Cancel();
         SaveSettings();
+        Rhythm.Save();
         SaveQueue();
         Midi.Dispose();
         _suno?.Dispose();
@@ -225,6 +248,7 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 Crossfader = target;
                 _crossfadeTarget = null;
+                EndTransition();
                 // a fine dissolvenza fermiamo il deck che è stato sfumato
                 var faded = target > 0 ? DeckA : DeckB;
                 if (faded.IsPlaying) faded.Deck.Pause();
@@ -234,6 +258,7 @@ public sealed partial class MainViewModel : ObservableObject
             else
             {
                 Crossfader = v + Math.Sign(target - v) * step;
+                StepTransition(Crossfader);
             }
         }
 
@@ -301,7 +326,7 @@ public sealed partial class MainViewModel : ObservableObject
         CompatReferenceLabel = $"Compatibili con: {r.Display}" + (r.Bpm > 0 ? $" ({r.Bpm:0} BPM, {r.KeyLabel})" : "");
         foreach (var t in Tracks)
         {
-            double s = SearchUtil.Compatibility(r, t);
+            double s = SuggestScore(r, t);
             _compatScores[t.Id] = s;
             t.MatchLabel = s >= 0.35 ? (s * 100).ToString("0") + "%" : "";
         }
@@ -350,11 +375,41 @@ public sealed partial class MainViewModel : ObservableObject
         });
         try
         {
-            await Library.ScanAsync(Settings.LibraryFolders, progress, _scanCts.Token);
+            var added = await Library.ScanAsync(Settings.LibraryFolders, progress, _scanCts.Token);
             RefreshTracks();
             StatusText = $"Libreria: {Tracks.Count} brani";
-            // analisi BPM/tonalità/forma d'onda dei brani nuovi, in background
-            if (Settings.AutoAnalyze && !IsAnalyzing && Tracks.Any(t => !t.Analyzed)) _ = AnalyzeMissingAsync();
+
+            // 1) rinomina intelligente dei brani nuovi/riletti (titolo senza artista, artista corretto), senza toccare i file
+            int cleaned = 0;
+            await Task.Run(() => { foreach (var t in added) if (TitleCleaner.Apply(t, writeTags: false)) cleaned++; });
+            if (cleaned > 0) { Library.Save(); LibraryView.Refresh(); }
+
+            // 2) doppioni: li cerco e propongo di mandarli nel Cestino (recuperabili)
+            var dupProgress = new Progress<string>(s => StatusText = s);
+            var tracksNow = Tracks.ToList();
+            var groups = await Task.Run(() => DuplicateFinder.Find(tracksNow, dupProgress, _scanCts.Token));
+            if (groups.Count > 0)
+            {
+                int files = groups.Sum(g => g.Remove.Count);
+                long mb = groups.Sum(g => g.BytesSaved) / 1048576;
+                var r = MessageBox.Show($"Trovati {files} file doppi in {groups.Count} gruppi ({mb} MB).\nSpostarli nel Cestino di Windows tenendo la copia migliore?\n\n(No = li rivedi con calma dal pulsante Doppioni)",
+                    "Riscansione: doppioni", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
+                if (r == MessageBoxResult.Yes)
+                {
+                    int ok = 0;
+                    foreach (var g in groups)
+                        foreach (var t in g.Remove)
+                        {
+                            if (DeckA.Track == t || DeckB.Track == t) continue;
+                            if (DuplicateFinder.RecycleFile(t.FilePath)) { RemoveTrackFromLibrary(t, replaceWith: g.Keep); ok++; }
+                        }
+                    StatusText = $"Doppioni: {ok} file spostati nel Cestino";
+                }
+            }
+
+            // 3) analisi BPM/tonalità/forma d'onda di tutti i brani non ancora analizzati, in background
+            if (!IsAnalyzing && Tracks.Any(t => !t.Analyzed)) _ = AnalyzeMissingAsync();
+            StatusText = $"Libreria: {Tracks.Count} brani" + (cleaned > 0 ? $" · {cleaned} titoli sistemati" : "") + (Tracks.Any(t => !t.Analyzed) ? " · analisi in corso…" : "");
         }
         catch (OperationCanceledException) { StatusText = "Scansione annullata"; }
         catch (Exception ex) { StatusText = "Errore scansione: " + ex.Message; }
@@ -377,6 +432,30 @@ public sealed partial class MainViewModel : ObservableObject
         SingerName = "";
         QueueKeyShift = 0;
     }
+
+    /// <summary>Mixa subito il brano selezionato in libreria (o passato come parametro).</summary>
+    [RelayCommand]
+    private void MixNow(Track? t)
+    {
+        t ??= SelectedTrack;
+        if (t == null) return;
+        PlayNextWith(new QueueEntry { Track = t, Singer = SingerName.Trim(), KeyShift = QueueKeyShift });
+        SingerName = ""; QueueKeyShift = 0;
+    }
+
+    /// <summary>Mette il brano in cima alla coda (prossimo a partire).</summary>
+    [RelayCommand]
+    private void QueueToTop(Track? t)
+    {
+        t ??= SelectedTrack;
+        if (t == null) return;
+        Queue.Insert(0, new QueueEntry { Track = t, Singer = SingerName.Trim(), KeyShift = QueueKeyShift });
+        SingerName = ""; QueueKeyShift = 0;
+        StatusText = $"In cima alla coda: {t.Display}";
+    }
+
+    [RelayCommand] private void QueueEntryMixNow(QueueEntry? e) { if (e != null) PlayNextWith(e); }
+    [RelayCommand] private void QueueEntryToTop(QueueEntry? e) { if (e == null) return; int i = Queue.IndexOf(e); if (i > 0) Queue.Move(i, 0); }
 
     public void AddToQueue(Track track, string singer, int keyShift)
     {
@@ -498,15 +577,19 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>"Prossimo": carica il primo in coda sull'altro deck, lo avvia e sfuma.</summary>
     [RelayCommand]
-    private void PlayNext()
+    private void PlayNext() => PlayNextWith(null);
+
+    /// <summary>MIX NOW: carica il brano (o il primo in coda) sul deck libero, lo avvia e sfuma subito. Con automix "senza fine" e coda vuota pesca dai suggeriti.</summary>
+    public void PlayNextWith(QueueEntry? entry)
     {
         var playing = DeckA.IsPlaying && (!DeckB.IsPlaying || Crossfader <= 0) ? DeckA
                     : DeckB.IsPlaying ? DeckB : null;
         var target = playing == DeckA ? DeckB : DeckA;
 
-        if (Queue.Count > 0)
+        if (entry == null && Queue.Count == 0 && AutoMixEndless && playing != null) TryFillQueueFromSuggestions(playing);
+        var e = entry ?? (Queue.Count > 0 ? Queue[0] : null);
+        if (e != null)
         {
-            var e = Queue[0];
             if (!LoadToDeck(target, e.Track, e.Singer, e.KeyShift)) return;
             Queue.Remove(e);
         }
@@ -515,6 +598,7 @@ public sealed partial class MainViewModel : ObservableObject
             StatusText = "Coda vuota e nessun brano sul deck " + target.Name;
             return;
         }
+        if (playing != null) _autoMixTriggeredFor = playing; // l'automix non deve rifare il passaggio
 
         MatchIncomingTempo(target, playing);
         if (AutoMixUseCues && target.Track?.IsKaraoke == false && target.Track.IntroEndSec > 2 && target.Deck.PositionSec < 1)
@@ -530,6 +614,10 @@ public sealed partial class MainViewModel : ObservableObject
     public void StartCrossfade(double target)
     {
         double secs = Math.Max(0.2, CrossfadeSeconds);
+        var incoming = target > 0 ? DeckB : DeckA;
+        var outgoing = target > 0 ? DeckA : DeckB;
+        if (incoming.HasTrack && outgoing.HasTrack && outgoing.IsPlaying && Math.Abs(Crossfader - target) > 0.1) BeginTransition(outgoing, incoming, target);
+        else _transition = null;
         _crossfadeTarget = target;
         _crossfadeSpeed = 2.0 / secs; // percorso da -1 a +1 in "secs" secondi
     }
@@ -541,7 +629,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (!d.IsPlaying || !d.HasTrack) continue;
             if (_autoMixTriggeredFor == d) continue;
             if (other.IsPlaying) continue;
-            if (Queue.Count == 0) continue;
+            if (Queue.Count == 0 && !(AutoMixEndless && TryFillQueueFromSuggestions(d))) continue;
             double dur = d.Deck.DurationSec;
             double mixAt = dur - CrossfadeSeconds - 0.5;
             if (AutoMixUseCues && d.Track?.OutroStartSec > 0 && d.Track.OutroStartSec < dur - 0.5)
@@ -559,11 +647,41 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Coda vuota con automix: mette in coda il miglior brano suggerito (compatibile, non suonato stasera);
+    /// se non c'è nulla di compatibile prende il brano audio non ancora suonato più "riposato"; in ultima istanza qualunque brano.
+    /// </summary>
+    private bool TryFillQueueFromSuggestions(DeckViewModel playing)
+    {
+        var current = playing.Track;
+        var onDecks = new HashSet<string>();
+        if (DeckA.Track != null) onDecks.Add(DeckA.Track.Id);
+        if (DeckB.Track != null) onDecks.Add(DeckB.Track.Id);
+        var pool = Tracks.Where(t => !t.IsKaraoke && !onDecks.Contains(t.Id) && File.Exists(t.FilePath)).ToList();
+        if (pool.Count == 0) return false;
+
+        Track? pick = null;
+        if (current != null)
+        {
+            pick = pool.Where(t => !t.PlayedThisSession)
+                .Select(t => (t, s: SuggestScore(current, t) * (t.Analyzed ? 1.0 : 0.6)))
+                .Where(x => x.s > 0.3)
+                .OrderByDescending(x => x.s).ThenBy(x => x.t.PlayCount)
+                .Select(x => x.t).FirstOrDefault();
+        }
+        pick ??= pool.Where(t => !t.PlayedThisSession).OrderBy(t => t.PlayCount).ThenBy(t => t.LastPlayedUtc ?? DateTime.MinValue).ThenBy(_ => Random.Shared.Next()).FirstOrDefault();
+        pick ??= pool.OrderBy(t => t.LastPlayedUtc ?? DateTime.MinValue).First(); // tutti già suonati: riparte dal più vecchio
+        Queue.Add(new QueueEntry { Track = pick });
+        StatusText = $"Automix: coda vuota, aggiunto {pick.Display}";
+        return true;
+    }
+
     private void OnDeckEnded(DeckViewModel d)
     {
         if (_autoMixTriggeredFor == d) _autoMixTriggeredFor = null;
         d.Tick();
         // Con automix attivo e coda piena, se per qualche motivo la dissolvenza non è partita
+        if (AutoMix && Queue.Count == 0 && AutoMixEndless && !DeckA.IsPlaying && !DeckB.IsPlaying) TryFillQueueFromSuggestions(d);
         if (AutoMix && Queue.Count > 0 && !DeckA.IsPlaying && !DeckB.IsPlaying)
         {
             var other = d == DeckA ? DeckB : DeckA;
@@ -947,6 +1065,94 @@ public sealed partial class MainViewModel : ObservableObject
         if (target > 0) ApplyTempoForTarget(incoming, target);
     }
 
+    // ---------------------------------------------------------------- stile di passaggio (come un DJ dal vivo)
+
+    /// <summary>"fade" dissolvenza semplice · "glide" cross-BPM · "bass" cross-BPM + scambio bassi · "echo" cross-BPM + bassi + filtro/echo-out.</summary>
+    [ObservableProperty] private string _transitionStyle = "bass";
+    partial void OnTransitionStyleChanged(string value) => Settings.TransitionStyle = value;
+
+    private sealed class Transition
+    {
+        public DeckViewModel Outgoing = null!, Incoming = null!;
+        public double From, To;                // valori del crossfader
+        public double OutTempo0, OutTempo1;    // fattore tempo del deck in uscita: iniziale → finale (BPM del brano entrante)
+        public double InTempo0, InTempo1;      // deck entrante: agganciato al brano in uscita → tempo naturale
+        public bool Glide, BassSwap, EchoOut;
+        public bool EchoFired;
+    }
+    private Transition? _transition;
+
+    /// <summary>Prepara il passaggio "da DJ": il tempo scivola dai BPM del brano in uscita a quelli del brano entrante mentre il crossfader si muove.</summary>
+    private void BeginTransition(DeckViewModel outgoing, DeckViewModel incoming, double target)
+    {
+        _transition = null;
+        if (TransitionStyle == "fade") return;
+        bool karaoke = outgoing.IsKaraoke || incoming.IsKaraoke;
+        var t = new Transition
+        {
+            Outgoing = outgoing, Incoming = incoming, From = Crossfader, To = target,
+            BassSwap = TransitionStyle is "bass" or "echo" && !karaoke,
+            EchoOut = TransitionStyle == "echo" && !karaoke,
+        };
+        // cross-BPM: solo se entrambi hanno BPM, niente blocco BPM e niente karaoke
+        double inBpm = incoming.Track?.Bpm ?? 0, outBpm = EffectiveBpm(outgoing);
+        if (!BpmLock && !karaoke && inBpm > 0 && outBpm > 0 && BpmMatch)
+        {
+            t.InTempo0 = incoming.Deck.Tempo;             // già agganciato ai BPM in uscita da MatchIncomingTempo
+            t.InTempo1 = 1.0;                              // arriva al suo tempo naturale
+            double inNative = inBpm;                       // BPM naturali del brano entrante (×1/×2/×½ più vicini a quelli in uscita)
+            foreach (var mult in new[] { 2.0, 0.5 }) if (Math.Abs(inBpm * mult - outBpm) < Math.Abs(inNative - outBpm)) inNative = inBpm * mult;
+            double outTempo1 = outgoing.Deck.Tempo * inNative / outBpm;
+            t.OutTempo0 = outgoing.Deck.Tempo;
+            t.OutTempo1 = Math.Clamp(outTempo1, 0.75, 1.25);
+            t.Glide = Math.Abs(t.InTempo1 - t.InTempo0) > 0.002 || Math.Abs(t.OutTempo1 - t.OutTempo0) > 0.002;
+        }
+        if (t.BassSwap) incoming.EqLow = -14;              // il brano entra senza bassi, poi li prende
+        _transition = t;
+    }
+
+    /// <summary>Avanzamento del passaggio (0..1) chiamato dal timer a ogni movimento del crossfader.</summary>
+    private void StepTransition(double crossfader)
+    {
+        var t = _transition;
+        if (t == null) return;
+        double p = Math.Clamp((crossfader - t.From) / (t.To - t.From), 0, 1);
+        double s = p * p * (3 - 2 * p); // smoothstep
+        if (t.Glide)
+        {
+            t.Incoming.Deck.Tempo = t.InTempo0 + (t.InTempo1 - t.InTempo0) * s;
+            t.Outgoing.Deck.Tempo = t.OutTempo0 + (t.OutTempo1 - t.OutTempo0) * s;
+        }
+        if (t.BassSwap)
+        {
+            // entrante: bassi da −14 a 0 nella prima metà; uscente: bassi da 0 a −14 nella seconda metà
+            t.Incoming.EqLow = -14 * (1 - Math.Clamp(p / 0.55, 0, 1));
+            t.Outgoing.EqLow = -14 * Math.Clamp((p - 0.45) / 0.55, 0, 1);
+        }
+        if (t.EchoOut)
+        {
+            t.Outgoing.FilterValue = 0.85 * Math.Clamp((p - 0.35) / 0.65, 0, 1); // high-pass progressivo
+            if (!t.EchoFired && p >= 0.8) { t.EchoFired = true; t.Outgoing.EchoOutCommand.Execute(null); }
+        }
+    }
+
+    private void EndTransition()
+    {
+        var t = _transition;
+        _transition = null;
+        if (t == null) return;
+        if (t.Glide)
+        {
+            // il brano entrante arriva al suo tempo: allineo l'indicatore del deck
+            t.Incoming.TempoPercent = (int)Math.Round((t.InTempo1 - 1) * 100);
+            t.Incoming.Deck.Tempo = t.InTempo1;
+            t.Outgoing.TempoPercent = 0;
+        }
+        t.Outgoing.EqLow = 0; t.Outgoing.FilterValue = 0; t.Incoming.EqLow = 0;
+        if (t.Outgoing.EchoOutRunning) t.Outgoing.CancelEchoOutCommand.Execute(null);
+        t.Outgoing.Deck.Fx.Reset();
+    }
+
     // ---------------------------------------------------------------- storico riproduzioni e suggerimenti
 
     public ObservableCollection<Track> Suggestions { get; } = new();
@@ -973,7 +1179,7 @@ public sealed partial class MainViewModel : ObservableObject
         var queued = new HashSet<string>(Queue.Select(q => q.Track.Id));
         var scored = Tracks
             .Where(t => t.Id != r.Id && !queued.Contains(t.Id) && !t.PlayedThisSession && !t.IsKaraoke)
-            .Select(t => (t, s: SearchUtil.Compatibility(r, t) * (t.Analyzed ? 1.0 : 0.6)))
+            .Select(t => (t, s: SuggestScore(r, t) * (t.Analyzed ? 1.0 : 0.6)))
             .Where(x => x.s > 0.3)
             .OrderByDescending(x => x.s)
             .ThenBy(x => x.t.PlayCount)
@@ -984,6 +1190,44 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand] private void RefreshSuggestions() => UpdateSuggestions();
+
+    /// <summary>"" libero · "decade" stessa decade · "genre" stesso genere. Vale per suggeriti e filtro Compatibili.</summary>
+    [ObservableProperty] private string _suggestBy = "";
+    partial void OnSuggestByChanged(string value)
+    {
+        Settings.SuggestBy = value;
+        UpdateSuggestions();
+        if (LibraryFilter == "compat") { ComputeCompatibility(); ApplyLibrarySort(); LibraryView.Refresh(); }
+    }
+
+    /// <summary>Compatibilità BPM/tonalità pesata con la coerenza decade/genere richiesta.</summary>
+    private double SuggestScore(Track r, Track t)
+    {
+        double s = SearchUtil.Compatibility(r, t);
+        if (s <= 0) return s;
+        double aff = SuggestBy switch
+        {
+            "decade" => DecadeAffinity(r, t),
+            "genre" => GenreAffinity(r, t),
+            _ => 1.0,
+        };
+        return s * aff;
+    }
+
+    private static double DecadeAffinity(Track r, Track t)
+    {
+        if (r.Year <= 0 || t.Year <= 0) return 0.5;          // anno ignoto: non escludiamo, ma scende
+        int d = Math.Abs(r.Year / 10 - t.Year / 10);
+        return d switch { 0 => 1.0, 1 => 0.65, _ => 0.2 };
+    }
+
+    private static double GenreAffinity(Track r, Track t)
+    {
+        var a = SearchUtil.Words(r.Genre); var b = SearchUtil.Words(t.Genre);
+        if (a.Length == 0 || b.Length == 0) return 0.5;
+        if (string.Equals(r.Genre, t.Genre, StringComparison.OrdinalIgnoreCase)) return 1.0;
+        return a.Intersect(b).Any() ? 0.8 : 0.2;              // "Pop Rock" vs "Rock": affine
+    }
 
     [RelayCommand]
     private void SuggestionToQueue(Track? t)
@@ -1059,12 +1303,13 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             var (audioPath, _) = LibraryService.PrepareForPlayback(track);
-            var (inst, voc) = await Stems.SeparateAsync(track.Id, audioPath, CancellationToken.None);
+            var (inst, voc, dir) = await Stems.SeparateAsync(track.Id, audioPath, CancellationToken.None);
             track.InstrumentalPath = inst;
             track.VocalsPath = voc;
+            track.StemsDir = dir;
             Library.Save();
-            StatusText = $"Base senza voce pronta: {track.Display}";
-            foreach (var d in new[] { DeckA, DeckB }) if (d.Track == track) d.HasInstrumental = true;
+            StatusText = $"Stem pronti (voce, batteria, basso, altro): {track.Display}";
+            foreach (var d in new[] { DeckA, DeckB }) if (d.Track == track) { d.HasInstrumental = true; d.HasStems = track.HasStems; }
             return true;
         }
         catch (Exception ex)
@@ -1410,7 +1655,7 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 case "play": if (pressed) deck.TogglePlay(); break;
                 case "stop": if (pressed) deck.Stop(); break;
-                case "volume": deck.Volume = norm; break;
+                case "volume": deck.GainDb = (norm - 0.5) * 24; break; // -12 … +12 dB, centro = unity
                 case "tempo": deck.TempoPercent = (int)Math.Round((norm - 0.5) * 50); break; // -25..+25
                 case "keyup": if (pressed) deck.KeyUp(); break;
                 case "keydown": if (pressed) deck.KeyDown(); break;

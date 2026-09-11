@@ -17,6 +17,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- intestazione -->
@@ -28,7 +29,7 @@
                         Visibility="{Binding HasTrack, Converter={StaticResource BoolToVis}}">
                     <TextBlock Text="{Binding KindLabel}" Style="{StaticResource Muted}" FontWeight="Bold"/>
                 </Border>
-                <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding FxVisible}" Content="FX" Padding="8,2" FontSize="11" FontWeight="Black" Margin="6,0,0,0" ToolTip="Mostra/nascondi effetti"/>
+                <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding FxVisible}" Content="⚡ FX" Padding="10,2" FontSize="11" FontWeight="Black" Margin="6,0,0,0" ToolTip="Mostra/nascondi effetti (filtro, echo, riverbero, flanger, EQ…)"/>
                 <TextBlock DockPanel.Dock="Right" Text="{Binding Singer, StringFormat=🎤 {0}}" FontWeight="Bold" Foreground="{StaticResource WarnBrush}"
                            Visibility="{Binding Singer, Converter={StaticResource NullToVis}}" VerticalAlignment="Center"/>
                 <TextBlock/>
@@ -71,9 +72,10 @@
                 <TextBlock Grid.Column="0" Text="{Binding PositionLabel}" FontFamily="Consolas" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <local:WaveformView Grid.Column="1" x:Name="SeekBar" Height="56" Cursor="Hand"
                         Data="{Binding Waveform}" Progress="{Binding Progress}" IntroFraction="{Binding IntroFraction}" OutroFraction="{Binding OutroFraction}" LoopStart="{Binding LoopStartFraction}" LoopEnd="{Binding LoopEndFraction}"
+                        BeatSec="{Binding BeatOffsetSec}" Bpm="{Binding NativeBpm}" DurationSec="{Binding DurationSec}" CueFraction="{Binding CueFraction}"
                         Accent="{Binding Accent, ElementName=Root}"
                         MouseLeftButtonDown="SeekBar_MouseDown" MouseMove="SeekBar_MouseMove" MouseRightButtonDown="SeekBar_RightDown"
-                        ToolTip="Click: vai al punto. Tasto destro: sposta qui la fine dell'intro o l'inizio dell'uscita.">
+                        ToolTip="Click: vai al punto. Tasto destro: intro/uscita, griglia dei battiti (battere qui, BPM ±), cue.">
                     <local:WaveformView.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="⏩ Fine intro qui" Click="IntroHere_Click"/>
@@ -83,13 +85,36 @@
                             <MenuItem Header="Inizio uscita = posizione attuale" Click="OutroNow_Click"/>
                             <Separator/>
                             <MenuItem Header="Azzera intro/uscita" Click="ClearCues_Click"/>
+                            <Separator/>
+                            <MenuItem Header="🥁 Battere (1) qui — allinea la griglia" Click="BeatHere_Click" ToolTip="Il punto cliccato diventa un '1' della griglia dei battiti"/>
+                            <MenuItem Header="🥁 Battere (1) = posizione attuale" Click="BeatNow_Click"/>
+                            <MenuItem Header="Griglia dei battiti">
+                                <MenuItem Header="BPM +0.1" Command="{Binding BpmAdjustCommand}" CommandParameter="+0.1"/>
+                                <MenuItem Header="BPM −0.1" Command="{Binding BpmAdjustCommand}" CommandParameter="-0.1"/>
+                                <MenuItem Header="BPM +1" Command="{Binding BpmAdjustCommand}" CommandParameter="+1"/>
+                                <MenuItem Header="BPM −1" Command="{Binding BpmAdjustCommand}" CommandParameter="-1"/>
+                                <MenuItem Header="BPM ×2" Command="{Binding BpmAdjustCommand}" CommandParameter="x2"/>
+                                <MenuItem Header="BPM ÷2" Command="{Binding BpmAdjustCommand}" CommandParameter="/2"/>
+                                <Separator/>
+                                <MenuItem Header="Griglia +10 ms" Command="{Binding GridNudgeCommand}" CommandParameter="10"/>
+                                <MenuItem Header="Griglia −10 ms" Command="{Binding GridNudgeCommand}" CommandParameter="-10"/>
+                                <MenuItem Header="Griglia +50 ms" Command="{Binding GridNudgeCommand}" CommandParameter="50"/>
+                                <MenuItem Header="Griglia −50 ms" Command="{Binding GridNudgeCommand}" CommandParameter="-50"/>
+                                <Separator/>
+                                <MenuItem Header="Ricalcola automaticamente" Command="{Binding GridAutoCommand}"/>
+                            </MenuItem>
+                            <Separator/>
+                            <MenuItem Header="📍 Cue qui" Click="CueHere_Click"/>
+                            <MenuItem Header="Cancella cue" Command="{Binding ClearCueCommand}"/>
                         </ContextMenu>
                     </local:WaveformView.ContextMenu>
                 </local:WaveformView>
                 <TextBlock Grid.Column="2" Text="{Binding RemainingLabel}" FontFamily="Consolas" FontSize="16" VerticalAlignment="Center" Margin="8,0,0,0"
                            Foreground="{StaticResource MutedBrush}"/>
                 <DockPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,3,0,0">
-                    <TextBlock Text="{Binding BpmLabel}" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding BpmLabel}" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <Button Content="{Binding TapLabel}" Style="{StaticResource SmallButton}" Padding="6,0" FontSize="10" FontWeight="Black" Command="{Binding TapCommand}" Margin="0,0,10,0"
+                            ToolTip="Tap tempo: batti il tempo con il click; dopo 4 tap i BPM del brano vengono corretti e salvati"/>
                     <TextBlock Text="{Binding KeyDisplay}" FontWeight="Bold" Foreground="#FF7DD3FC" Margin="0,0,10,0"/>
                     <TextBlock DockPanel.Dock="Right" Text="{Binding IntroOutroLabel}" Style="{StaticResource Muted}" HorizontalAlignment="Right"/>
                     <TextBlock Text="USCITA" Foreground="{StaticResource DangerBrush}" FontWeight="Bold" FontSize="11" VerticalAlignment="Center"
@@ -98,7 +123,10 @@
             </Grid>
 
             <!-- trasporto -->
-            <UniformGrid Grid.Row="4" Columns="5" Margin="0,0,0,4">
+            <UniformGrid Grid.Row="4" Columns="6" Margin="0,0,0,4">
+                <Button Style="{StaticResource IconButton}" Content="{Binding CueLabel}" FontSize="11" FontWeight="Black" Foreground="{StaticResource WarnBrush}" Command="{Binding CueCommand}" Margin="2"
+                        ToolTip="CUE: in play → torna al cue e pausa · in pausa sul cue → riparte dal cue · in pausa altrove → imposta il cue qui. Doppio click destro: cancella il cue."
+                        MouseRightButtonUp="Cue_Right"/>
                 <Button Style="{StaticResource IconButton}" Content="⏹" ToolTip="Stop (torna a inizio)" Command="{Binding StopCommand}" Margin="2"/>
                 <Button Style="{StaticResource IconButton}" Content="«10" FontSize="13" ToolTip="Indietro 10 s" Command="{Binding Back10Command}" Margin="2"/>
                 <Button x:Name="PlayBtn" FontSize="22" ToolTip="Play / Pausa" Command="{Binding TogglePlayCommand}" Margin="2"
@@ -158,25 +186,68 @@
 
                 <StackPanel Grid.Column="2">
                     <DockPanel>
-                        <TextBlock Text="VOLUME" Style="{StaticResource SectionTitle}" Margin="0"/>
-                        <local:LevelMeter Left="{Binding LevelL}" Right="{Binding LevelR}" Height="12" Margin="8,0,0,4" VerticalAlignment="Center" ToolTip="Uscita del deck (dopo volume e crossfader)"/>
+                        <TextBlock Text="GAIN" Style="{StaticResource SectionTitle}" Margin="0"/>
+                        <Button DockPanel.Dock="Right" Content="0" Style="{StaticResource SmallButton}" Padding="6,0" Command="{Binding GainResetCommand}" ToolTip="Gain a 0 dB"/>
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding GainLabel}" FontFamily="Consolas" FontWeight="Bold" Margin="0,0,6,0" VerticalAlignment="Center" MinWidth="58" TextAlignment="Right"/>
+                        <local:LevelMeter Left="{Binding LevelL}" Right="{Binding LevelR}" Height="12" Margin="8,0,0,4" VerticalAlignment="Center" ToolTip="Uscita del deck (dopo gain e crossfader)"/>
                     </DockPanel>
-                    <Slider Minimum="0" Maximum="1" Value="{Binding Volume}" Margin="0,4,0,0"/>
+                    <Slider Minimum="-24" Maximum="12" Value="{Binding GainDb}" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,4,0,0"
+                            ToolTip="Gain di ingresso del deck: pareggia il livello dei brani (0 dB = originale). Il livello in uscita si dosa col crossfader."
+                            MouseDoubleClick="Gain_DoubleClick"/>
                 </StackPanel>
             </Grid>
 
+            <!-- vinile: jog / scratch, reverse, avanti-indietro, spin, slow -->
+            <Border Grid.Row="6" Background="#FF0D0D12" CornerRadius="8" Padding="8,6" Margin="0,8,0,0">
+                <Border.Resources>
+                    <Style x:Key="HoldBtn" TargetType="Button" BasedOn="{StaticResource SmallButton}">
+                        <Setter Property="Padding" Value="7,3"/>
+                        <Setter Property="FontSize" Value="11"/>
+                        <Setter Property="FontWeight" Value="Black"/>
+                        <Setter Property="Margin" Value="0,0,4,0"/>
+                        <Setter Property="MinWidth" Value="52"/>
+                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="Hold_Down"/>
+                        <EventSetter Event="PreviewMouseLeftButtonUp" Handler="Hold_Up"/>
+                        <EventSetter Event="MouseLeave" Handler="Hold_Leave"/>
+                    </Style>
+                </Border.Resources>
+                <DockPanel>
+                    <local:JogWheel x:Name="Jog" Width="92" Height="92" Accent="{Binding Accent, ElementName=Root}" Angle="{Binding JogAngle}" IsSpinning="{Binding IsPlaying}"
+                                    JogStarted="Jog_Started" JogRateChanged="Jog_Rate" JogEnded="Jog_Ended" Nudged="Jog_Nudged" Margin="0,0,10,0"
+                                    ToolTip="Piatto: trascina per fare scratch (anche all'indietro), rotella = pitch bend"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="VINILE" Style="{StaticResource SectionTitle}" Margin="0,0,0,4"/>
+                        <WrapPanel>
+                            <Button Style="{StaticResource HoldBtn}" Content="◀◀" Tag="backward" ToolTip="Tieni premuto: indietro veloce con audio"/>
+                            <Button Style="{StaticResource HoldBtn}" Content="▶▶" Tag="forward" ToolTip="Tieni premuto: avanti veloce con audio"/>
+                            <Button Style="{StaticResource HoldBtn}" Content="REV" Tag="reverse" ToolTip="Tieni premuto: riproduzione al contrario; al rilascio riprende"/>
+                            <Button Style="{StaticResource HoldBtn}" Content="SLOW" Tag="slow" ToolTip="Tieni premuto: il disco rallenta fino a fermarsi; al rilascio riparte"/>
+                        </WrapPanel>
+                        <WrapPanel Margin="0,4,0,0">
+                            <Button Style="{StaticResource SmallButton}" Padding="7,3" FontSize="11" FontWeight="Black" Margin="0,0,4,0" MinWidth="52" Content="↶ SPIN" Command="{Binding SpinBackCommand}" ToolTip="Girata secca all'indietro"/>
+                            <Button Style="{StaticResource SmallButton}" Padding="7,3" FontSize="11" FontWeight="Black" Margin="0,0,4,0" MinWidth="52" Content="SPIN ↷" Command="{Binding SpinForwardCommand}" ToolTip="Girata secca in avanti"/>
+                            <Button Style="{StaticResource SmallButton}" Padding="7,3" FontSize="11" FontWeight="Black" Margin="0,0,4,0" MinWidth="52" Content="BRAKE" Command="{Binding BrakeCommand}" ToolTip="Frenata vinile fino allo stop (poi pausa)"/>
+                            <Button Style="{StaticResource SmallButton}" Padding="7,3" FontSize="11" FontWeight="Black" Margin="0,0,4,0" MinWidth="52" Content="BACKSPIN" Command="{Binding BackspinCommand}" ToolTip="Riavvolgimento vinile (poi pausa)"/>
+                        </WrapPanel>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
             <!-- EQ + loop -->
-            <Grid Grid.Row="6" Margin="0,8,0,0">
+            <Grid Grid.Row="7" Margin="0,8,0,0">
                 <Grid.Resources>
                     <Style x:Key="EqSlider" TargetType="Slider" BasedOn="{StaticResource {x:Type Slider}}">
                         <Setter Property="Width" Value="46"/>
-                        <Setter Property="Minimum" Value="-30"/>
-                        <Setter Property="Maximum" Value="8"/>
+                        <Setter Property="Minimum" Value="-12"/>
+                        <Setter Property="Maximum" Value="12"/>
+                        <Setter Property="TickFrequency" Value="12"/>
+                        <Setter Property="TickPlacement" Value="BottomRight"/>
                         <Setter Property="VerticalAlignment" Value="Center"/>
                         <Setter Property="Margin" Value="2,0"/>
-                        <Setter Property="ToolTip" Value="EQ: −30 dB (kill) … +8 dB. Doppio click sul nome per il kill."/>
+                        <Setter Property="ToolTip" Value="EQ: −12 … +12 dB (centro = piatto). Doppio click = 0. Il pulsante accanto è il kill."/>
+                        <EventSetter Event="MouseDoubleClick" Handler="Eq_DoubleClick"/>
                     </Style>
-                    <Style x:Key="EqKill" TargetType="Button" BasedOn="{StaticResource SmallButton}">
+                    <Style x:Key="EqKill" TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
                         <Setter Property="Padding" Value="4,1"/>
                         <Setter Property="FontSize" Value="10"/>
                         <Setter Property="FontWeight" Value="Black"/>
@@ -197,13 +268,13 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <Button Style="{StaticResource EqKill}" Content="LOW" Command="{Binding KillLowCommand}" ToolTip="Kill bassi"/>
+                    <ToggleButton Style="{StaticResource EqKill}" Content="LOW" IsChecked="{Binding EqLowKill}" ToolTip="Kill bassi"/>
                     <Slider Style="{StaticResource EqSlider}" Value="{Binding EqLow}" Foreground="{StaticResource MagentaBrush}"/>
-                    <Button Style="{StaticResource EqKill}" Content="MID" Command="{Binding KillMidCommand}" ToolTip="Kill medi"/>
+                    <ToggleButton Style="{StaticResource EqKill}" Content="MID" IsChecked="{Binding EqMidKill}" ToolTip="Kill medi"/>
                     <Slider Style="{StaticResource EqSlider}" Value="{Binding EqMid}" Foreground="{StaticResource WarnBrush}"/>
-                    <Button Style="{StaticResource EqKill}" Content="HI" Command="{Binding KillHighCommand}" ToolTip="Kill alti"/>
+                    <ToggleButton Style="{StaticResource EqKill}" Content="HI" IsChecked="{Binding EqHighKill}" ToolTip="Kill alti"/>
                     <Slider Style="{StaticResource EqSlider}" Value="{Binding EqHigh}"/>
-                    <Button Style="{StaticResource EqKill}" Content="↺" Command="{Binding EqResetCommand}" ToolTip="EQ piatto" MinWidth="22" Margin="2,0,8,0"/>
+                    <Button Style="{StaticResource SmallButton}" Padding="4,1" FontSize="10" Content="↺" Command="{Binding EqResetCommand}" ToolTip="EQ piatto" MinWidth="22" Margin="2,0,8,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                     <TextBlock Text="{Binding LoopLabel}" Foreground="{StaticResource WarnBrush}" FontWeight="Black" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -219,7 +290,7 @@
                 </StackPanel>
             </Grid>
             <!-- effetti -->
-            <Border Grid.Row="7" Background="#FF0D0D12" CornerRadius="8" Padding="8,6" Margin="0,8,0,0"
+            <Border Grid.Row="8" Background="#FF0D0D12" CornerRadius="8" Padding="8,6" Margin="0,8,0,0"
                     Visibility="{Binding FxVisible, Converter={StaticResource BoolToVis}}">
                 <Border.Resources>
                     <Style x:Key="FxToggle" TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
@@ -274,12 +345,45 @@
                         <Slider Style="{StaticResource FxSlider}" Minimum="0" Maximum="1" Value="{Binding CrushAmount}" Width="50"/>
                         <ToggleButton Style="{StaticResource FxToggle}" IsChecked="{Binding GateOn}" Content="GATE" Margin="6,0,0,0" ToolTip="Trans/gate a tempo"/>
                         <Button Content="{Binding GateBeatsLabel}" Style="{StaticResource SmallButton}" Padding="6,2" FontSize="11" FontFamily="Consolas" Command="{Binding GateBeatsCycleCommand}" Margin="4,0,0,0"/>
-                        <Button Content="BRAKE" Style="{StaticResource SmallButton}" Padding="8,2" FontSize="11" FontWeight="Black" Command="{Binding BrakeCommand}" Margin="8,0,0,0" ToolTip="Frenata vinile (poi pausa)"/>
-                        <Button Content="BACKSPIN" Style="{StaticResource SmallButton}" Padding="8,2" FontSize="11" FontWeight="Black" Command="{Binding BackspinCommand}" Margin="4,0,0,0" ToolTip="Riavvolgimento vinile (poi pausa)"/>
                         <TextBlock DockPanel.Dock="Right" Text="{Binding AiStatus}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="6,0,0,0" MaxWidth="120" TextTrimming="CharacterEllipsis"/>
                         <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding AiVocalOff}" Content="🤖 VOCE AI" Padding="8,3" FontSize="11" FontWeight="Black" Margin="8,0,0,0"
                                       Command="{Binding ToggleAiVocalCommand}" ToolTip="Rimozione voce con Demucs (AI). La prima volta genera la base senza voce (1–3 min), poi si attiva/disattiva al volo."
                                       IsEnabled="{Binding IsSeparating, Converter={StaticResource InverseBool}}"/>
+                        <TextBlock/>
+                    </DockPanel>
+                    <!-- stem: isola gli strumenti -->
+                    <DockPanel Margin="0,6,0,0">
+                        <ToggleButton Style="{StaticResource FxToggle}" IsChecked="{Binding StemsOn}" Content="🎚 STEMS" Command="{Binding ToggleStemsCommand}"
+                                      IsEnabled="{Binding IsSeparating, Converter={StaticResource InverseBool}}"
+                                      ToolTip="Isola gli strumenti: voce, batteria, basso e resto su 4 canali separati (Demucs AI). La prima volta genera gli stem (1–3 min)."/>
+                        <Button DockPanel.Dock="Right" Content="↺" Style="{StaticResource SmallButton}" Padding="6,2" FontSize="10" Command="{Binding StemsResetCommand}" ToolTip="Tutti gli stem al 100%" Margin="4,0,0,0"/>
+                        <StackPanel Orientation="Horizontal" IsEnabled="{Binding StemsOn}" Margin="6,0,0,0">
+                            <StackPanel.Resources>
+                                <Style x:Key="StemKill" TargetType="Button" BasedOn="{StaticResource SmallButton}">
+                                    <Setter Property="Padding" Value="4,1"/>
+                                    <Setter Property="FontSize" Value="10"/>
+                                    <Setter Property="FontWeight" Value="Black"/>
+                                    <Setter Property="MinWidth" Value="44"/>
+                                </Style>
+                                <Style x:Key="StemSolo" TargetType="Button" BasedOn="{StaticResource SmallButton}">
+                                    <Setter Property="Padding" Value="4,1"/>
+                                    <Setter Property="FontSize" Value="9"/>
+                                    <Setter Property="Margin" Value="1,0,6,0"/>
+                                </Style>
+                            </StackPanel.Resources>
+                            <Button Style="{StaticResource StemKill}" Content="VOCE" Command="{Binding StemKillCommand}" CommandParameter="vocals" ToolTip="Kill voce"/>
+                            <Slider Style="{StaticResource FxSlider}" Minimum="0" Maximum="1.5" Value="{Binding StemVocals}" Width="56"/>
+                            <Button Style="{StaticResource StemSolo}" Content="S" Command="{Binding StemSoloCommand}" CommandParameter="vocals" ToolTip="Solo voce (a cappella)"/>
+                            <Button Style="{StaticResource StemKill}" Content="BATT" Command="{Binding StemKillCommand}" CommandParameter="drums" ToolTip="Kill batteria"/>
+                            <Slider Style="{StaticResource FxSlider}" Minimum="0" Maximum="1.5" Value="{Binding StemDrums}" Width="56"/>
+                            <Button Style="{StaticResource StemSolo}" Content="S" Command="{Binding StemSoloCommand}" CommandParameter="drums" ToolTip="Solo batteria"/>
+                            <Button Style="{StaticResource StemKill}" Content="BASSO" Command="{Binding StemKillCommand}" CommandParameter="bass" ToolTip="Kill basso"/>
+                            <Slider Style="{StaticResource FxSlider}" Minimum="0" Maximum="1.5" Value="{Binding StemBass}" Width="56"/>
+                            <Button Style="{StaticResource StemSolo}" Content="S" Command="{Binding StemSoloCommand}" CommandParameter="bass" ToolTip="Solo basso"/>
+                            <Button Style="{StaticResource StemKill}" Content="ALTRO" Command="{Binding StemKillCommand}" CommandParameter="other" ToolTip="Kill resto (chitarre, synth, tastiere…)"/>
+                            <Slider Style="{StaticResource FxSlider}" Minimum="0" Maximum="1.5" Value="{Binding StemOther}" Width="56"/>
+                            <Button Style="{StaticResource StemSolo}" Content="S" Command="{Binding StemSoloCommand}" CommandParameter="other" ToolTip="Solo resto"/>
+                        </StackPanel>
                         <TextBlock/>
                     </DockPanel>
                 </StackPanel>

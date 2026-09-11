@@ -21,6 +21,14 @@ public sealed class WaveformView : FrameworkElement
         DependencyProperty.Register(nameof(LoopStart), typeof(double), typeof(WaveformView), new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
     public static readonly DependencyProperty LoopEndProperty =
         DependencyProperty.Register(nameof(LoopEnd), typeof(double), typeof(WaveformView), new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+    public static readonly DependencyProperty BeatSecProperty =
+        DependencyProperty.Register(nameof(BeatSec), typeof(double), typeof(WaveformView), new FrameworkPropertyMetadata(-1.0, FrameworkPropertyMetadataOptions.AffectsRender));
+    public static readonly DependencyProperty BpmProperty =
+        DependencyProperty.Register(nameof(Bpm), typeof(double), typeof(WaveformView), new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+    public static readonly DependencyProperty DurationSecProperty =
+        DependencyProperty.Register(nameof(DurationSec), typeof(double), typeof(WaveformView), new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+    public static readonly DependencyProperty CueFractionProperty =
+        DependencyProperty.Register(nameof(CueFraction), typeof(double), typeof(WaveformView), new FrameworkPropertyMetadata(-1.0, FrameworkPropertyMetadataOptions.AffectsRender));
     public static readonly DependencyProperty AccentProperty =
         DependencyProperty.Register(nameof(Accent), typeof(Brush), typeof(WaveformView), new FrameworkPropertyMetadata(Brushes.LimeGreen, FrameworkPropertyMetadataOptions.AffectsRender));
 
@@ -30,12 +38,15 @@ public sealed class WaveformView : FrameworkElement
     private static readonly Brush IntroBrush = new SolidColorBrush(Color.FromArgb(0x30, 0x00, 0xE5, 0xFF));
     private static readonly Brush OutroBrush = new SolidColorBrush(Color.FromArgb(0x38, 0xFF, 0x2D, 0x95));
     private static readonly Pen CursorPen = new(Brushes.White, 2);
+    private static readonly Pen BarPen = new(new SolidColorBrush(Color.FromArgb(0x38, 0xFF, 0xFF, 0xFF)), 1);
+    private static readonly Pen PhrasePen = new(new SolidColorBrush(Color.FromArgb(0x80, 0xFF, 0xFF, 0xFF)), 1);
+    private static readonly Pen CuePen = new(new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0x8C, 0x00)), 2);
     private static readonly Pen MarkerPen = new(new SolidColorBrush(Color.FromArgb(0xC0, 0xFA, 0xCC, 0x15)), 1) { DashStyle = DashStyles.Dash };
 
     static WaveformView()
     {
         BgBrush.Freeze(); UnplayedPeak.Freeze(); UnplayedRms.Freeze(); IntroBrush.Freeze(); OutroBrush.Freeze();
-        CursorPen.Freeze(); MarkerPen.Freeze();
+        CursorPen.Freeze(); MarkerPen.Freeze(); BarPen.Freeze(); PhrasePen.Freeze(); CuePen.Freeze();
     }
 
     public byte[]? Data { get => (byte[]?)GetValue(DataProperty); set => SetValue(DataProperty, value); }
@@ -43,6 +54,12 @@ public sealed class WaveformView : FrameworkElement
     public double IntroFraction { get => (double)GetValue(IntroFractionProperty); set => SetValue(IntroFractionProperty, value); }
     public double OutroFraction { get => (double)GetValue(OutroFractionProperty); set => SetValue(OutroFractionProperty, value); }
     public Brush Accent { get => (Brush)GetValue(AccentProperty); set => SetValue(AccentProperty, value); }
+    /// <summary>Griglia dei battiti: secondi del primo "1" (-1 = nessuna), BPM e durata del brano.</summary>
+    public double BeatSec { get => (double)GetValue(BeatSecProperty); set => SetValue(BeatSecProperty, value); }
+    public double Bpm { get => (double)GetValue(BpmProperty); set => SetValue(BpmProperty, value); }
+    public double DurationSec { get => (double)GetValue(DurationSecProperty); set => SetValue(DurationSecProperty, value); }
+    /// <summary>Punto cue in frazione (-1 = nessuno).</summary>
+    public double CueFraction { get => (double)GetValue(CueFractionProperty); set => SetValue(CueFractionProperty, value); }
     public double LoopStart { get => (double)GetValue(LoopStartProperty); set => SetValue(LoopStartProperty, value); }
     public double LoopEnd { get => (double)GetValue(LoopEndProperty); set => SetValue(LoopEndProperty, value); }
     private static readonly Brush LoopBrush = new SolidColorBrush(Color.FromArgb(0x55, 0xFF, 0xD6, 0x0A));
@@ -102,6 +119,24 @@ public sealed class WaveformView : FrameworkElement
             dc.DrawLine(LoopPen, new Point(x0, 0), new Point(x0, h));
             dc.DrawLine(LoopPen, new Point(x1, 0), new Point(x1, h));
         }
+        // griglia: una tacca ogni battuta (4 battiti), più marcata ogni frase (16 battiti)
+        if (Bpm > 0 && BeatSec >= 0 && DurationSec > 0)
+        {
+            double bar = 4 * 60.0 / Bpm;
+            double pxPerBar = w * bar / DurationSec;
+            int every = pxPerBar >= 3 ? 1 : pxPerBar >= 0.75 ? 4 : 16;   // se le battute sono fitte, mostra solo frasi
+            double first = BeatSec - Math.Floor(BeatSec / bar) * bar;
+            int idx = (int)Math.Round((first - BeatSec) / bar);
+            for (double t = first; t < DurationSec; t += bar, idx++)
+            {
+                bool phrase = ((idx % 4) + 4) % 4 == 0;
+                if (every == 16 && !phrase) continue;
+                if (!phrase && every > 1 && ((idx % every) + every) % every != 0) continue;
+                double x = w * t / DurationSec;
+                dc.DrawLine(phrase ? PhrasePen : BarPen, new Point(x, phrase ? 0 : h * 0.25), new Point(x, phrase ? h : h * 0.75));
+            }
+        }
+        if (CueFraction >= 0) dc.DrawLine(CuePen, new Point(w * CueFraction, 0), new Point(w * CueFraction, h));
         if (intro > 0) dc.DrawLine(MarkerPen, new Point(w * intro, 0), new Point(w * intro, h));
         if (outro < 1) dc.DrawLine(MarkerPen, new Point(w * outro, 0), new Point(w * outro, h));
         dc.DrawLine(CursorPen, new Point(w * prog, 0), new Point(w * prog, h));

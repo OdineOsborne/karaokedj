@@ -45,6 +45,12 @@ public sealed partial class DeckViewModel : ObservableObject
     [ObservableProperty] private bool _isCdg;
     [ObservableProperty] private bool _isVideo;
     [ObservableProperty] private double _positionSec;
+    /// <summary>Forma d'onda fine (50 col/s) per la vista di mixaggio; calcolata in background al caricamento.</summary>
+    [ObservableProperty] private byte[]? _fineWaveform;
+    /// <summary>BPM naturali del brano (0 = ignoti) e fattore tempo attuale, per la griglia dei battiti.</summary>
+    [ObservableProperty] private double _nativeBpm;
+    [ObservableProperty] private double _tempoFactor = 1.0;
+    private CancellationTokenSource? _fineCts;
     [ObservableProperty] private double _durationSec;
     [ObservableProperty] private double _progress;
     [ObservableProperty] private string _positionLabel = "0:00";
@@ -52,7 +58,10 @@ public sealed partial class DeckViewModel : ObservableObject
     [ObservableProperty] private bool _isEnding;
     [ObservableProperty] private int _keyShift;
     [ObservableProperty] private int _tempoPercent;
-    [ObservableProperty] private double _volume = 1.0;
+    /// <summary>Gain del deck in dB (-24 … +12, 0 = unity). Sostituisce il vecchio "volume": il livello si dosa col crossfader.</summary>
+    [ObservableProperty] private double _gainDb;
+    public string GainLabel => Math.Abs(GainDb) < 0.05 ? "0 dB" : GainDb.ToString("+0.0;-0.0") + " dB";
+    [RelayCommand] private void GainReset() => GainDb = 0;
     [ObservableProperty] private string? _videoPath;
     [ObservableProperty] private string? _loadError;
     [ObservableProperty] private bool _keyLock = true;
@@ -68,7 +77,7 @@ public sealed partial class DeckViewModel : ObservableObject
     [ObservableProperty] private double _levelR;
 
     // ---------------------------------------------------------------- effetti
-    [ObservableProperty] private bool _fxVisible;
+    [ObservableProperty] private bool _fxVisible = true;
     [ObservableProperty] private bool _vocalRemove;
     [ObservableProperty] private double _vocalStrength = 1.0;
     [ObservableProperty] private double _filterValue;
@@ -90,13 +99,21 @@ public sealed partial class DeckViewModel : ObservableObject
     [ObservableProperty] private double _eqLow;
     [ObservableProperty] private double _eqMid;
     [ObservableProperty] private double _eqHigh;
-    partial void OnEqLowChanged(double v) => Deck.Fx.EqLow = (float)v;
-    partial void OnEqMidChanged(double v) => Deck.Fx.EqMid = (float)v;
-    partial void OnEqHighChanged(double v) => Deck.Fx.EqHigh = (float)v;
-    [RelayCommand] private void EqReset() { EqLow = 0; EqMid = 0; EqHigh = 0; }
-    [RelayCommand] private void KillLow() => EqLow = EqLow <= -29 ? 0 : -30;
-    [RelayCommand] private void KillMid() => EqMid = EqMid <= -29 ? 0 : -30;
-    [RelayCommand] private void KillHigh() => EqHigh = EqHigh <= -29 ? 0 : -30;
+    // EQ a 3 bande: cursore −12 … +12 dB (0 al centro, taglia o esalta), kill separato (−40 dB) che non muove il cursore
+    [ObservableProperty] private bool _eqLowKill;
+    [ObservableProperty] private bool _eqMidKill;
+    [ObservableProperty] private bool _eqHighKill;
+    private const float KillDb = -40f;
+    partial void OnEqLowChanged(double v) => Deck.Fx.EqLow = EqLowKill ? KillDb : (float)v;
+    partial void OnEqMidChanged(double v) => Deck.Fx.EqMid = EqMidKill ? KillDb : (float)v;
+    partial void OnEqHighChanged(double v) => Deck.Fx.EqHigh = EqHighKill ? KillDb : (float)v;
+    partial void OnEqLowKillChanged(bool k) => Deck.Fx.EqLow = k ? KillDb : (float)EqLow;
+    partial void OnEqMidKillChanged(bool k) => Deck.Fx.EqMid = k ? KillDb : (float)EqMid;
+    partial void OnEqHighKillChanged(bool k) => Deck.Fx.EqHigh = k ? KillDb : (float)EqHigh;
+    [RelayCommand] private void EqReset() { EqLow = 0; EqMid = 0; EqHigh = 0; EqLowKill = EqMidKill = EqHighKill = false; }
+    [RelayCommand] private void KillLow() => EqLowKill = !EqLowKill;
+    [RelayCommand] private void KillMid() => EqMidKill = !EqMidKill;
+    [RelayCommand] private void KillHigh() => EqHighKill = !EqHighKill;
 
     // altri effetti
     [ObservableProperty] private bool _phaserOn;
@@ -114,9 +131,110 @@ public sealed partial class DeckViewModel : ObservableObject
     [RelayCommand] private void Brake() => Deck.Brake(1.5);
     [RelayCommand] private void Backspin() => Deck.Backspin(0.8);
 
+    // ---------------------------------------------------------------- griglia dei battiti
+    /// <summary>Secondi del primo "1" della griglia (-1 = ignoto).</summary>
+    [ObservableProperty] private double _beatOffsetSec = -1;
+    partial void OnBeatOffsetSecChanged(double v) => OnPropertyChanged(nameof(GridAnchorSec));
+
+    /// <summary>Griglia stimata dai bassi (se il brano non l'ha già o non è stata corretta a mano).</summary>
+    private void EstimateBeatGridIfNeeded(Track track, byte[]? fine)
+    {
+        if (fine == null || track.Bpm <= 0) return;
+        if (track.BeatManual || track.BeatOffsetSec >= 0) { BeatOffsetSec = track.BeatOffsetSec; return; }
+        double off = Audio.BeatGrid.EstimateOffset(fine, track.Bpm);
+        if (off < 0) return;
+        track.BeatOffsetSec = Math.Round(off, 3);
+        if (Track == track) BeatOffsetSec = track.BeatOffsetSec;
+        CuesChanged?.Invoke(this);
+    }
+
+    /// <summary>"Battere qui": il punto indicato (frazione della forma d'onda, o posizione attuale) diventa un "1" della griglia.</summary>
+    public void BeatHere(double? fraction)
+    {
+        if (Track == null || DurationSec <= 0) return;
+        double sec = fraction is double f ? f * DurationSec : Deck.PositionSec;
+        Track.BeatOffsetSec = Math.Round(sec, 3);
+        Track.BeatManual = true;
+        BeatOffsetSec = Track.BeatOffsetSec;
+        CuesChanged?.Invoke(this);
+    }
+
+    /// <summary>Corregge i BPM del brano (es. ±0.1, ×2, ÷2) mantenendo la griglia ancorata.</summary>
+    [RelayCommand]
+    public void BpmAdjust(string op)
+    {
+        if (Track == null || Track.Bpm <= 0) return;
+        double bpm = Track.Bpm;
+        bpm = op switch
+        {
+            "+0.1" => bpm + 0.1, "-0.1" => bpm - 0.1, "+1" => bpm + 1, "-1" => bpm - 1,
+            "x2" => bpm * 2, "/2" => bpm / 2, _ => bpm,
+        };
+        Track.Bpm = Math.Round(Math.Clamp(bpm, 40, 250), 2);
+        Track.BeatManual = true;
+        RefreshAnalysisLabels();
+        UpdateEchoTime();
+        CuesChanged?.Invoke(this);
+    }
+
+    /// <summary>Sposta la griglia di qualche millisecondo (es. "+10" / "-10").</summary>
+    [RelayCommand]
+    public void GridNudge(string ms)
+    {
+        if (Track == null || !double.TryParse(ms, System.Globalization.CultureInfo.InvariantCulture, out var d)) return;
+        double off = (Track.BeatOffsetSec >= 0 ? Track.BeatOffsetSec : 0) + d / 1000.0;
+        Track.BeatOffsetSec = Math.Round(Math.Max(0, off), 3);
+        Track.BeatManual = true;
+        BeatOffsetSec = Track.BeatOffsetSec;
+        CuesChanged?.Invoke(this);
+    }
+
+    /// <summary>Riporta la griglia alla stima automatica.</summary>
+    [RelayCommand]
+    public void GridAuto()
+    {
+        if (Track == null) return;
+        Track.BeatManual = false; Track.BeatOffsetSec = -1;
+        BeatOffsetSec = -1;
+        EstimateBeatGridIfNeeded(Track, FineWaveform);
+        CuesChanged?.Invoke(this);
+    }
+
+    // ---------------------------------------------------------------- vinile: scratch, reverse, avanti/indietro, spin, slow
+    /// <summary>Angolo del piatto jog (gradi) in base alla posizione: 33⅓ giri/min.</summary>
+    [ObservableProperty] private double _jogAngle;
+    [ObservableProperty] private bool _isJogging;
+
+    public void JogStart() { Deck.JogStart(); IsJogging = true; }
+    public void JogRate(double rate) => Deck.JogRate(rate, 0.02);
+    public void JogEnd() { Deck.JogEnd(0.08); IsJogging = false; }
+    /// <summary>Pitch bend momentaneo dalla rotella: ±4 % per ~0,25 s.</summary>
+    public async void Nudge(int dir)
+    {
+        Deck.JogStart(); Deck.JogRate(1 + 0.04 * dir, 0.02);
+        await Task.Delay(250);
+        Deck.JogEnd(0.1);
+    }
+
+    /// <summary>Tieni premuto: riproduzione all'indietro; al rilascio riprende.</summary>
+    [RelayCommand] private void ReverseHold() { Deck.JogStart(); Deck.JogRate(-1, 0.06); }
+    /// <summary>Tieni premuto: avanti veloce ×3 con audio.</summary>
+    [RelayCommand] private void ForwardHold() { Deck.JogStart(); Deck.JogRate(3, 0.15); }
+    /// <summary>Tieni premuto: indietro veloce ×3 con audio.</summary>
+    [RelayCommand] private void BackwardHold() { Deck.JogStart(); Deck.JogRate(-3, 0.15); }
+    /// <summary>Tieni premuto: il disco rallenta fino a fermarsi (slow); al rilascio riparte.</summary>
+    [RelayCommand] private void SlowHold() { Deck.JogStart(); Deck.JogRate(0, 0.9); }
+    /// <summary>Rilascio di uno dei comandi "tieni premuto".</summary>
+    [RelayCommand] private void HoldRelease() => Deck.JogEnd(0.12);
+    /// <summary>Girata secca in avanti (+3×, torna normale in 0,7 s).</summary>
+    [RelayCommand] private void SpinForward() => Deck.Spin(3.5, 0.7);
+    /// <summary>Girata secca all'indietro (−3×, torna normale in 0,7 s).</summary>
+    [RelayCommand] private void SpinBack() => Deck.Spin(-3.5, 0.7);
+
     // ---------------------------------------------------------------- voce AI (Demucs)
     [ObservableProperty] private bool _aiVocalOff;
     [ObservableProperty] private bool _hasInstrumental;
+    [ObservableProperty] private bool _hasStems;
     [ObservableProperty] private bool _isSeparating;
     [ObservableProperty] private string _aiStatus = "";
     /// <summary>Impostato dal MainViewModel: prepara la versione senza voce (Demucs) e ritorna true se pronta.</summary>
@@ -127,6 +245,13 @@ public sealed partial class DeckViewModel : ObservableObject
         if (Track == null) return;
         try
         {
+            if (Track.HasStems)
+            {
+                // con gli stem la voce è solo uno dei 4 canali: la spengo (o riaccendo) senza cambiare sorgente
+                if (value && !StemsOn) StemsOn = true;
+                StemVocals = value ? 0 : 1;
+                return;
+            }
             if (value && Track.HasInstrumental) Deck.SwapSource(Track.InstrumentalPath!);
             else if (!value) Deck.SwapSource(LibraryService.PrepareForPlayback(Track).audioPath);
         }
@@ -145,11 +270,99 @@ public sealed partial class DeckViewModel : ObservableObject
         try
         {
             bool ok = await PrepareStems(track);
-            HasInstrumental = track.HasInstrumental;
+            HasInstrumental = track.HasInstrumental; HasStems = track.HasStems;
             if (ok && Track == track) AiVocalOff = true;
         }
         finally { IsSeparating = false; }
     }
+
+    // ---------------------------------------------------------------- stem (isola gli strumenti)
+    /// <summary>true: il deck suona i 4 stem separati (voce, batteria, basso, altro) con livelli regolabili.</summary>
+    [ObservableProperty] private bool _stemsOn;
+    [ObservableProperty] private double _stemVocals = 1;
+    [ObservableProperty] private double _stemDrums = 1;
+    [ObservableProperty] private double _stemBass = 1;
+    [ObservableProperty] private double _stemOther = 1;
+
+    partial void OnStemsOnChanged(bool value)
+    {
+        if (Track == null) return;
+        try
+        {
+            if (value)
+            {
+                if (!Track.HasStems) { _stemsOn = false; OnPropertyChanged(nameof(StemsOn)); return; }
+                Deck.SwapToStems(Track.StemsDir!);
+                ApplyStemGains();
+            }
+            else
+            {
+                Deck.SwapSource(LibraryService.PrepareForPlayback(Track).audioPath);
+                if (AiVocalOff) { _aiVocalOff = false; OnPropertyChanged(nameof(AiVocalOff)); }
+            }
+        }
+        catch (Exception ex) { AiStatus = "Errore stem: " + ex.Message; }
+    }
+
+    partial void OnStemVocalsChanged(double v) { ApplyStemGains(); if (v > 0 && AiVocalOff) { _aiVocalOff = false; OnPropertyChanged(nameof(AiVocalOff)); } }
+    partial void OnStemDrumsChanged(double v) => ApplyStemGains();
+    partial void OnStemBassChanged(double v) => ApplyStemGains();
+    partial void OnStemOtherChanged(double v) => ApplyStemGains();
+
+    private void ApplyStemGains()
+    {
+        var s = Deck.Stems;
+        if (s == null) return;
+        s.SetGain(0, (float)StemVocals); s.SetGain(1, (float)StemDrums); s.SetGain(2, (float)StemBass); s.SetGain(3, (float)StemOther);
+    }
+
+    /// <summary>STEMS: genera gli stem se mancano (Demucs), poi attiva/disattiva la modalità.</summary>
+    [RelayCommand]
+    private async Task ToggleStemsAsync()
+    {
+        if (Track == null) return;
+        if (Track.HasStems) { StemsOn = !StemsOn; return; }
+        if (IsSeparating || PrepareStems == null) return;
+        var track = Track;
+        IsSeparating = true;
+        try
+        {
+            bool ok = await PrepareStems(track);
+            HasInstrumental = track.HasInstrumental; HasStems = track.HasStems;
+            if (ok && Track == track) StemsOn = true;
+        }
+        finally { IsSeparating = false; }
+    }
+
+    /// <summary>Kill di uno stem (0 ↔ 1): "vocals" | "drums" | "bass" | "other". Tenendo un solo stem si isola lo strumento.</summary>
+    [RelayCommand]
+    private void StemKill(string which)
+    {
+        switch (which)
+        {
+            case "vocals": StemVocals = StemVocals > 0 ? 0 : 1; break;
+            case "drums": StemDrums = StemDrums > 0 ? 0 : 1; break;
+            case "bass": StemBass = StemBass > 0 ? 0 : 1; break;
+            case "other": StemOther = StemOther > 0 ? 0 : 1; break;
+        }
+    }
+
+    /// <summary>Solo: lascia acceso solo lo stem indicato (di nuovo → tutti accesi).</summary>
+    [RelayCommand]
+    private void StemSolo(string which)
+    {
+        bool already = (which == "vocals" && StemVocals > 0 && StemDrums == 0 && StemBass == 0 && StemOther == 0)
+                    || (which == "drums" && StemDrums > 0 && StemVocals == 0 && StemBass == 0 && StemOther == 0)
+                    || (which == "bass" && StemBass > 0 && StemVocals == 0 && StemDrums == 0 && StemOther == 0)
+                    || (which == "other" && StemOther > 0 && StemVocals == 0 && StemDrums == 0 && StemBass == 0);
+        if (already) { StemVocals = StemDrums = StemBass = StemOther = 1; return; }
+        StemVocals = which == "vocals" ? 1 : 0;
+        StemDrums = which == "drums" ? 1 : 0;
+        StemBass = which == "bass" ? 1 : 0;
+        StemOther = which == "other" ? 1 : 0;
+    }
+
+    [RelayCommand] private void StemsReset() { StemVocals = StemDrums = StemBass = StemOther = 1; }
 
     // ---------------------------------------------------------------- loop
     [ObservableProperty] private bool _loopOn;
@@ -324,6 +537,7 @@ public sealed partial class DeckViewModel : ObservableObject
     partial void OnTempoPercentChanged(int value)
     {
         Deck.Tempo = 1.0 + value / 100.0;
+        TempoFactor = Deck.Tempo;
         OnPropertyChanged(nameof(TempoLabel));
         RefreshAnalysisLabels();
         UpdateEchoTime();
@@ -351,6 +565,8 @@ public sealed partial class DeckViewModel : ObservableObject
         UpdateEchoTime();
         double factor = 1.0 + TempoPercent / 100.0;
         BpmLabel = t.Bpm > 0 ? (t.Bpm * factor).ToString("0.0") + " BPM" : "";
+        NativeBpm = t.Bpm;
+        if (t.BeatOffsetSec < 0 && !t.BeatManual && FineWaveform != null) EstimateBeatGridIfNeeded(t, FineWaveform);
         if (string.IsNullOrEmpty(t.Key)) { KeyDisplay = ""; return; }
         int semis = KeyShift + (KeyLock ? 0 : (int)Math.Round(12 * Math.Log2(factor)));
         var k = AudioAnalyzer.Transpose(t.Key, semis);
@@ -358,7 +574,11 @@ public sealed partial class DeckViewModel : ObservableObject
         KeyDisplay = k + (cam.Length > 0 ? $" · {cam}" : "") + (semis != 0 ? $"  (orig. {t.Key})" : "");
     }
 
-    partial void OnVolumeChanged(double value) => Deck.Volume = (float)value;
+    partial void OnGainDbChanged(double value)
+    {
+        Deck.Volume = value <= -24 ? 0f : (float)Math.Pow(10, value / 20);
+        OnPropertyChanged(nameof(GainLabel));
+    }
 
     public void Load(Track track, string singer = "", int keyShift = 0)
     {
@@ -393,10 +613,17 @@ public sealed partial class DeckViewModel : ObservableObject
             Deck.Fx.Dry = 1f;
             _playedMarked = false;
             _aiVocalOff = false; OnPropertyChanged(nameof(AiVocalOff));
-            HasInstrumental = track.HasInstrumental;
+            _stemsOn = false; OnPropertyChanged(nameof(StemsOn));
+            _stemVocals = _stemDrums = _stemBass = _stemOther = 1;
+            OnPropertyChanged(nameof(StemVocals)); OnPropertyChanged(nameof(StemDrums)); OnPropertyChanged(nameof(StemBass)); OnPropertyChanged(nameof(StemOther));
+            HasInstrumental = track.HasInstrumental; HasStems = track.HasStems;
+            CueSec = track.CueSec;
+            NativeBpm = track.Bpm;
+            BeatOffsetSec = track.BeatOffsetSec;
             LoopExit();
             Tick();
             TrackLoaded?.Invoke(this);
+            StartFineWaveform(track, audioPath);
         }
         catch (Exception ex)
         {
@@ -423,8 +650,23 @@ public sealed partial class DeckViewModel : ObservableObject
         IsEnding = false;
         BpmLabel = "";
         KeyDisplay = "";
+        _fineCts?.Cancel(); FineWaveform = null; NativeBpm = 0; CueSec = -1; BeatOffsetSec = -1;
         Tick();
         TrackLoaded?.Invoke(this);
+    }
+
+    private async void StartFineWaveform(Track track, string audioPath)
+    {
+        _fineCts?.Cancel();
+        var cts = _fineCts = new CancellationTokenSource();
+        FineWaveform = Audio.FineWaveform.Load(track.Id);
+        if (FineWaveform != null) { EstimateBeatGridIfNeeded(track, FineWaveform); return; }
+        try
+        {
+            var data = await Audio.FineWaveform.GetOrComputeAsync(track.Id, audioPath, cts.Token);
+            if (!cts.IsCancellationRequested && Track == track) { FineWaveform = data; EstimateBeatGridIfNeeded(track, data); }
+        }
+        catch { }
     }
 
     [RelayCommand] public void TogglePlay() => Deck.TogglePlay();
@@ -474,14 +716,103 @@ public sealed partial class DeckViewModel : ObservableObject
         CuesChanged?.Invoke(this);
     }
 
+    // ---------------------------------------------------------------- cue point e tap tempo
+
+    /// <summary>Punto cue del brano (s), -1 = non impostato. Salvato nel brano.</summary>
+    [ObservableProperty] private double _cueSec = -1;
+    public bool HasCue => CueSec >= 0;
+    /// <summary>Ancora della griglia battiti per la vista di mixaggio: il cue (se messo su un battere), altrimenti 0.</summary>
+    public double GridAnchorSec => BeatOffsetSec >= 0 ? BeatOffsetSec : (CueSec >= 0 ? CueSec : 0);
+    public string CueLabel => HasCue ? "CUE " + TimeSpan.FromSeconds(CueSec).ToString(@"m\:ss\.f") : "CUE";
+    partial void OnCueSecChanged(double value)
+    {
+        OnPropertyChanged(nameof(HasCue)); OnPropertyChanged(nameof(CueLabel)); OnPropertyChanged(nameof(GridAnchorSec));
+        CueFraction = value >= 0 && DurationSec > 0 ? value / DurationSec : -1;
+    }
+    /// <summary>Posizione del cue in frazione della forma d'onda (-1 = nessuno).</summary>
+    [ObservableProperty] private double _cueFraction = -1;
+
+    /// <summary>
+    /// Comportamento da CDJ: in riproduzione → torna al cue e mette in pausa; in pausa sul cue → riparte dal cue;
+    /// in pausa altrove → imposta il cue qui.
+    /// </summary>
+    [RelayCommand]
+    public void Cue()
+    {
+        if (Track == null) return;
+        if (IsPlaying)
+        {
+            if (!HasCue) CueSec = Math.Round(Deck.PositionSec, 2);
+            Deck.Pause();
+            Deck.Seek(CueSec);
+            return;
+        }
+        if (HasCue && Math.Abs(Deck.PositionSec - CueSec) < 0.15) { Deck.Play(); return; }
+        CueSec = Math.Round(Deck.PositionSec, 2);
+        Track.CueSec = CueSec;
+        CuesChanged?.Invoke(this);
+    }
+
+    /// <summary>Imposta il cue a una frazione della forma d'onda (o alla posizione attuale).</summary>
+    public void SetCueAt(double? fraction)
+    {
+        if (Track == null || DurationSec <= 0) return;
+        CueSec = Math.Round(fraction is double f ? f * DurationSec : Deck.PositionSec, 2);
+        Track.CueSec = CueSec;
+        CuesChanged?.Invoke(this);
+    }
+
+    /// <summary>Parte dal cue (hot cue).</summary>
+    [RelayCommand]
+    public void PlayFromCue()
+    {
+        if (Track == null) return;
+        if (!HasCue) { CueSec = Math.Round(Deck.PositionSec, 2); Track.CueSec = CueSec; CuesChanged?.Invoke(this); }
+        Deck.Seek(CueSec);
+        Deck.Play();
+    }
+
+    [RelayCommand]
+    public void ClearCue()
+    {
+        if (Track == null) return;
+        CueSec = -1; Track.CueSec = -1;
+        CuesChanged?.Invoke(this);
+    }
+
+    private readonly List<DateTime> _taps = new();
+    [ObservableProperty] private string _tapLabel = "TAP";
+
+    /// <summary>Tap tempo sul deck: dopo 4+ tap i BPM del brano vengono impostati (al netto del tempo del deck) e salvati.</summary>
+    [RelayCommand]
+    public void Tap()
+    {
+        var now = DateTime.UtcNow;
+        if (_taps.Count > 0 && (now - _taps[^1]).TotalSeconds > 2) _taps.Clear();
+        _taps.Add(now);
+        if (_taps.Count > 12) _taps.RemoveAt(0);
+        if (_taps.Count < 2) { TapLabel = "TAP ●"; return; }
+        double avg = (_taps[^1] - _taps[0]).TotalSeconds / (_taps.Count - 1);
+        double bpm = 60.0 / avg;
+        TapLabel = $"TAP {bpm:0.0}";
+        if (_taps.Count < 4 || Track == null) return;
+        double factor = 1.0 + TempoPercent / 100.0;
+        Track.Bpm = Math.Round(bpm / factor, 1);
+        RefreshAnalysisLabels();
+        CuesChanged?.Invoke(this);
+    }
+
     /// <summary>Intro/uscita modificate a mano: il MainViewModel salva la libreria.</summary>
     public event Action<DeckViewModel>? CuesChanged;
+
 
     /// <summary>Aggiornamento periodico dal timer UI.</summary>
     public void Tick()
     {
         IsPlaying = Deck.IsPlaying;
         PositionSec = Deck.PositionSec;
+        if (Math.Abs(TempoFactor - Deck.Tempo) > 1e-4) TempoFactor = Deck.Tempo;
+        if (!IsJogging) JogAngle = (PositionSec * Views.JogWheel.DegPerSecAtNormal) % 360;
         // VU: sale subito, scende con decadimento
         double tl = Views.LevelMeter.ToScale(Deck.PeakL), tr = Views.LevelMeter.ToScale(Deck.PeakR);
         LevelL = tl > LevelL ? tl : Math.Max(0, LevelL - 0.06);

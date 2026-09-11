@@ -25,6 +25,8 @@ public sealed class AudioEngine : IDisposable
         _mixer.AddMixerInput(DeckA);
         _mixer.AddMixerInput(DeckB);
         Pads = new PadPlayer(_mixer);
+        Rhythm = new RhythmEngine();
+        _mixer.AddMixerInput(Rhythm);
         _master = new VolumeSampleProvider(_mixer);
         _meter = new PeakMeter(_master);
         Crossfader = 0;
@@ -33,6 +35,8 @@ public sealed class AudioEngine : IDisposable
     public Deck DeckA { get; }
     public Deck DeckB { get; }
     public PadPlayer Pads { get; }
+    /// <summary>Sequencer ritmico (traccia di supporto).</summary>
+    public RhythmEngine Rhythm { get; }
 
     public float MasterVolume { get => _master.Volume; set => _master.Volume = Math.Clamp(value, 0f, 1.5f); }
 

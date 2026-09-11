@@ -13,6 +13,7 @@ public static class AppPaths
     public static string QueueFile => Path.Combine(Root, "queue.json");
     public static string PlaylistsFile => Path.Combine(Root, "playlists.json");
     public static string CelebrationFile => Path.Combine(Root, "celebration.json");
+    public static string RhythmFile => Path.Combine(Root, "rhythm.json");
     public static string ToolsDir => Path.Combine(Root, "tools");
     public static string CacheDir => Path.Combine(Path.GetTempPath(), "KaraokeDJ");
     public static string DefaultDownloadsDir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "KaraokeDJ Downloads");

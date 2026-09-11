@@ -33,6 +33,43 @@ public partial class DeckControl : UserControl
             SeekBar.ReleaseMouseCapture();
     }
 
+    // ---- vinile: jog e pulsanti "tieni premuto"
+    private void Jog_Started() { if (DataContext is DeckViewModel vm) vm.JogStart(); }
+    private void Jog_Rate(double rate) { if (DataContext is DeckViewModel vm) vm.JogRate(rate); }
+    private void Jog_Ended() { if (DataContext is DeckViewModel vm) vm.JogEnd(); }
+    private void Jog_Nudged(int dir) { if (DataContext is DeckViewModel vm) vm.Nudge(dir); }
+
+    private bool _holding;
+    private void Hold_Down(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not Button b || DataContext is not DeckViewModel vm) return;
+        _holding = true;
+        switch (b.Tag as string)
+        {
+            case "backward": vm.BackwardHoldCommand.Execute(null); break;
+            case "forward": vm.ForwardHoldCommand.Execute(null); break;
+            case "reverse": vm.ReverseHoldCommand.Execute(null); break;
+            case "slow": vm.SlowHoldCommand.Execute(null); break;
+        }
+    }
+    private void Hold_Up(object sender, MouseButtonEventArgs e) { if (_holding && DataContext is DeckViewModel vm) { _holding = false; vm.HoldReleaseCommand.Execute(null); } }
+    private void Hold_Leave(object sender, MouseEventArgs e) { if (_holding && e.LeftButton == MouseButtonState.Pressed && DataContext is DeckViewModel vm) { _holding = false; vm.HoldReleaseCommand.Execute(null); } }
+
+    private void Cue_Right(object sender, MouseButtonEventArgs e)
+    {
+        if (DataContext is DeckViewModel vm) vm.ClearCue();
+    }
+
+    private void Eq_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Slider s) s.Value = 0;
+    }
+
+    private void Gain_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (DataContext is DeckViewModel vm) vm.GainDb = 0;
+    }
+
     private void Loop_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button b && b.Tag is string beats && DataContext is DeckViewModel vm) vm.LoopBeatsCommand.Execute(beats);
@@ -69,6 +106,9 @@ public partial class DeckControl : UserControl
     private DeckViewModel? Vm => DataContext as DeckViewModel;
     private void IntroHere_Click(object sender, RoutedEventArgs e) => Vm?.SetIntroAt(_rightClickFraction >= 0 ? _rightClickFraction : null);
     private void OutroHere_Click(object sender, RoutedEventArgs e) => Vm?.SetOutroAt(_rightClickFraction >= 0 ? _rightClickFraction : null);
+    private void BeatHere_Click(object sender, RoutedEventArgs e) => Vm?.BeatHere(_rightClickFraction >= 0 ? _rightClickFraction : null);
+    private void BeatNow_Click(object sender, RoutedEventArgs e) => Vm?.BeatHere(null);
+    private void CueHere_Click(object sender, RoutedEventArgs e) => Vm?.SetCueAt(_rightClickFraction >= 0 ? _rightClickFraction : null);
     private void IntroNow_Click(object sender, RoutedEventArgs e) => Vm?.SetIntroAt(null);
     private void OutroNow_Click(object sender, RoutedEventArgs e) => Vm?.SetOutroAt(null);
     private void ClearCues_Click(object sender, RoutedEventArgs e) => Vm?.ClearCues();
