@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0B0F">
+<title>VOXA · Scaletta</title>
+<style>
+  :root { --bg:#0B0B0F; --panel:#15151d; --text:#F4F4F8; --muted:#9a9ab0; --violet:#8A2BFF; --cyan:#00E5FF; --pink:#FF2D6D; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:Montserrat,"Segoe UI",system-ui,sans-serif; font-size:15px; }
+  header { position:sticky; top:0; background:linear-gradient(180deg,#0B0B0F 70%,transparent); padding:14px 14px 8px; z-index:5; }
+  h1 { margin:0; font-size:18px; letter-spacing:.14em; font-weight:900; }
+  h1 span { color:var(--cyan); }
+  .now { background:var(--panel); border-radius:12px; padding:10px 12px; margin:8px 14px; display:flex; gap:10px; align-items:center; }
+  .now .dot { width:10px; height:10px; border-radius:50%; background:#444; flex:none; }
+  .now .dot.on { background:var(--cyan); box-shadow:0 0 10px var(--cyan); }
+  .now .t { flex:1; min-width:0; }
+  .now .t b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .now .t small { color:var(--muted); }
+  .now .rem { font-variant-numeric:tabular-nums; color:var(--muted); }
+  section { padding:0 14px 90px; }
+  h2 { font-size:12px; letter-spacing:.16em; color:var(--muted); margin:14px 0 6px; }
+  .row { display:flex; align-items:center; gap:8px; background:var(--panel); border-radius:10px; padding:8px 10px; margin:6px 0; }
+  .row .n { width:22px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .row .t { flex:1; min-width:0; }
+  .row .t b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
+  .row .t small { color:var(--muted); display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .row button { background:#22222e; color:var(--text); border:0; border-radius:8px; width:38px; height:38px; font-size:17px; }
+  .row button.x { color:var(--pink); }
+  .row button.top { color:var(--cyan); }
+  .row button.add { color:var(--cyan); width:auto; padding:0 12px; font-weight:700; font-size:14px; }
+  .row.drag { opacity:.5; }
+  input[type=search] { width:100%; padding:12px; border-radius:10px; border:1px solid #2a2a36; background:#101018; color:var(--text); font-size:16px; }
+  .bar { position:fixed; bottom:0; left:0; right:0; display:flex; gap:8px; padding:10px 14px calc(10px + env(safe-area-inset-bottom)); background:linear-gradient(0deg,#0B0B0F 70%,transparent); }
+  .bar button { flex:1; padding:14px; border:0; border-radius:12px; font-weight:800; font-size:15px; color:#fff; background:#22222e; }
+  .bar button.mix { background:linear-gradient(90deg,var(--violet),var(--pink)); }
+  .toast { position:fixed; left:50%; bottom:90px; transform:translateX(-50%); background:#22222e; padding:10px 16px; border-radius:20px; opacity:0; transition:opacity .2s; pointer-events:none; }
+  .toast.on { opacity:1; }
+  .pin { padding:40px 24px; text-align:center; }
+  .pin input { font-size:28px; letter-spacing:.3em; text-align:center; width:180px; padding:10px; border-radius:10px; border:1px solid #2a2a36; background:#101018; color:var(--text); }
+  .pin button { margin-top:14px; padding:12px 22px; border:0; border-radius:10px; background:var(--violet); color:#fff; font-weight:800; font-size:16px; }
+  .err { color:var(--pink); margin-top:10px; }
+  .muted { color:var(--muted); font-size:13px; }
+  .singer { color:#FFD60A; }
+</style>
+</head>
+<body>
+<header><h1>VOXA <span>·</span> SCALETTA</h1></header>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<script>
+const qs = new URLSearchParams(location.search);
+const session = qs.get("s") || "";
+let pin = localStorage.getItem("voxa.pin." + session) || "";
+let state = null, lib = [], q = "", results = [], dragFrom = null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(t) { const e = $("#toast"); e.textContent = t; e.classList.add("on"); setTimeout(() => e.classList.remove("on"), 1600); }
+async function api(op, extra) {
+  const r = await fetch(`/api/setlist?op=${op}&s=${encodeURIComponent(session)}&pin=${encodeURIComponent(pin)}`, extra);
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || r.statusText); }
+  return r.json();
+}
+async function cmd(c) { try { await api("cmd", { method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({ pin, ...c }) }); toast("Fatto ✓"); setTimeout(refresh, 600); } catch (e) { toast(e.message); } }
+
+function askPin(err) {
+  $("#app").innerHTML = `<div class="pin"><p>Inserisci il <b>PIN</b> mostrato nella finestra <i>Scaletta remota</i> di VOXA</p>
+    <input id="pinbox" inputmode="numeric" maxlength="6" autofocus><br><button id="go">Entra</button><div class="err">${esc(err || "")}</div></div>`;
+  $("#go").onclick = () => { pin = $("#pinbox").value.trim(); localStorage.setItem("voxa.pin." + session, pin); start(); };
+  $("#pinbox").onkeydown = e => { if (e.key === "Enter") $("#go").click(); };
+}
+
+function mmss(s) { s = Math.max(0, Math.round(s || 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+
+function render() {
+  if (!state) return;
+  const decks = state.decks || {};
+  const playing = ["a", "b"].map(k => decks[k]).filter(d => d && d.title);
+  const nowHtml = playing.length ? playing.map(d => `<div class="now"><div class="dot ${d.playing ? "on" : ""}"></div><div class="t"><b>${esc(d.title)}</b><small>${esc(d.artist || "")}${d.singer ? ` · <span class="singer">🎤 ${esc(d.singer)}</span>` : ""} · Deck ${d.name}</small></div><div class="rem">−${mmss(d.remaining)}</div></div>`).join("")
+    : `<div class="now"><div class="dot"></div><div class="t"><b>Nessun brano in riproduzione</b></div></div>`;
+  const queue = state.queue || [];
+  const qHtml = queue.length ? queue.map((e, i) => `<div class="row" draggable="true" data-i="${i}">
+      <div class="n">${i + 1}</div><div class="t"><b>${esc(e.title)}</b><small>${esc(e.artist || "")}${e.singer ? ` · <span class="singer">🎤 ${esc(e.singer)}</span>` : ""}</small></div>
+      <button class="top" data-c="top" data-i="${i}" title="In cima">⤒</button>
+      <button data-c="up" data-i="${i}" title="Su">▲</button><button data-c="down" data-i="${i}" title="Giù">▼</button>
+      <button class="x" data-c="remove" data-i="${i}" title="Togli">✕</button></div>`).join("")
+    : `<div class="muted">Coda vuota${state.autoMix ? " — l'auto-mix pesca dai suggeriti" : ""}.</div>`;
+  const sugg = (state.suggestions || []).map(s => `<div class="row"><div class="n">★</div><div class="t"><b>${esc(s.title)}</b><small>${esc(s.artist || "")}</small></div><button class="add" data-c="add" data-id="${esc(s.id)}">＋ coda</button></div>`).join("");
+  const res = results.map(t => `<div class="row"><div class="n">${t.k === "K" ? "🎤" : "♪"}</div><div class="t"><b>${esc(t.t)}</b><small>${esc(t.a || "")}${t.b ? " · " + t.b + " BPM" : ""}</small></div><button class="top" data-c="addtop" data-id="${esc(t.id)}" title="Prossimo">⤒</button><button class="add" data-c="add" data-id="${esc(t.id)}">＋ coda</button></div>`).join("");
+  $("#app").innerHTML = `${nowHtml}<section>
+    <h2>CERCA IN LIBRERIA (${lib.length})</h2><input type="search" id="q" placeholder="titolo, artista, bpm…" value="${esc(q)}">${res}
+    <h2>IN CODA (${queue.length})</h2>${qHtml}
+    ${sugg ? `<h2>SUGGERITI</h2>${sugg}` : ""}
+    </section>
+    <div class="bar"><button id="fadeA">◀ Sfuma A</button><button class="mix" id="next">⏭ MIX NOW</button><button id="fadeB">Sfuma B ▶</button></div>`;
+  const qb = $("#q"); qb.oninput = () => { q = qb.value; search(); }; qb.onfocus = () => { qb.setSelectionRange(qb.value.length, qb.value.length); };
+  document.querySelectorAll("[data-c]").forEach(b => b.onclick = () => {
+    const c = b.dataset.c;
+    if (c === "add") cmd({ cmd: "add", id: b.dataset.id });
+    else if (c === "addtop") cmd({ cmd: "addtop", id: b.dataset.id });
+    else cmd({ cmd: c, index: +b.dataset.i });
+  });
+  $("#next").onclick = () => { if (confirm("Passare subito al prossimo brano (mix now)?")) cmd({ cmd: "next" }); };
+  $("#fadeA").onclick = () => cmd({ cmd: "fadeA" });
+  $("#fadeB").onclick = () => cmd({ cmd: "fadeB" });
+  // riordino trascinando (desktop) — sul telefono ci sono ▲▼
+  document.querySelectorAll(".row[draggable]").forEach(r => {
+    r.ondragstart = () => { dragFrom = +r.dataset.i; r.classList.add("drag"); };
+    r.ondragover = e => e.preventDefault();
+    r.ondrop = () => { const to = +r.dataset.i; if (dragFrom != null && dragFrom !== to) cmd({ cmd: "move", index: dragFrom, to }); dragFrom = null; };
+    r.ondragend = () => r.classList.remove("drag");
+  });
+}
+
+function norm(s) { return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+function search() {
+  const words = norm(q).split(/\s+/).filter(Boolean);
+  if (!words.length) { results = []; renderResultsOnly(); return; }
+  results = lib.filter(t => { const h = norm(t.a + " " + t.t + " " + (t.b || "")); return words.every(w => h.includes(w)); }).slice(0, 30);
+  renderResultsOnly();
+}
+function renderResultsOnly() { const active = document.activeElement === $("#q"); const pos = $("#q")?.selectionStart; render(); if (active) { const qb = $("#q"); qb.focus(); try { qb.setSelectionRange(pos, pos); } catch {} } }
+
+let timer = null, lastAt = 0;
+async function refresh() {
+  try {
+    const s = await api("state");
+    if (s.at && s.at !== lastAt) { lastAt = s.at; state = s; if (document.activeElement !== $("#q")) render(); }
+    else if (!state) { state = s; render(); }
+    if (s.libVersion && s.libVersion !== lib.version) await loadLib(s.libVersion);
+  } catch (e) { if (/PIN/.test(e.message)) { clearTimeout(timer); askPin(e.message); return; } toast(e.message); }
+  timer = setTimeout(refresh, 3000);
+}
+async function loadLib(v) { try { const j = await api("library"); lib = j.tracks || []; lib.version = v; render(); } catch {} }
+async function start() { if (!session) { $("#app").innerHTML = `<div class="pin">Link non valido: inquadra il QR mostrato da VOXA.</div>`; return; } if (!pin) { askPin(); return; } $("#app").innerHTML = `<div class="pin muted">Collegamento…</div>`; refresh(); }
+start();
+</script>
+</body>
+</html>

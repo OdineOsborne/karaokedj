@@ -18,38 +18,10 @@ public sealed class MidiMapping
     public MidiKey Key => new(Type, Channel, Number);
 }
 
-/// <summary>Azioni controllabili via MIDI. Il valore è 0..127 per i CC, velocity per le note.</summary>
+/// <summary>Compatibilità: il catalogo delle azioni è in <see cref="AppActions"/>.</summary>
 public static class MidiActions
 {
-    public static readonly (string Id, string Label, bool IsContinuous)[] All =
-    {
-        ("crossfader", "Crossfader", true),
-        ("master", "Volume master", true),
-        ("a.play", "Deck A – Play/Pausa", false),
-        ("a.stop", "Deck A – Stop", false),
-        ("a.volume", "Deck A – Gain", true),
-        ("a.tempo", "Deck A – Tempo", true),
-        ("a.keyup", "Deck A – Tonalità +", false),
-        ("a.keydown", "Deck A – Tonalità −", false),
-        ("a.keyreset", "Deck A – Tonalità 0", false),
-        ("a.keylock", "Deck A – Key lock on/off", false),
-        ("b.play", "Deck B – Play/Pausa", false),
-        ("b.stop", "Deck B – Stop", false),
-        ("b.volume", "Deck B – Gain", true),
-        ("b.tempo", "Deck B – Tempo", true),
-        ("b.keyup", "Deck B – Tonalità +", false),
-        ("b.keydown", "Deck B – Tonalità −", false),
-        ("b.keyreset", "Deck B – Tonalità 0", false),
-        ("b.keylock", "Deck B – Key lock on/off", false),
-        ("next", "Prossimo in coda", false),
-        ("fadeA", "Sfuma verso A", false),
-        ("fadeB", "Sfuma verso B", false),
-        ("projector", "Proiettore on/off", false),
-        ("padstop", "Stop tutti i pad", false),
-        ("pad1", "Pad 1 (F1)", false), ("pad2", "Pad 2 (F2)", false), ("pad3", "Pad 3 (F3)", false), ("pad4", "Pad 4 (F4)", false),
-        ("pad5", "Pad 5 (F5)", false), ("pad6", "Pad 6 (F6)", false), ("pad7", "Pad 7 (F7)", false), ("pad8", "Pad 8 (F8)", false),
-        ("pad9", "Pad 9 (F9)", false), ("pad10", "Pad 10 (F10)", false), ("pad11", "Pad 11 (F11)", false), ("pad12", "Pad 12 (F12)", false),
-    };
+    public static IEnumerable<(string Id, string Label, bool IsContinuous)> All => AppActions.All.Select(a => (a.Id, a.Label, a.IsContinuous));
 }
 
 /// <summary>Ingresso MIDI (NAudio) con mappatura "learn" e dispatch delle azioni sul thread UI.</summary>
@@ -149,6 +121,10 @@ public sealed class MidiService : IDisposable
                 key = new MidiKey("note", on.Channel, on.NoteNumber);
                 value = on.Velocity;
                 break;
+            case NoteEvent off when off.CommandCode == MidiCommandCode.NoteOff || (off is NoteOnEvent on0 && on0.Velocity == 0):
+                key = new MidiKey("note", off.Channel, off.NoteNumber);
+                value = 0; // rilascio (per le azioni "tieni premuto")
+                break;
             default:
                 return;
         }
@@ -160,6 +136,7 @@ public sealed class MidiService : IDisposable
             MessageReceived?.Invoke(key, value);
             if (_learnCallback != null)
             {
+                if (value == 0 && !continuous) return; // il rilascio del tasto non è un controllo da imparare
                 var cb = _learnCallback;
                 _learnCallback = null;
                 cb(key);

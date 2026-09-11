@@ -20,11 +20,13 @@ public partial class MainWindow : Window
             if (DataContext is MainViewModel vm)
             {
                 vm.PropertyChanged += Vm_PropertyChanged;
+                vm.SearchFocusRequested += FocusSearch;
                 Width = vm.Settings.WindowWidth;
                 Height = vm.Settings.WindowHeight;
             }
         };
         PreviewKeyDown += MainWindow_PreviewKeyDown;
+        PreviewKeyUp += MainWindow_PreviewKeyUp;
         Closing += MainWindow_Closing;
         Loaded += async (_, _) =>
         {
@@ -78,33 +80,33 @@ public partial class MainWindow : Window
 
     // ------------------------------------------------------------ tastiera
 
+    // Scorciatoie configurabili (tasto destro su un comando → assegna). Nelle caselle di testo i tasti senza modificatori restano per scrivere.
     private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        // F1..F12 → pad
-        if (e.Key >= Key.F1 && e.Key <= Key.F12)
-        {
-            Vm.TriggerPadByIndex(e.Key - Key.F1);
-            e.Handled = true;
-            return;
-        }
-        if (Keyboard.Modifiers == ModifierKeys.Control)
-        {
-            switch (e.Key)
-            {
-                case Key.D1: Vm.DeckA.TogglePlay(); e.Handled = true; break;
-                case Key.D2: Vm.DeckB.TogglePlay(); e.Handled = true; break;
-                case Key.P: Vm.IsProjectorOpen = !Vm.IsProjectorOpen; e.Handled = true; break;
-                case Key.N: Vm.PlayNextCommand.Execute(null); e.Handled = true; break;
-                case Key.F: SearchBox.Focus(); SearchBox.SelectAll(); e.Handled = true; break;
-                case Key.Enter: Vm.AddToQueueCommand.Execute(null); e.Handled = true; break;
-                case Key.Space: Vm.StopAllPadsCommand.Execute(null); e.Handled = true; break;
-            }
-        }
-        else if (e.Key == Key.Escape && Vm.IsProjectorOpen && _projector != null && _projector.IsActive)
-        {
-            Vm.IsProjectorOpen = false;
-        }
+        if (e.Key == Key.Escape && Vm.IsProjectorOpen && _projector != null && _projector.IsActive) { Vm.IsProjectorOpen = false; return; }
+        if (e.IsRepeat) { if (IsMappedNow(e)) e.Handled = true; return; }
+        var g = Services.KeyboardService.GestureText(e.Key == Key.System ? e.SystemKey : e.Key, Keyboard.Modifiers);
+        if (g == null) return;
+        if (TypingInTextBox() && !g.Contains("Ctrl") && !g.Contains("Alt") && !g.StartsWith("F")) return;
+        if (Vm.HandleKey(g, pressed: true)) e.Handled = true;
     }
+
+    private void MainWindow_PreviewKeyUp(object sender, KeyEventArgs e)
+    {
+        var g = Services.KeyboardService.GestureText(e.Key == Key.System ? e.SystemKey : e.Key, Keyboard.Modifiers);
+        if (g == null) return;
+        if (Vm.HandleKey(g, pressed: false)) e.Handled = true;
+    }
+
+    private bool IsMappedNow(KeyEventArgs e)
+    {
+        var g = Services.KeyboardService.GestureText(e.Key == Key.System ? e.SystemKey : e.Key, Keyboard.Modifiers);
+        return g != null && Vm.Keys.ActionFor(g) != null && !(TypingInTextBox() && !g.Contains("Ctrl") && !g.Contains("Alt"));
+    }
+
+    private static bool TypingInTextBox() => Keyboard.FocusedElement is TextBox or System.Windows.Controls.Primitives.TextBoxBase or PasswordBox;
+
+    private void FocusSearch() { SearchBox.Focus(); SearchBox.SelectAll(); }
 
     private void SingerBox_KeyDown(object sender, KeyEventArgs e)
     {
@@ -182,6 +184,8 @@ public partial class MainWindow : Window
     // ------------------------------------------------------------ impostazioni
 
     private void Duplicates_Click(object sender, RoutedEventArgs e) => new DuplicatesWindow(Vm) { Owner = this }.ShowDialog();
+
+    private void Remote_Click(object sender, RoutedEventArgs e) => new RemoteWindow(Vm) { Owner = this }.ShowDialog();
 
     private void Bordero_Click(object sender, RoutedEventArgs e) => new BorderoWindow(Vm) { Owner = this }.ShowDialog();
 

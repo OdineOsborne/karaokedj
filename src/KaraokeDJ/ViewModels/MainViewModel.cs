@@ -173,6 +173,7 @@ public sealed partial class MainViewModel : ObservableObject
         StartAnimation();
         LoadLicense();
         Midi.LoadMappings(Settings.MidiMappings);
+        Keys.Load(Settings.KeyMappings, useDefaultsIfEmpty: true);
         if (!string.IsNullOrEmpty(Settings.MidiDeviceName) && !Midi.Open(Settings.MidiDeviceName))
             StatusText = "Controller MIDI non trovato: " + Settings.MidiDeviceName;
         _timer.Start();
@@ -189,6 +190,7 @@ public sealed partial class MainViewModel : ObservableObject
         _downloadCts?.Cancel();
         SaveSettings();
         Rhythm.Save();
+        _remote?.Dispose();
         SaveQueue();
         Midi.Dispose();
         _suno?.Dispose();
@@ -208,6 +210,7 @@ public sealed partial class MainViewModel : ObservableObject
         Settings.IdleTitle = IdleTitle;
         Settings.IdleSubtitle = IdleSubtitle;
         Settings.MidiMappings = Midi.ExportMappings();
+        Settings.KeyMappings = Keys.Export();
         Settings.Pads = Pads.Select(p => new PadDto { Index = p.Index, Name = p.Name, FilePath = p.FilePath }).ToList();
         JsonStore.Save(AppPaths.SettingsFile, Settings);
     }
@@ -347,6 +350,7 @@ public sealed partial class MainViewModel : ObservableObject
         Tracks.Clear();
         foreach (var t in Library.Tracks) Tracks.Add(t);
         LibraryCount = Tracks.Count;
+        _remote?.LibraryChanged();
     }
 
     [RelayCommand]
@@ -1642,42 +1646,136 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ---------------------------------------------------------------- MIDI
 
+    // ---------------------------------------------------------------- azioni (tastiera + MIDI)
+
+    public KeyboardService Keys { get; } = new();
+    /// <summary>La finestra principale porta il fuoco sulla ricerca.</summary>
+    public event Action? SearchFocusRequested;
+
     private void HandleMidiAction(string action, int value, bool continuous)
     {
         double norm = value / 127.0;
-        // per i pulsanti mappati su CC consideriamo solo la pressione (valore alto)
-        bool pressed = !continuous || value >= 64;
+        // pulsanti su CC: pressione = valore alto; note: rilascio = velocity 0
+        bool pressed = continuous ? value >= 64 : value > 0;
+        ExecuteAction(action, pressed, norm, continuous);
+    }
+
+    /// <summary>
+    /// Esegue un'azione del catalogo <see cref="AppActions"/>. <paramref name="pressed"/> false = rilascio (solo per le azioni "tieni premuto").
+    /// <paramref name="norm"/> 0..1 per i controlli continui.
+    /// </summary>
+    public void ExecuteAction(string action, bool pressed, double norm = 1, bool continuous = false)
+    {
         var deck = action.StartsWith("a.") ? DeckA : action.StartsWith("b.") ? DeckB : null;
         var sub = deck != null ? action[2..] : action;
 
         if (deck != null)
         {
+            if (!pressed)
+            {
+                if (sub is "rev" or "slow" or "fwd" or "back") deck.HoldReleaseCommand.Execute(null);
+                return;
+            }
             switch (sub)
             {
-                case "play": if (pressed) deck.TogglePlay(); break;
-                case "stop": if (pressed) deck.Stop(); break;
-                case "volume": deck.GainDb = (norm - 0.5) * 24; break; // -12 … +12 dB, centro = unity
-                case "tempo": deck.TempoPercent = (int)Math.Round((norm - 0.5) * 50); break; // -25..+25
-                case "keyup": if (pressed) deck.KeyUp(); break;
-                case "keydown": if (pressed) deck.KeyDown(); break;
-                case "keyreset": if (pressed) deck.KeyReset(); break;
-                case "keylock": if (pressed) deck.KeyLock = !deck.KeyLock; break;
+                case "play": deck.TogglePlay(); break;
+                case "stop": deck.Stop(); break;
+                case "cue": deck.Cue(); break;
+                case "playcue": deck.PlayFromCue(); break;
+                case "tap": deck.Tap(); break;
+                case "sync": SyncDeckCommand.Execute(deck); break;
+                case "back10": deck.Back10(); break;
+                case "fwd10": deck.Forward10(); break;
+                case "eject": deck.Eject(); break;
+                case "volume": if (continuous) deck.GainDb = (norm - 0.5) * 24; break;      // −12 … +12 dB, centro = unity
+                case "tempo": if (continuous) deck.TempoPercent = (int)Math.Round((norm - 0.5) * 50); break; // −25 … +25
+                case "temporeset": deck.TempoReset(); break;
+                case "keyup": deck.KeyUp(); break;
+                case "keydown": deck.KeyDown(); break;
+                case "keyreset": deck.KeyReset(); break;
+                case "keylock": deck.KeyLock = !deck.KeyLock; break;
+                case "loop1": deck.LoopBeatsCommand.Execute("1"); break;
+                case "loop2": deck.LoopBeatsCommand.Execute("2"); break;
+                case "loop4": deck.LoopBeatsCommand.Execute("4"); break;
+                case "loop8": deck.LoopBeatsCommand.Execute("8"); break;
+                case "loophalf": deck.LoopHalfCommand.Execute(null); break;
+                case "loopdouble": deck.LoopDoubleCommand.Execute(null); break;
+                case "loopexit": deck.LoopExitCommand.Execute(null); break;
+                case "filter": deck.FilterOn = !deck.FilterOn; break;
+                case "filtervalue": if (continuous) deck.FilterValue = norm * 2 - 1; break;
+                case "filterreset": deck.FilterValue = 0; break;
+                case "echo": deck.EchoOn = !deck.EchoOn; break;
+                case "echoout": deck.EchoOutCommand.Execute(null); break;
+                case "reverb": deck.ReverbOn = !deck.ReverbOn; break;
+                case "flanger": deck.FlangerOn = !deck.FlangerOn; break;
+                case "phaser": deck.PhaserOn = !deck.PhaserOn; break;
+                case "crush": deck.CrushOn = !deck.CrushOn; break;
+                case "gate": deck.GateOn = !deck.GateOn; break;
+                case "fxreset": deck.FxResetCommand.Execute(null); break;
+                case "vocaloff": deck.VocalRemove = !deck.VocalRemove; break;
+                case "aivocal": deck.ToggleAiVocalCommand.Execute(null); break;
+                case "stems": deck.ToggleStemsCommand.Execute(null); break;
+                case "stemvocals": if (continuous) deck.StemVocals = norm * 1.5; break;
+                case "stemdrums": if (continuous) deck.StemDrums = norm * 1.5; break;
+                case "stembass": if (continuous) deck.StemBass = norm * 1.5; break;
+                case "stemother": if (continuous) deck.StemOther = norm * 1.5; break;
+                case "eqlow": if (continuous) deck.EqLow = (norm - 0.5) * 24; break;
+                case "eqmid": if (continuous) deck.EqMid = (norm - 0.5) * 24; break;
+                case "eqhigh": if (continuous) deck.EqHigh = (norm - 0.5) * 24; break;
+                case "killlow": deck.KillLowCommand.Execute(null); break;
+                case "killmid": deck.KillMidCommand.Execute(null); break;
+                case "killhigh": deck.KillHighCommand.Execute(null); break;
+                case "eqreset": deck.EqResetCommand.Execute(null); break;
+                case "brake": deck.BrakeCommand.Execute(null); break;
+                case "backspin": deck.BackspinCommand.Execute(null); break;
+                case "spinfwd": deck.SpinForwardCommand.Execute(null); break;
+                case "spinback": deck.SpinBackCommand.Execute(null); break;
+                case "rev": deck.ReverseHoldCommand.Execute(null); break;
+                case "slow": deck.SlowHoldCommand.Execute(null); break;
+                case "fwd": deck.ForwardHoldCommand.Execute(null); break;
+                case "back": deck.BackwardHoldCommand.Execute(null); break;
+                case "jog":
+                    // encoder relativo (jog wheel MIDI): 1..63 avanti, 65..127 indietro
+                    if (continuous) { int v = (int)Math.Round(norm * 127); deck.Nudge(v == 0 ? 0 : v < 64 ? 1 : -1); }
+                    break;
             }
             return;
         }
+
+        if (!pressed) return;
         switch (action)
         {
-            case "crossfader": _crossfadeTarget = null; Crossfader = norm * 2 - 1; break;
-            case "master": MasterVolume = norm * 1.2; break;
-            case "next": if (pressed) PlayNextCommand.Execute(null); break;
-            case "fadeA": if (pressed) StartCrossfade(-1); break;
-            case "fadeB": if (pressed) StartCrossfade(1); break;
-            case "projector": if (pressed) IsProjectorOpen = !IsProjectorOpen; break;
-            case "padstop": if (pressed) StopAllPadsCommand.Execute(null); break;
+            case "crossfader": if (continuous) { _crossfadeTarget = null; Crossfader = norm * 2 - 1; } break;
+            case "master": if (continuous) MasterVolume = norm * 1.2; break;
+            case "next": PlayNextCommand.Execute(null); break;
+            case "fadeA": StartCrossfade(-1); break;
+            case "fadeB": StartCrossfade(1); break;
+            case "automix": AutoMix = !AutoMix; break;
+            case "projector": IsProjectorOpen = !IsProjectorOpen; break;
+            case "search": SearchFocusRequested?.Invoke(); break;
+            case "addqueue": AddToQueueCommand.Execute(null); break;
+            case "queuetop": QueueToTopCommand.Execute(null); break;
+            case "mixnow": MixNowCommand.Execute(null); break;
+            case "rhythm.play": Rhythm.TogglePlayCommand.Execute(null); break;
+            case "rhythm.tap": Rhythm.Tap(); break;
+            case "rhythm.resync": Rhythm.ResyncCommand.Execute(null); break;
+            case "rhythm.volume": if (continuous) Rhythm.Volume = (float)(norm * 1.2); break;
+            case "padstop": StopAllPadsCommand.Execute(null); break;
             default:
-                if (action.StartsWith("pad") && int.TryParse(action[3..], out var n) && pressed) TriggerPadByIndex(n - 1);
+                if (action.StartsWith("pad") && int.TryParse(action[3..], out var n)) TriggerPadByIndex(n - 1);
                 break;
         }
+    }
+
+    /// <summary>Tasto premuto/rilasciato nella finestra principale. Ritorna true se gestito.</summary>
+    public bool HandleKey(string gesture, bool pressed)
+    {
+        var a = Keys.ActionFor(gesture);
+        if (a == null) return false;
+        var def = AppActions.Find(a);
+        if (!pressed && def?.IsHold != true) return true; // il rilascio conta solo per le azioni "tieni premuto"
+        ExecuteAction(a, pressed);
+        return true;
     }
 
     public void ApplyMidiDevice(string? name)
@@ -1687,6 +1785,72 @@ public sealed partial class MainViewModel : ObservableObject
         StatusText = Midi.Open(name) ? "MIDI: " + name : "Impossibile aprire " + name;
     }
 
+    // ---------------------------------------------------------------- QR sul proiettore
+
+    [ObservableProperty] private bool _qrOverlayVisible;
+    [ObservableProperty] private System.Windows.Media.ImageSource? _qrOverlayImage;
+    [ObservableProperty] private string _qrOverlayCaption = "";
+    private CancellationTokenSource? _qrCts;
+
+    /// <summary>Mostra un QR grande sul proiettore per <paramref name="seconds"/> secondi (0 = finché non viene nascosto).</summary>
+    public async void ShowQrOnProjector(string url, string caption, int seconds)
+    {
+        _qrCts?.Cancel();
+        var cts = _qrCts = new CancellationTokenSource();
+        QrOverlayImage = Views.RemoteWindow.MakeQr(url, 12);
+        QrOverlayCaption = caption;
+        QrOverlayVisible = true;
+        if (!IsProjectorOpen) IsProjectorOpen = true;
+        if (seconds <= 0) return;
+        try { await Task.Delay(TimeSpan.FromSeconds(seconds), cts.Token); QrOverlayVisible = false; } catch (OperationCanceledException) { }
+    }
+
+    public void HideQrOnProjector() { _qrCts?.Cancel(); QrOverlayVisible = false; }
+
+    // ---------------------------------------------------------------- scaletta remota (QR → telefono)
+
+    private RemoteSetlistService? _remote;
+    public RemoteSetlistService Remote => _remote ??= new RemoteSetlistService(CloudBaseUrl, RemoteState, RemoteLibrary, ApplyRemoteCommand);
+
+    private object RemoteState()
+    {
+        object DeckInfo(DeckViewModel d) => new
+        {
+            name = d.Name, title = d.Track?.Title ?? "", artist = d.Track?.Artist ?? "", singer = d.Singer,
+            playing = d.IsPlaying, remaining = Math.Round(Math.Max(0, d.DurationSec - d.PositionSec) / 5) * 5, // arrotondato: meno push
+        };
+        return new
+        {
+            decks = new { a = DeckInfo(DeckA), b = DeckInfo(DeckB) },
+            queue = Queue.Select(e => new { id = e.Track.Id, title = e.Track.Title, artist = e.Track.Artist, singer = e.Singer }).ToList(),
+            suggestions = Suggestions.Take(6).Select(t => new { id = t.Id, title = t.Title, artist = t.Artist }).ToList(),
+            autoMix = AutoMix,
+            libVersion = Remote.LibraryVersion,
+        };
+    }
+
+    private object RemoteLibrary() =>
+        Tracks.Select(t => new { id = t.Id, a = t.Artist, t = t.Title, b = t.Bpm > 0 ? (int)Math.Round(t.Bpm) : 0, k = t.IsKaraoke ? "K" : "" }).ToList();
+
+    /// <summary>Comandi dal telefono, eseguiti sul thread UI.</summary>
+    private void ApplyRemoteCommand(RemoteCommand c)
+    {
+        Track? T(string? id) => id == null ? null : Library.FindById(id);
+        switch (c.Cmd)
+        {
+            case "add": if (T(c.Id) is { } t1) AddToQueue(t1, c.Singer ?? "", 0); break;
+            case "addtop": if (T(c.Id) is { } t2) { Queue.Insert(0, new QueueEntry { Track = t2, Singer = c.Singer ?? "" }); StatusText = $"Dal telefono, prossimo: {t2.Display}"; } break;
+            case "remove": if (c.Index is int ri && ri >= 0 && ri < Queue.Count) Queue.RemoveAt(ri); break;
+            case "up": if (c.Index is int ui && ui > 0 && ui < Queue.Count) Queue.Move(ui, ui - 1); break;
+            case "down": if (c.Index is int di && di >= 0 && di < Queue.Count - 1) Queue.Move(di, di + 1); break;
+            case "top": if (c.Index is int ti && ti > 0 && ti < Queue.Count) Queue.Move(ti, 0); break;
+            case "move": if (c.Index is int mi && c.To is int mt && mi >= 0 && mi < Queue.Count && mt >= 0 && mt < Queue.Count && mi != mt) Queue.Move(mi, mt); break;
+            case "next": PlayNextCommand.Execute(null); StatusText = "Dal telefono: mix now"; break;
+            case "fadeA": StartCrossfade(-1); break;
+            case "fadeB": StartCrossfade(1); break;
+        }
+    }
+
     // ---------------------------------------------------------------- download
 
     [RelayCommand]
@@ -1694,6 +1858,14 @@ public sealed partial class MainViewModel : ObservableObject
     {
         var input = DownloadInput.Trim();
         if (string.IsNullOrEmpty(input) || IsDownloading) return;
+        var first = await DownloadCoreAsync(input);
+        if (first != null) DownloadInput = "";
+    }
+
+    /// <summary>Scarica (URL, Spotify, testo libero → ricerca) e aggiunge alla libreria. Ritorna il primo brano scaricato, null se fallito.</summary>
+    private async Task<Track?> DownloadCoreAsync(string input)
+    {
+        if (IsDownloading) return null;
         _downloadCts = new CancellationTokenSource();
         IsDownloading = true;
         DownloadPercent = 0;
@@ -1723,17 +1895,74 @@ public sealed partial class MainViewModel : ObservableObject
             LibraryCount = Tracks.Count;
             if (first != null) SelectedTrack = first;
             DownloadStatus = added == 1 && first != null ? "Scaricato: " + first.Display : $"Scaricati {added} brani — {DownloadStatus}";
-            DownloadInput = "";
             if (!Settings.LibraryFolders.Contains(AppPaths.DownloadsDir, StringComparer.OrdinalIgnoreCase))
             {
                 Settings.LibraryFolders.Add(AppPaths.DownloadsDir);
                 SaveSettings();
             }
+            return first;
         }
-        catch (OperationCanceledException) { DownloadStatus = "Annullato"; }
-        catch (Exception ex) { DownloadStatus = "Errore: " + ex.Message; }
+        catch (OperationCanceledException) { DownloadStatus = "Annullato"; return null; }
+        catch (Exception ex) { DownloadStatus = "Errore: " + ex.Message; return null; }
         finally { IsDownloading = false; }
     }
 
     [RelayCommand] private void CancelDownload() => _downloadCts?.Cancel();
+
+    // ---------------------------------------------------------------- suggeriti fuori libreria (AI → download → coda)
+
+    public ObservableCollection<ExternalSuggestion> ExternalSuggestions { get; } = new();
+    [ObservableProperty] private bool _isSuggestingExternal;
+    [ObservableProperty] private string _externalSuggestionsLabel = "";
+
+    /// <summary>Chiede a Claude brani non in libreria adatti a seguire quello in corso (coerenza: decade/genere come i suggeriti).</summary>
+    [RelayCommand]
+    private async Task SuggestExternalAsync()
+    {
+        if (IsSuggestingExternal) return;
+        var r = CompatReference();
+        if (r == null) { ExternalSuggestionsLabel = "Manda in play (o seleziona) un brano di riferimento"; return; }
+        var key = Secret.Unprotect(Settings.AnthropicApiKeyProtected);
+        if (string.IsNullOrEmpty(key)) { ExternalSuggestionsLabel = "Serve la chiave API Anthropic (Impostazioni → Generale → AI)"; return; }
+        IsSuggestingExternal = true;
+        ExternalSuggestionsLabel = $"Cerco brani nuovi dopo {r.Display}…";
+        try
+        {
+            var list = await SuggestService.SuggestAsync(r, SuggestBy, Library.Tracks, key, CancellationToken.None);
+            ExternalSuggestions.Clear();
+            foreach (var s in list) ExternalSuggestions.Add(s);
+            ExternalSuggestionsLabel = list.Count == 0 ? "Nessuna proposta fuori libreria" : $"fuori libreria, dopo: {r.Display}";
+        }
+        catch (Exception ex) { ExternalSuggestionsLabel = "Errore AI: " + ex.Message; }
+        finally { IsSuggestingExternal = false; }
+    }
+
+    /// <summary>Scarica il brano proposto (ricerca YouTube via yt-dlp) e lo mette in coda.</summary>
+    [RelayCommand]
+    private async Task DownloadSuggestionAsync(ExternalSuggestion? s)
+    {
+        if (s == null || IsDownloading) return;
+        StatusText = $"Scarico {s.Display}…";
+        var track = await DownloadCoreAsync(s.Query);
+        if (track == null) { StatusText = "Download non riuscito: " + DownloadStatus; return; }
+        // il titolo/artista proposti dall'AI sono più affidabili del nome del video
+        if (!string.IsNullOrWhiteSpace(s.Artist)) track.Artist = s.Artist;
+        if (!string.IsNullOrWhiteSpace(s.Title)) track.Title = s.Title;
+        track.InvalidateSearchCache();
+        TitleCleaner.Apply(track, writeTags: true);
+        Library.Save();
+        LibraryView.Refresh();
+        ExternalSuggestions.Remove(s);
+        AddToQueue(track, "", 0);
+    }
+
+    /// <summary>Scarica e mette in cima alla coda (prossimo).</summary>
+    [RelayCommand]
+    private async Task DownloadSuggestionNextAsync(ExternalSuggestion? s)
+    {
+        if (s == null || IsDownloading) return;
+        await DownloadSuggestionAsync(s);
+        var e = Queue.LastOrDefault();
+        if (e != null && Queue.Count > 1) Queue.Move(Queue.Count - 1, 0);
+    }
 }

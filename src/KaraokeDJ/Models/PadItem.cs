@@ -10,6 +10,8 @@ public sealed partial class PadItem : ObservableObject
     [ObservableProperty] private bool _isPlaying;
 
     public string Hotkey => $"F{Index + 1}";
+    /// <summary>Id azione per scorciatoie ("pad1"…).</summary>
+    public string ActionId => $"pad{Index + 1}";
     public bool HasFile => !string.IsNullOrEmpty(FilePath) && File.Exists(FilePath);
 
     partial void OnFilePathChanged(string? value) => OnPropertyChanged(nameof(HasFile));

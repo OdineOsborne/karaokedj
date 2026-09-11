@@ -41,6 +41,8 @@ public sealed class AppSettings
     public List<PadDto> Pads { get; set; } = new();
     public string? MidiDeviceName { get; set; }
     public List<Services.MidiMapping> MidiMappings { get; set; } = new();
+    /// <summary>Scorciatoie da tastiera (vuoto = predefinite).</summary>
+    public List<Services.KeyMapping> KeyMappings { get; set; } = new();
     public double WindowWidth { get; set; } = 1500;
     public double WindowHeight { get; set; } = 960;
 }

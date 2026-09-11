@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using KaraokeDJ.Audio;
 using KaraokeDJ.Services;
@@ -20,7 +21,9 @@ public partial class SettingsWindow : Window
         public string Id { get; init; } = "";
         public string Label { get; init; } = "";
         [ObservableProperty] private string _binding = "—";
-        [ObservableProperty] private string _learnLabel = "Impara";
+        [ObservableProperty] private string _learnLabel = "Impara MIDI";
+        [ObservableProperty] private string _keyBinding = "—";
+        [ObservableProperty] private string _keyLearnLabel = "Impara tasto";
     }
 
     public SettingsWindow(MainViewModel vm)
@@ -55,10 +58,11 @@ public partial class SettingsWindow : Window
         MidiCombo.ItemsSource = midiDevices;
         MidiCombo.SelectedItem = midiDevices.Contains(vm.Settings.MidiDeviceName ?? "") ? vm.Settings.MidiDeviceName : "(nessuno)";
         foreach (var (id, label, _) in MidiActions.All)
-            _midiRows.Add(new MidiRow { Id = id, Label = label, Binding = vm.Midi.KeyFor(id)?.ToString() ?? "—" });
+            _midiRows.Add(new MidiRow { Id = id, Label = label, Binding = vm.Midi.KeyFor(id)?.ToString() ?? "—", KeyBinding = KeyboardService.Pretty(vm.Keys.GestureFor(id)) });
         MidiList.ItemsSource = _midiRows;
         vm.Midi.MessageReceived += OnMidiMessage;
-        Closed += (_, _) => { vm.Midi.MessageReceived -= OnMidiMessage; vm.Midi.CancelLearn(); };
+        Closed += (_, _) => { vm.Midi.MessageReceived -= OnMidiMessage; vm.Midi.CancelLearn(); vm.SaveSettings(); };
+        PreviewKeyDown += KeyLearn_PreviewKeyDown;
     }
 
     private void OnMidiMessage(MidiKey key, int value) => MidiActivity.Text = $"Ricevuto: {key} = {value}";
@@ -74,18 +78,51 @@ public partial class SettingsWindow : Window
     {
         if ((sender as Button)?.Tag is not MidiRow row) return;
         if (!_vm.Midi.IsOpen) { MidiActivity.Text = "Prima collega un dispositivo MIDI"; return; }
-        if (_learning != null) _learning.LearnLabel = "Impara";
+        if (_learning != null) _learning.LearnLabel = "Impara MIDI";
         _learning = row;
         row.LearnLabel = "Muovi…";
         _vm.Midi.BeginLearn(key =>
         {
             _vm.Midi.SetMapping(row.Id, key);
             row.Binding = key.ToString();
-            row.LearnLabel = "Impara";
+            row.LearnLabel = "Impara MIDI";
             _learning = null;
             // se lo stesso controllo era assegnato altrove, aggiorna la riga
             foreach (var r in _midiRows.Where(r => r != row && r.Binding == key.ToString())) r.Binding = "—";
         });
+    }
+
+    private MidiRow? _keyLearning;
+
+    private void KeyLearn_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is not MidiRow row) return;
+        if (_keyLearning != null) _keyLearning.KeyLearnLabel = "Impara tasto";
+        _keyLearning = row;
+        row.KeyLearnLabel = "Premi…";
+        Focus();
+    }
+
+    private void KeyClear_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is not MidiRow row) return;
+        _vm.Keys.Clear(row.Id);
+        row.KeyBinding = "—";
+    }
+
+    /// <summary>Durante «Impara tasto» il prossimo tasto premuto diventa la scorciatoia della riga.</summary>
+    private void KeyLearn_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (_keyLearning == null) return;
+        e.Handled = true;
+        if (e.Key == Key.Escape) { _keyLearning.KeyLearnLabel = "Impara tasto"; _keyLearning = null; return; }
+        var g = KeyboardService.GestureText(e.Key == Key.System ? e.SystemKey : e.Key, Keyboard.Modifiers);
+        if (g == null) return;
+        var row = _keyLearning; _keyLearning = null;
+        _vm.Keys.Set(row.Id, g);
+        row.KeyBinding = KeyboardService.Pretty(g);
+        row.KeyLearnLabel = "Impara tasto";
+        foreach (var r in _midiRows.Where(r => r != row && r.KeyBinding == row.KeyBinding)) r.KeyBinding = "—";
     }
 
     private void MidiClear_Click(object sender, RoutedEventArgs e)

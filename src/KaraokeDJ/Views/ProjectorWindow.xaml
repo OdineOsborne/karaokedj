@@ -85,5 +85,15 @@
                 <ContentPresenter ContentTemplate="{StaticResource NextBanner}" Content="{Binding}"/>
             </Grid>
         </vlc:VideoView>
+
+        <!-- ═══ QR (scaletta remota / richieste) mostrato per qualche secondo sopra tutto ═══ -->
+        <Border x:Name="QrLayer" Visibility="{Binding QrOverlayVisible, Converter={StaticResource BoolToVis}}" Background="#CC000000">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Border Background="White" CornerRadius="24" Padding="28">
+                    <Image Source="{Binding QrOverlayImage}" Width="520" Height="520" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                </Border>
+                <TextBlock Text="{Binding QrOverlayCaption}" FontSize="44" FontWeight="Black" Foreground="White" HorizontalAlignment="Center" Margin="0,24,0,0" TextAlignment="Center"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

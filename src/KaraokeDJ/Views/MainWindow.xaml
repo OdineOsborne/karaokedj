@@ -29,6 +29,7 @@
                 <Button Content="🔄 Riscansiona" Command="{Binding RescanCommand}" Margin="0,0,6,0" IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBool}}" ToolTip="Rilegge le cartelle: nuovi brani, tag (anno, genere), titoli/artisti sistemati, doppioni (chiede conferma), poi analisi BPM/tonalità di tutto ciò che manca"/>
                 <Button Content="🧹 Doppioni" Click="Duplicates_Click" Margin="0,0,6,0" ToolTip="Trova e rimuove i brani doppi (nel Cestino)"/>
                 <Button Content="🥁 Ritmi" Click="Rhythm_Click" Margin="0,0,6,0" ToolTip="Sequencer ritmico di supporto: batteria, percussioni o campioni tuoi agganciati ai BPM della serata"/>
+                <Button Content="📱 Scaletta remota" Click="Remote_Click" Margin="0,0,6,0" ToolTip="QR per gestire la scaletta dal telefono (coda, ricerca, mix now)"/>
                 <Button Content="📋 Borderò SIAE" Click="Bordero_Click" Margin="0,0,6,0" ToolTip="Programma musicale della serata: elenco dei brani riprodotti con titolo e autori, da stampare o copiare nel modulo SIAE"/>
                 <Button Content="⚙ Impostazioni" Click="Settings_Click" Margin="0,0,6,0"/>
                 <Button Content="🎉 Animazione" Click="Animation_Click" Margin="0,0,6,0" ToolTip="Festeggiato, messaggi degli invitati, canzone con Suno, dedica sul proiettore"/>
@@ -51,7 +52,7 @@
                 <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisInv}}"/>
                 <Button Content="{Binding AppVersion, StringFormat=⬆ {0}}" Style="{StaticResource SmallButton}" Command="{Binding CheckUpdatesCommand}" Margin="0,0,10,0" ToolTip="Controlla se ci sono aggiornamenti su GitHub"/>
                 <ToggleButton IsChecked="{Binding MixViewVisible}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="〰 MIX" ToolTip="Mostra/nascondi le onde sovrapposte dei due deck (per allineare i beat)"/>
-                <ToggleButton IsChecked="{Binding IsProjectorOpen}" Padding="14,6" FontWeight="Bold" ToolTip="Ctrl+P">
+                <ToggleButton IsChecked="{Binding IsProjectorOpen}" Padding="14,6" FontWeight="Bold" ToolTip="Ctrl+P" v:Shortcut.Action="projector">
                     <TextBlock Text="🖥 PROIETTORE"/>
                 </ToggleButton>
             </StackPanel>
@@ -91,7 +92,7 @@
 
                     <TextBlock Grid.Row="0" Text="MIXER" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center"/>
 
-                    <Button Grid.Row="1" Content="⏭  PROSSIMO IN CODA" Style="{StaticResource AccentButton}" Height="56" FontSize="15"
+                    <Button Grid.Row="1" Content="⏭  PROSSIMO IN CODA" v:Shortcut.Action="next" Style="{StaticResource AccentButton}" Height="56" FontSize="15"
                             Command="{Binding PlayNextCommand}" ToolTip="Carica il primo in coda sull'altro deck, lo avvia e sfuma (Ctrl+N)"/>
 
                     <StackPanel Grid.Row="2" Margin="0,12,0,0">
@@ -101,10 +102,10 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <Button Grid.Column="0" Content="A" Width="34" Height="34" Padding="0" FontWeight="Bold" Foreground="{StaticResource AccentABrush}"
+                            <Button Grid.Column="0" Content="A" Width="34" Height="34" Padding="0" FontWeight="Bold" Foreground="{StaticResource AccentABrush}" v:Shortcut.Action="fadeA"
                                     Command="{Binding CrossfadeToACommand}" ToolTip="Sfuma verso A"/>
                             <Slider Grid.Column="1" Minimum="-1" Maximum="1" Value="{Binding Crossfader}" VerticalAlignment="Center" Margin="6,0"/>
-                            <Button Grid.Column="2" Content="B" Width="34" Height="34" Padding="0" FontWeight="Bold" Foreground="{StaticResource AccentBBrush}"
+                            <Button Grid.Column="2" Content="B" Width="34" Height="34" Padding="0" FontWeight="Bold" Foreground="{StaticResource AccentBBrush}" v:Shortcut.Action="fadeB"
                                     Command="{Binding CrossfadeToBCommand}" ToolTip="Sfuma verso B"/>
                         </Grid>
                         <TextBlock Text="CROSSFADER" Style="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,2,0,0"/>
@@ -112,7 +113,7 @@
 
                     <StackPanel Grid.Row="3" VerticalAlignment="Center">
                         <DockPanel Margin="0,4">
-                            <CheckBox IsChecked="{Binding AutoMix}" Content="Auto-mix dalla coda" ToolTip="A fine brano parte automaticamente il prossimo in coda con dissolvenza"/>
+                            <CheckBox IsChecked="{Binding AutoMix}" Content="Auto-mix dalla coda" v:Shortcut.Action="automix" ToolTip="A fine brano parte automaticamente il prossimo in coda con dissolvenza"/>
                         </DockPanel>
                         <DockPanel Margin="0,4">
                             <CheckBox IsChecked="{Binding AutoMixUseCues}" Content="Usa intro/uscita rilevate" ToolTip="Mixa all'inizio dell'uscita e fa partire il brano successivo dopo l'intro (serve l'analisi del brano)"/>
@@ -293,7 +294,7 @@
                             <TextBlock Text="{Binding QueueKeyLabel}" Width="30" TextAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" Foreground="{StaticResource WarnBrush}"/>
                             <Button Content="+" Width="28" Padding="0" Click="QueueKeyUp_Click"/>
                         </StackPanel>
-                        <Button Grid.Column="2" Content="＋ Coda" Style="{StaticResource AccentButton}" Command="{Binding AddToQueueCommand}" Margin="0,0,6,0" ToolTip="Ctrl+Invio. Tasto destro sul brano: in cima alla coda / mixa ora"/>
+                        <Button Grid.Column="2" Content="＋ Coda" Style="{StaticResource AccentButton}" Command="{Binding AddToQueueCommand}" v:Shortcut.Action="addqueue" Margin="0,0,6,0" ToolTip="Ctrl+Invio. Tasto destro sul brano: in cima alla coda / mixa ora"/>
                         <Button Grid.Column="3" Content="→ A" Command="{Binding LoadSelectedToACommand}" Foreground="{StaticResource AccentABrush}" FontWeight="Bold" Margin="0,0,6,0"/>
                         <Button Grid.Column="4" Content="→ B" Command="{Binding LoadSelectedToBCommand}" Foreground="{StaticResource AccentBBrush}" FontWeight="Bold"/>
                     </Grid>
@@ -358,11 +359,40 @@
                     </StackPanel>
 
                     <!-- suggeritore prossimo brano -->
-                    <Border Grid.Row="3" Background="#FF0D0D12" CornerRadius="8" Padding="8,6" Margin="0,8,0,0" MaxHeight="190">
+                    <Border Grid.Row="3" Background="#FF0D0D12" CornerRadius="8" Padding="8,6" Margin="0,8,0,0" MaxHeight="290">
                         <DockPanel>
+                            <!-- fuori libreria: proposte AI da scaricare e mettere in coda -->
+                            <DockPanel DockPanel.Dock="Bottom" Margin="0,6,0,0" Visibility="{Binding ExternalSuggestionsLabel, Converter={StaticResource NullToVis}}">
+                                <TextBlock DockPanel.Dock="Top" Text="{Binding ExternalSuggestionsLabel}" Style="{StaticResource Muted}" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
+                                <ItemsControl ItemsSource="{Binding ExternalSuggestions}" MaxHeight="96">
+                                    <ItemsControl.Template>
+                                        <ControlTemplate TargetType="ItemsControl">
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><ItemsPresenter/></ScrollViewer>
+                                        </ControlTemplate>
+                                    </ItemsControl.Template>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <DockPanel Margin="0,1">
+                                                <TextBlock Text="🌐" Width="24" VerticalAlignment="Center"/>
+                                                <Button DockPanel.Dock="Right" Content="⬇ prossimo" Style="{StaticResource SmallButton}" Padding="6,1" FontSize="11" Margin="2,0" ToolTip="Scarica e metti in cima alla coda"
+                                                        Command="{Binding DataContext.DownloadSuggestionNextCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
+                                                        IsEnabled="{Binding DataContext.IsDownloading, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBool}}"/>
+                                                <Button DockPanel.Dock="Right" Content="⬇ in coda" Style="{StaticResource SmallButton}" Padding="6,1" FontSize="11" Margin="2,0" ToolTip="Scarica (YouTube) e metti in coda"
+                                                        Command="{Binding DataContext.DownloadSuggestionCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
+                                                        IsEnabled="{Binding DataContext.IsDownloading, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBool}}"/>
+                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Reason}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="6,0" MaxWidth="180" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </DockPanel>
                             <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
                                 <TextBlock Text="🎯 SUGGERITI" Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center"/>
                                 <Button DockPanel.Dock="Right" Content="↻" Style="{StaticResource SmallButton}" Padding="6,1" Command="{Binding RefreshSuggestionsCommand}" ToolTip="Aggiorna"/>
+                                <Button DockPanel.Dock="Right" Content="🌐 Fuori libreria" Style="{StaticResource SmallButton}" Padding="6,1" Margin="0,0,6,0" Command="{Binding SuggestExternalCommand}"
+                                        IsEnabled="{Binding IsSuggestingExternal, Converter={StaticResource InverseBool}}"
+                                        ToolTip="Chiede all'AI brani NON in libreria adatti a seguire quello in corso: con un click li scarichi (YouTube) e li metti in coda. Serve la chiave API Anthropic."/>
                                 <ComboBox DockPanel.Dock="Right" SelectedValue="{Binding SuggestBy}" SelectedValuePath="Tag" FontSize="11" Padding="6,1" MinWidth="112" Margin="6,0"
                                           ToolTip="Coerenza dei suggerimenti (vale anche per il filtro Compatibili)">
                                     <ComboBoxItem Tag="" Content="Mix libero"/>
@@ -425,7 +455,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type m:PadItem}">
-                                <Button Margin="3" Height="42" Padding="2" AllowDrop="True" Drop="Pad_Drop" DragOver="Pad_DragOver"
+                                <Button Margin="3" Height="42" Padding="2" AllowDrop="True" Drop="Pad_Drop" DragOver="Pad_DragOver" v:Shortcut.Action="{Binding ActionId}"
                                         Command="{Binding DataContext.TriggerPadCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}">
                                     <Button.Style>
                                         <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">

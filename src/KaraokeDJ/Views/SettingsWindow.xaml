@@ -99,7 +99,7 @@
             </TabItem>
 
             <!-- ═══ MIDI ═══ -->
-            <TabItem Header="Controller MIDI">
+            <TabItem Header="MIDI e tastiera">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -113,22 +113,28 @@
                     </DockPanel>
                     <DockPanel Grid.Row="1" Margin="0,0,0,8">
                         <TextBlock x:Name="MidiActivity" Style="{StaticResource Muted}" Text="Nessun messaggio ricevuto" VerticalAlignment="Center"/>
-                        <TextBlock Style="{StaticResource Muted}" HorizontalAlignment="Right" Text="Premi «Impara» e poi muovi la manopola / premi il tasto sul controller"/>
+                        <TextBlock Style="{StaticResource Muted}" HorizontalAlignment="Right" TextWrapping="Wrap" MaxWidth="520" TextAlignment="Right" Text="«Impara MIDI» poi muovi il controllo sul controller · «Impara tasto» poi premi la combinazione sulla tastiera. Nell'app: tasto destro su un comando fa lo stesso."/>
                     </DockPanel>
                     <ListBox Grid.Row="2" x:Name="MidiList" HorizontalContentAlignment="Stretch">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="220"/>
+                                        <ColumnDefinition Width="230"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{Binding Label}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="0" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                     <TextBlock Grid.Column="1" Text="{Binding Binding}" Style="{StaticResource Muted}" VerticalAlignment="Center" FontFamily="Consolas"/>
-                                    <Button Grid.Column="2" Content="{Binding LearnLabel}" Style="{StaticResource SmallButton}" Click="MidiLearn_Click" Tag="{Binding}" Margin="4,0" MinWidth="70"/>
-                                    <Button Grid.Column="3" Content="✕" Style="{StaticResource SmallButton}" Click="MidiClear_Click" Tag="{Binding}"/>
+                                    <Button Grid.Column="2" Content="{Binding LearnLabel}" Style="{StaticResource SmallButton}" Click="MidiLearn_Click" Tag="{Binding}" Margin="4,0" MinWidth="90"/>
+                                    <Button Grid.Column="3" Content="✕" Style="{StaticResource SmallButton}" Click="MidiClear_Click" Tag="{Binding}" Margin="0,0,12,0"/>
+                                    <TextBlock Grid.Column="4" Text="{Binding KeyBinding}" Style="{StaticResource Muted}" VerticalAlignment="Center" FontFamily="Consolas"/>
+                                    <Button Grid.Column="5" Content="{Binding KeyLearnLabel}" Style="{StaticResource SmallButton}" Click="KeyLearn_Click" Tag="{Binding}" Margin="4,0" MinWidth="90"/>
+                                    <Button Grid.Column="6" Content="✕" Style="{StaticResource SmallButton}" Click="KeyClear_Click" Tag="{Binding}"/>
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
