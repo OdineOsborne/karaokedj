@@ -3,8 +3,10 @@ import { Redis } from "@upstash/redis";
 let redis;
 function db() {
   if (!redis) {
-    if (!process.env.UPSTASH_REDIS_REST_URL) throw new Error("Redis non configurato (UPSTASH_REDIS_REST_URL)");
-    redis = Redis.fromEnv();
+    const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (!url || !token) throw new Error("Redis non configurato (KV_REST_API_URL / KV_REST_API_TOKEN)");
+    redis = new Redis({ url, token });
   }
   return redis;
 }

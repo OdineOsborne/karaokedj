@@ -7,6 +7,6 @@ Variabili d'ambiente (Vercel → Settings → Environment Variables):
 - `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` — app REST PayPal (Live). `PAYPAL_ENV=sandbox` per le prove.
 - `PAYPAL_CURRENCY` — default `EUR`
 - `PAYPAL_WEBHOOK_ID` — (opzionale) id del webhook `PAYMENT.CAPTURE.COMPLETED` puntato a `/api/webhook`
-- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` — Upstash Redis (marketplace Vercel) per salvare le licenze
+- `KV_REST_API_URL`, `KV_REST_API_TOKEN` — Upstash Redis dal marketplace Vercel (aggiunte automaticamente) per salvare le licenze
 
 Endpoint: `GET /dona?m=ID` pagina donazione · `POST /api/order` · `POST /api/capture` · `GET /api/license?m=ID` · `POST /api/webhook`.
