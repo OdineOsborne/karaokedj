@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{8E933768-AD9D-4D60-97FD-41C7FDF96DE0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KaraokeDJ", "src\KaraokeDJ\KaraokeDJ.csproj", "{DE7BC312-4416-4FF2-814E-5AAEB75DA224}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DE7BC312-4416-4FF2-814E-5AAEB75DA224}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE7BC312-4416-4FF2-814E-5AAEB75DA224}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE7BC312-4416-4FF2-814E-5AAEB75DA224}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE7BC312-4416-4FF2-814E-5AAEB75DA224}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{DE7BC312-4416-4FF2-814E-5AAEB75DA224} = {8E933768-AD9D-4D60-97FD-41C7FDF96DE0}
+	EndGlobalSection
+EndGlobal

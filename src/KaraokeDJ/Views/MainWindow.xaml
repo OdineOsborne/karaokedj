@@ -1,0 +1,444 @@
+<Window x:Class="KaraokeDJ.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="clr-namespace:KaraokeDJ.Views"
+        xmlns:vm="clr-namespace:KaraokeDJ.ViewModels"
+        xmlns:m="clr-namespace:KaraokeDJ.Models"
+        Title="KaraokeDJ" Width="1500" Height="960" MinWidth="1100" MinHeight="760"
+        Background="{StaticResource WindowBgBrush}" WindowStartupLocation="CenterScreen"
+        d:DataContext="{d:DesignInstance vm:MainViewModel}"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ═══════════ barra strumenti ═══════════ -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,18,0">
+                    <TextBlock Text="KARAOKE" Style="{StaticResource Wordmark}"/>
+                    <TextBlock Text="DJ" Style="{StaticResource Wordmark}" Foreground="{StaticResource AccentBrush}">
+                        <TextBlock.Effect><DropShadowEffect Color="{StaticResource AccentColor}" BlurRadius="16" ShadowDepth="0" Opacity="0.8"/></TextBlock.Effect>
+                    </TextBlock>
+                </StackPanel>
+                <Button Content="📁 Aggiungi cartella" Command="{Binding AddFolderCommand}" Margin="0,0,6,0"/>
+                <Button Content="🔄 Riscansiona" Command="{Binding RescanCommand}" Margin="0,0,6,0" IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBool}}"/>
+                <Button Content="⚙ Impostazioni" Click="Settings_Click" Margin="0,0,6,0"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{Binding UpdateStatus, StringFormat=⬆ {0} — installa e riavvia}" Style="{StaticResource AccentButton}" Command="{Binding InstallUpdateCommand}" Margin="0,0,10,0"
+                        Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVis}}"/>
+                <TextBlock Text="{Binding AppVersion}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <ToggleButton IsChecked="{Binding IsProjectorOpen}" Padding="14,6" FontWeight="Bold" ToolTip="Ctrl+P">
+                    <TextBlock Text="🖥 PROIETTORE"/>
+                </ToggleButton>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- ═══════════ deck + mixer ═══════════ -->
+        <Grid Grid.Row="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="260"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <v:DeckControl Grid.Column="0" DataContext="{Binding DeckA}" Accent="{StaticResource AccentABrush}"/>
+
+            <Border Grid.Column="1" Style="{StaticResource Panel}" Margin="10,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="MIXER" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center"/>
+
+                    <Button Grid.Row="1" Content="⏭  PROSSIMO IN CODA" Style="{StaticResource AccentButton}" Height="56" FontSize="15"
+                            Command="{Binding PlayNextCommand}" ToolTip="Carica il primo in coda sull'altro deck, lo avvia e sfuma (Ctrl+N)"/>
+
+                    <StackPanel Grid.Row="2" Margin="0,12,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Content="A" Width="34" Height="34" Padding="0" FontWeight="Bold" Foreground="{StaticResource AccentABrush}"
+                                    Command="{Binding CrossfadeToACommand}" ToolTip="Sfuma verso A"/>
+                            <Slider Grid.Column="1" Minimum="-1" Maximum="1" Value="{Binding Crossfader}" VerticalAlignment="Center" Margin="6,0"/>
+                            <Button Grid.Column="2" Content="B" Width="34" Height="34" Padding="0" FontWeight="Bold" Foreground="{StaticResource AccentBBrush}"
+                                    Command="{Binding CrossfadeToBCommand}" ToolTip="Sfuma verso B"/>
+                        </Grid>
+                        <TextBlock Text="CROSSFADER" Style="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="3" VerticalAlignment="Center">
+                        <DockPanel Margin="0,4">
+                            <CheckBox IsChecked="{Binding AutoMix}" Content="Auto-mix dalla coda" ToolTip="A fine brano parte automaticamente il prossimo in coda con dissolvenza"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,4">
+                            <CheckBox IsChecked="{Binding AutoMixUseCues}" Content="Usa intro/uscita rilevate" ToolTip="Mixa all'inizio dell'uscita e fa partire il brano successivo dopo l'intro (serve l'analisi del brano)"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,4">
+                            <CheckBox IsChecked="{Binding BpmMatch}" Content="Aggancia BPM nel passaggio" ToolTip="Il brano entrante viene portato ai BPM di quello in uscita (×1, ×2 o ×½, max ±25 %)"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,4">
+                            <CheckBox IsChecked="{Binding BpmLock}" Content="Blocca BPM a" ToolTip="Tutti i brani caricati vengono velocizzati/rallentati a questo tempo"/>
+                            <TextBox Text="{Binding BpmLockValue, StringFormat={}{0:0}, UpdateSourceTrigger=LostFocus}" Width="66" Margin="6,0,0,0" TextAlignment="Center" FontWeight="Bold"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,4">
+                            <TextBlock Text="Dissolvenza" Width="80" VerticalAlignment="Center"/>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding CrossfadeSeconds, StringFormat={}{0:0} s}" Width="34" TextAlignment="Right" VerticalAlignment="Center"/>
+                            <Slider Minimum="1" Maximum="15" Value="{Binding CrossfadeSeconds}" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="4">
+                        <TextBlock Text="MASTER" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                        <Slider Minimum="0" Maximum="1.2" Value="{Binding MasterVolume}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <v:DeckControl Grid.Column="2" DataContext="{Binding DeckB}" Accent="{StaticResource AccentBBrush}"/>
+        </Grid>
+
+        <!-- ═══════════ libreria + coda ═══════════ -->
+        <Grid Grid.Row="2" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- libreria -->
+            <Border Grid.Column="0" Style="{StaticResource Panel}" Margin="0,0,10,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                        <TextBlock DockPanel.Dock="Left" Text="LIBRERIA" Style="{StaticResource SectionTitle}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding LibraryCount, StringFormat={}{0} brani}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="8,0,0,0">
+                            <RadioButton Style="{StaticResource Chip}" Content="Tutti" GroupName="LibFilter" IsChecked="True" Command="{Binding SetLibraryFilterCommand}" CommandParameter="all"/>
+                            <RadioButton Style="{StaticResource Chip}" Content="♪ Audio" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="audio" ToolTip="Solo brani musicali (senza testo)"/>
+                            <RadioButton Style="{StaticResource Chip}" Content="CDG" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="cdg" ToolTip="Basi karaoke MP3+G"/>
+                            <RadioButton Style="{StaticResource Chip}" Content="🎬 Video" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="video" ToolTip="Basi karaoke video"/>
+                            <RadioButton Style="{StaticResource Chip}" Content="🎯 Compatibili" GroupName="LibFilter" Command="{Binding RefreshCompatibilityCommand}"
+                                         ToolTip="Ordina la libreria per affinità (BPM ±8 %, tonalità Camelot vicina) con il brano in riproduzione o selezionato. Clicca di nuovo per aggiornare."/>
+                        </StackPanel>
+                        <TextBox x:Name="SearchBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" FontSize="15" Padding="8,6"
+                                 ToolTip="Cerca per artista o titolo, anche con refusi (Ctrl+F). Un numero cerca per BPM (es. 120), '8a' o 'Am' per tonalità."/>
+                    </DockPanel>
+
+                    <!-- playlist interne -->
+                    <DockPanel Grid.Row="1" Margin="0,0,0,6">
+                        <TextBlock Text="PLAYLIST" Style="{StaticResource SectionTitle}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Button DockPanel.Dock="Right" Content="▶ In coda" Style="{StaticResource SmallButton}" Command="{Binding PlaylistToQueueCommand}" Margin="4,0,0,0"
+                                Visibility="{Binding IsPlaylistSelected, Converter={StaticResource BoolToVis}}" ToolTip="Mette tutta la playlist nella coda"/>
+                        <Button DockPanel.Dock="Right" Content="🗑" Style="{StaticResource SmallButton}" Command="{Binding DeletePlaylistCommand}" Margin="4,0,0,0"
+                                Visibility="{Binding IsPlaylistSelected, Converter={StaticResource BoolToVis}}" ToolTip="Elimina playlist"/>
+                        <Button DockPanel.Dock="Right" Content="✎" Style="{StaticResource SmallButton}" Command="{Binding RenamePlaylistCommand}" Margin="4,0,0,0"
+                                Visibility="{Binding IsPlaylistSelected, Converter={StaticResource BoolToVis}}" ToolTip="Rinomina"/>
+                        <Button DockPanel.Dock="Right" Content="▼" Style="{StaticResource SmallButton}" Command="{Binding MoveInPlaylistCommand}" CommandParameter="down" Margin="2,0,0,0"
+                                Visibility="{Binding IsPlaylistSelected, Converter={StaticResource BoolToVis}}"/>
+                        <Button DockPanel.Dock="Right" Content="▲" Style="{StaticResource SmallButton}" Command="{Binding MoveInPlaylistCommand}" CommandParameter="up" Margin="4,0,0,0"
+                                Visibility="{Binding IsPlaylistSelected, Converter={StaticResource BoolToVis}}"/>
+                        <Button DockPanel.Dock="Right" Content="− Togli" Style="{StaticResource SmallButton}" Command="{Binding RemoveSelectedFromPlaylistCommand}" Margin="4,0,0,0"
+                                Visibility="{Binding IsPlaylistSelected, Converter={StaticResource BoolToVis}}" ToolTip="Togli il brano selezionato dalla playlist"/>
+                        <Button DockPanel.Dock="Right" Content="＋ Aggiungi" Style="{StaticResource SmallButton}" Command="{Binding AddSelectedToPlaylistCommand}" Margin="4,0,0,0"
+                                Visibility="{Binding IsPlaylistSelected, Converter={StaticResource BoolToVis}}" ToolTip="Aggiungi il brano selezionato. Con una playlist selezionata, scrivendo nella ricerca vedi tutta la libreria: cerca, seleziona, Aggiungi."/>
+                        <Button DockPanel.Dock="Right" Content="Nuova" Style="{StaticResource SmallButton}" Command="{Binding NewPlaylistCommand}" Margin="4,0,0,0"/>
+                        <ComboBox ItemsSource="{Binding Playlists}" SelectedItem="{Binding SelectedPlaylist}" DisplayMemberPath="Display" MinWidth="180"
+                                  x:Name="PlaylistCombo"/>
+                        <Button Content="Tutti i brani" Style="{StaticResource SmallButton}" Click="AllTracks_Click" Margin="4,0,0,0"
+                                Visibility="{Binding IsPlaylistSelected, Converter={StaticResource BoolToVis}}"/>
+                    </DockPanel>
+
+                    <DataGrid Grid.Row="2" x:Name="LibraryGrid" ItemsSource="{Binding LibraryView}" SelectedItem="{Binding SelectedTrack}"
+                              MouseDoubleClick="LibraryGrid_MouseDoubleClick" EnableRowVirtualization="True">
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding PlayedThisSession}" Value="True">
+                                        <Setter Property="Opacity" Value="0.45"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Artista" Binding="{Binding Artist}" Width="2*"/>
+                            <DataGridTextColumn Header="Titolo" Binding="{Binding Title}" Width="3*"/>
+                            <DataGridTextColumn Header="Tipo" Binding="{Binding KindLabel}" Width="60"/>
+                            <DataGridTextColumn Header="Durata" Binding="{Binding DurationLabel}" Width="60"/>
+                            <DataGridTextColumn Header="BPM" Binding="{Binding BpmLabel}" Width="50"/>
+                            <DataGridTextColumn Header="Tonalità" Binding="{Binding KeyLabel}" Width="80"/>
+                            <DataGridTextColumn Header="Match" Binding="{Binding MatchLabel}" Width="55"/>
+                            <DataGridTextColumn Header="Suonato" Binding="{Binding PlayedLabel}" Width="62"/>
+                        </DataGrid.Columns>
+                        <DataGrid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Carica su Deck A" Command="{Binding LoadSelectedToACommand}"/>
+                                <MenuItem Header="Carica su Deck B" Command="{Binding LoadSelectedToBCommand}"/>
+                                <MenuItem Header="Aggiungi alla coda" Command="{Binding AddToQueueCommand}"/>
+                                <MenuItem Header="Aggiungi alla playlist" ItemsSource="{Binding Playlists}">
+                                    <MenuItem.ItemContainerStyle>
+                                        <Style TargetType="MenuItem">
+                                            <Setter Property="Header" Value="{Binding Name}"/>
+                                            <Setter Property="Command" Value="{Binding DataContext.AddSelectedToPlaylistCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                            <Setter Property="CommandParameter" Value="{Binding}"/>
+                                        </Style>
+                                    </MenuItem.ItemContainerStyle>
+                                </MenuItem>
+                                <Separator/>
+                                <MenuItem Header="Analizza BPM / tonalità" Command="{Binding AnalyzeSelectedCommand}"/>
+                                <MenuItem Header="Analizza tutti i brani mancanti" Command="{Binding AnalyzeMissingCommand}"/>
+                                <MenuItem Header="Azzera i segni 'suonato stasera'" Command="{Binding ClearPlayedMarksCommand}"/>
+                                <Separator/>
+                                <MenuItem Header="✎ Rinomina intelligente (brano selezionato)" Command="{Binding CleanSelectedTitleCommand}"/>
+                                <MenuItem Header="✎ Rinomina intelligente (tutta la libreria)" Command="{Binding CleanAllTitlesCommand}"/>
+                                <MenuItem Header="🤖 Prepara base senza voce (Demucs)" Command="{Binding PrepareStemsSelectedCommand}"/>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
+                    </DataGrid>
+
+                    <Grid Grid.Row="3" Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" x:Name="SingerBox" Text="{Binding SingerName, UpdateSourceTrigger=PropertyChanged}" FontSize="14"
+                                 ToolTip="Nome del cantante (opzionale)" KeyDown="SingerBox_KeyDown">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                    <Style.Resources>
+                                        <VisualBrush x:Key="Hint" AlignmentX="Left" AlignmentY="Center" Stretch="None">
+                                            <VisualBrush.Visual>
+                                                <TextBlock Text="  Nome cantante…" Foreground="{StaticResource MutedBrush}"/>
+                                            </VisualBrush.Visual>
+                                        </VisualBrush>
+                                    </Style.Resources>
+                                    <Style.Triggers>
+                                        <Trigger Property="Text" Value="">
+                                            <Setter Property="Background" Value="{StaticResource Hint}"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="6,0" ToolTip="Tonalità iniziale per questo cantante">
+                            <Button Content="−" Width="28" Padding="0" Click="QueueKeyDown_Click"/>
+                            <TextBlock Text="{Binding QueueKeyLabel}" Width="30" TextAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" Foreground="{StaticResource WarnBrush}"/>
+                            <Button Content="+" Width="28" Padding="0" Click="QueueKeyUp_Click"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" Content="＋ Coda" Style="{StaticResource AccentButton}" Command="{Binding AddToQueueCommand}" Margin="0,0,6,0" ToolTip="Ctrl+Invio"/>
+                        <Button Grid.Column="3" Content="→ A" Command="{Binding LoadSelectedToACommand}" Foreground="{StaticResource AccentABrush}" FontWeight="Bold" Margin="0,0,6,0"/>
+                        <Button Grid.Column="4" Content="→ B" Command="{Binding LoadSelectedToBCommand}" Foreground="{StaticResource AccentBBrush}" FontWeight="Bold"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- coda -->
+            <Border Grid.Column="1" Style="{StaticResource Panel}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                        <TextBlock Text="CODA CANTANTI" Style="{StaticResource SectionTitle}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Queue.Count, StringFormat={} ({0})}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="4,0,0,6"/>
+                        <Button DockPanel.Dock="Right" Content="Svuota" Style="{StaticResource SmallButton}" Command="{Binding ClearQueueCommand}" HorizontalAlignment="Right"/>
+                    </DockPanel>
+
+                    <ListBox Grid.Row="1" x:Name="QueueList" ItemsSource="{Binding Queue}" SelectedItem="{Binding SelectedQueueEntry}"
+                             HorizontalContentAlignment="Stretch" MouseDoubleClick="QueueList_MouseDoubleClick" AllowDrop="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             PreviewMouseMove="QueueList_PreviewMouseMove" Drop="QueueList_Drop" DragOver="QueueList_DragOver">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type m:QueueEntry}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Track.KindLabel}" Style="{StaticResource Muted}" Width="40" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Singer}" FontWeight="Bold" Foreground="{StaticResource WarnBrush}"
+                                                   Visibility="{Binding Singer, Converter={StaticResource NullToVis}}"/>
+                                        <TextBlock Text="{Binding Track.Display}" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Text="{Binding KeyLabel}" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" Margin="6,0" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="3" Orientation="Horizontal">
+                                        <Button Content="A" Style="{StaticResource SmallButton}" Foreground="{StaticResource AccentABrush}" FontWeight="Bold"
+                                                Command="{Binding DataContext.QueueEntryToACommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="2,0"/>
+                                        <Button Content="B" Style="{StaticResource SmallButton}" Foreground="{StaticResource AccentBBrush}" FontWeight="Bold"
+                                                Command="{Binding DataContext.QueueEntryToBCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="2,0"/>
+                                        <Button Content="✕" Style="{StaticResource SmallButton}"
+                                                Command="{Binding DataContext.RemoveFromQueueCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="2,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="▲" Style="{StaticResource SmallButton}" Command="{Binding MoveQueueUpCommand}" Margin="0,0,4,0"/>
+                        <Button Content="▼" Style="{StaticResource SmallButton}" Command="{Binding MoveQueueDownCommand}" Margin="0,0,4,0"/>
+                        <Button Content="Carica il primo sul deck libero" Style="{StaticResource SmallButton}" Command="{Binding LoadNextToFreeDeckCommand}"/>
+                    </StackPanel>
+
+                    <!-- suggeritore prossimo brano -->
+                    <Border Grid.Row="3" Background="#FF0D0D12" CornerRadius="8" Padding="8,6" Margin="0,8,0,0" MaxHeight="190">
+                        <DockPanel>
+                            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+                                <TextBlock Text="🎯 SUGGERITI" Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center"/>
+                                <Button DockPanel.Dock="Right" Content="↻" Style="{StaticResource SmallButton}" Padding="6,1" Command="{Binding RefreshSuggestionsCommand}" ToolTip="Aggiorna"/>
+                                <TextBlock Text="{Binding SuggestionsLabel}" Style="{StaticResource Muted}" Margin="8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding Suggestions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type m:Track}">
+                                        <DockPanel Margin="0,1">
+                                            <TextBlock Text="{Binding MatchLabel}" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" Width="38" VerticalAlignment="Center"/>
+                                            <Button DockPanel.Dock="Right" Content="→ deck" Style="{StaticResource SmallButton}" Padding="6,1" FontSize="11" Margin="2,0"
+                                                    Command="{Binding DataContext.SuggestionToFreeDeckCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                            <Button DockPanel.Dock="Right" Content="＋ coda" Style="{StaticResource SmallButton}" Padding="6,1" FontSize="11" Margin="2,0"
+                                                    Command="{Binding DataContext.SuggestionToQueueCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                            <TextBlock Text="{Binding KeyLabel}" Style="{StaticResource Muted}" Width="60" VerticalAlignment="Center" Margin="4,0"/>
+                                            <TextBlock Text="{Binding BpmLabel}" Style="{StaticResource Muted}" Width="28" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ═══════════ pad + download ═══════════ -->
+        <Grid Grid.Row="3" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Panel}" Margin="0,0,10,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel Grid.Row="0" Margin="0,0,0,6">
+                        <TextBlock Text="JINGLE / EFFETTI  (F1–F12)" Style="{StaticResource SectionTitle}" VerticalAlignment="Center"/>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <ToggleButton IsChecked="{Binding IsEditingPads}" Content="✎ Assegna file" Padding="8,3" Margin="0,0,6,0"
+                                          ToolTip="Attivo: cliccando un pad scegli il file. Puoi anche trascinare un file sul pad."/>
+                            <Button Content="⏹ Stop tutti" Style="{StaticResource SmallButton}" Command="{Binding StopAllPadsCommand}"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding Pads}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Rows="2" Columns="6"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type m:PadItem}">
+                                <Button Margin="3" Height="42" Padding="2" AllowDrop="True" Drop="Pad_Drop" DragOver="Pad_DragOver"
+                                        Command="{Binding DataContext.TriggerPadCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding HasFile}" Value="False">
+                                                    <Setter Property="Opacity" Value="0.5"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                    <Button.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Assegna file…" Command="{Binding PlacementTarget.Tag.AssignPadFileCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
+                                            <MenuItem Header="Svuota pad" Command="{Binding PlacementTarget.Tag.ClearPadCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
+                                        </ContextMenu>
+                                    </Button.ContextMenu>
+                                    <Button.Tag>
+                                        <Binding Path="DataContext" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    </Button.Tag>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Hotkey}" Style="{StaticResource Muted}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="120"/>
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Panel}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="SCARICA DA YOUTUBE / SPOTIFY  (brano, playlist o album)" Style="{StaticResource SectionTitle}"/>
+                    <DockPanel Grid.Row="1">
+                        <Button DockPanel.Dock="Right" Content="⬇ Scarica" Style="{StaticResource AccentButton}" Command="{Binding DownloadCommand}" Margin="6,0,0,0"
+                                Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVisInv}}"/>
+                        <Button DockPanel.Dock="Right" Content="Annulla" Style="{StaticResource DangerButton}" Command="{Binding CancelDownloadCommand}" Margin="6,0,0,0"
+                                Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVis}}"/>
+                        <TextBox Text="{Binding DownloadInput, UpdateSourceTrigger=PropertyChanged}" ToolTip="Link YouTube (video o playlist), link Spotify (brano, playlist o album) oppure 'artista titolo'"
+                                 KeyDown="DownloadBox_KeyDown"/>
+                    </DockPanel>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,6,0,0">
+                        <RadioButton Content="Audio MP3" IsChecked="{Binding DownloadVideo, Converter={StaticResource InverseBool}}" Foreground="{StaticResource TextBrush}" Margin="0,0,12,0"/>
+                        <RadioButton Content="Video (karaoke con testo)" IsChecked="{Binding DownloadVideo}" Foreground="{StaticResource TextBrush}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="3" VerticalAlignment="Bottom">
+                        <ProgressBar Height="6" Minimum="0" Maximum="100" Value="{Binding DownloadPercent}" Margin="0,6,0,4"
+                                     Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVis}}"/>
+                        <TextBlock Text="{Binding DownloadStatus}" Style="{StaticResource Muted}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="40"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ═══════════ stato ═══════════ -->
+        <DockPanel Grid.Row="4">
+            <ProgressBar DockPanel.Dock="Right" Width="160" Height="8" Minimum="0" Maximum="100" Value="{Binding ScanPercent}"
+                         Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}" Margin="10,0,0,0"/>
+            <TextBlock Text="{Binding NowSinging, StringFormat=🎤 {0}}" DockPanel.Dock="Right" Foreground="{StaticResource WarnBrush}" Margin="10,0,0,0"
+                       Visibility="{Binding NowSinging, Converter={StaticResource NullToVis}}"/>
+            <TextBlock DockPanel.Dock="Right" Text="{Binding AiStatus}" Foreground="{StaticResource MagentaBrush}" Margin="10,0,0,0" Visibility="{Binding AiStatus, Converter={StaticResource NullToVis}}"/>
+            <TextBlock DockPanel.Dock="Right" Text="{Binding AnalyzeStatus}" Style="{StaticResource Muted}" Margin="10,0,0,0" Visibility="{Binding AnalyzeStatus, Converter={StaticResource NullToVis}}"/>
+            <TextBlock Text="{Binding StatusText}" Style="{StaticResource Muted}" TextTrimming="CharacterEllipsis"/>
+        </DockPanel>
+    </Grid>
+</Window>

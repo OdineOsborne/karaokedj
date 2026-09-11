@@ -1,0 +1,272 @@
+<UserControl x:Class="KaraokeDJ.Views.DeckControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:KaraokeDJ.Views"
+             x:Name="Root">
+    <Border Style="{StaticResource Panel}" BorderBrush="{Binding Accent, ElementName=Root}" BorderThickness="1.5">
+        <Border.Effect>
+            <DropShadowEffect Color="{Binding Accent.Color, ElementName=Root}" BlurRadius="22" ShadowDepth="0" Opacity="0.28"/>
+        </Border.Effect>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- intestazione -->
+            <DockPanel Grid.Row="0" Margin="0,0,0,6">
+                <Border DockPanel.Dock="Left" Background="{Binding Accent, ElementName=Root}" CornerRadius="6" Padding="10,3">
+                    <TextBlock Text="{Binding Name, StringFormat=DECK {0}}" FontWeight="Black" Foreground="#FF0A0A0E" FontSize="13"/>
+                </Border>
+                <Border DockPanel.Dock="Left" Margin="6,0,0,0" Background="{StaticResource PanelAltBrush}" CornerRadius="4" Padding="6,2"
+                        Visibility="{Binding HasTrack, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{Binding KindLabel}" Style="{StaticResource Muted}" FontWeight="Bold"/>
+                </Border>
+                <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding FxVisible}" Content="FX" Padding="8,2" FontSize="11" FontWeight="Black" Margin="6,0,0,0" ToolTip="Mostra/nascondi effetti"/>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding Singer, StringFormat=🎤 {0}}" FontWeight="Bold" Foreground="{StaticResource WarnBrush}"
+                           Visibility="{Binding Singer, Converter={StaticResource NullToVis}}" VerticalAlignment="Center"/>
+                <TextBlock/>
+            </DockPanel>
+
+            <!-- titolo -->
+            <StackPanel Grid.Row="1">
+                <TextBlock Text="{Binding Title}" FontSize="19" FontWeight="Black" TextTrimming="CharacterEllipsis" FontFamily="Segoe UI Variable Display, Segoe UI Black, Segoe UI"/>
+                <TextBlock Text="{Binding Artist}" Style="{StaticResource Muted}" FontSize="13" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+
+            <!-- anteprima -->
+            <Border Grid.Row="2" Background="Black" CornerRadius="4" Margin="0,6" Height="72" ClipToBounds="True"
+                    Visibility="{Binding IsKaraoke, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Image Source="{Binding CdgBitmap}" Stretch="Uniform" RenderOptions.BitmapScalingMode="Linear"
+                           Visibility="{Binding IsCdg, Converter={StaticResource BoolToVis}}"/>
+                    <TextBlock Text="🎬 VIDEO sul proiettore" HorizontalAlignment="Center" VerticalAlignment="Center" Style="{StaticResource Muted}" FontSize="14"
+                               Visibility="{Binding IsVideo, Converter={StaticResource BoolToVis}}"/>
+                    <TextBlock Text="♪" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#333" FontSize="40"
+                               Visibility="{Binding IsKaraoke, Converter={StaticResource BoolToVisInv}}"/>
+                    <Border Background="#AAEF4444" CornerRadius="4" Padding="8,3" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6"
+                            Visibility="{Binding IsEnding, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="FINE VICINA" FontWeight="Bold" FontSize="11"/>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- barra di avanzamento -->
+            <Grid Grid.Row="3" Margin="0,0,0,6">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding PositionLabel}" FontFamily="Consolas" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <local:WaveformView Grid.Column="1" x:Name="SeekBar" Height="56" Cursor="Hand"
+                        Data="{Binding Waveform}" Progress="{Binding Progress}" IntroFraction="{Binding IntroFraction}" OutroFraction="{Binding OutroFraction}" LoopStart="{Binding LoopStartFraction}" LoopEnd="{Binding LoopEndFraction}"
+                        Accent="{Binding Accent, ElementName=Root}"
+                        MouseLeftButtonDown="SeekBar_MouseDown" MouseMove="SeekBar_MouseMove"/>
+                <TextBlock Grid.Column="2" Text="{Binding RemainingLabel}" FontFamily="Consolas" FontSize="16" VerticalAlignment="Center" Margin="8,0,0,0"
+                           Foreground="{StaticResource MutedBrush}"/>
+                <DockPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,3,0,0">
+                    <TextBlock Text="{Binding BpmLabel}" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding KeyDisplay}" FontWeight="Bold" Foreground="#FF7DD3FC" Margin="0,0,10,0"/>
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding IntroOutroLabel}" Style="{StaticResource Muted}" HorizontalAlignment="Right"/>
+                    <TextBlock Text="USCITA" Foreground="{StaticResource DangerBrush}" FontWeight="Bold" FontSize="11" VerticalAlignment="Center"
+                               Visibility="{Binding InOutro, Converter={StaticResource BoolToVis}}"/>
+                </DockPanel>
+            </Grid>
+
+            <!-- trasporto -->
+            <UniformGrid Grid.Row="4" Columns="5" Margin="0,0,0,4">
+                <Button Style="{StaticResource IconButton}" Content="⏹" ToolTip="Stop (torna a inizio)" Command="{Binding StopCommand}" Margin="2"/>
+                <Button Style="{StaticResource IconButton}" Content="«10" FontSize="13" ToolTip="Indietro 10 s" Command="{Binding Back10Command}" Margin="2"/>
+                <Button x:Name="PlayBtn" FontSize="22" ToolTip="Play / Pausa" Command="{Binding TogglePlayCommand}" Margin="2"
+                        IsEnabled="{Binding HasTrack}" Background="{Binding Accent, ElementName=Root}" Foreground="#FF0A0A0E" BorderBrush="Transparent">
+                    <Button.Effect>
+                        <DropShadowEffect Color="{Binding Accent.Color, ElementName=Root}" BlurRadius="16" ShadowDepth="0" Opacity="0.6"/>
+                    </Button.Effect>
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                            <Setter Property="Content" Value="▶"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                    <Setter Property="Content" Value="⏸"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <Button Style="{StaticResource IconButton}" Content="10»" FontSize="13" ToolTip="Avanti 10 s" Command="{Binding Forward10Command}" Margin="2"/>
+                <Button Style="{StaticResource IconButton}" Content="⏏" ToolTip="Scarica il deck" Command="{Binding EjectCommand}" Margin="2"/>
+            </UniformGrid>
+
+            <!-- tonalità / tempo / volume -->
+            <Grid Grid.Row="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Background="{StaticResource BgBrush}" CornerRadius="6" Padding="8,4" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="TONALITÀ" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button Content="−" Width="34" Height="34" FontSize="18" Padding="0" Command="{Binding KeyDownCommand}"/>
+                            <Button Width="50" Height="34" Padding="0" Command="{Binding KeyResetCommand}" ToolTip="Azzera" Background="Transparent" BorderThickness="0">
+                                <TextBlock Text="{Binding KeyLabel}" FontSize="22" FontWeight="Black" Foreground="{StaticResource WarnBrush}"/>
+                            </Button>
+                            <Button Content="+" Width="34" Height="34" FontSize="18" Padding="0" Command="{Binding KeyUpCommand}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                    <DockPanel>
+                        <TextBlock Text="TEMPO" Style="{StaticResource SectionTitle}" Margin="0"/>
+                        <Button DockPanel.Dock="Right" Content="0" Style="{StaticResource SmallButton}" Padding="6,0" Command="{Binding TempoResetCommand}"/>
+                        <Button DockPanel.Dock="Right" Content="SYNC" Padding="6,0" FontSize="10" FontWeight="Black" Margin="0,0,4,0" Foreground="{StaticResource AccentBrush}"
+                                Command="{Binding DataContext.SyncDeckCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
+                                ToolTip="Porta il tempo ai BPM dell'altro deck (o ai BPM bloccati)"/>
+                        <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding KeyLock}" Content="🔒 KEY" Padding="6,0" FontSize="10" Margin="0,0,4,0"
+                                      ToolTip="Key lock (master tempo): acceso = cambiare velocità non cambia la tonalità; spento = il tono segue la velocità come un vinile"/>
+                        <TextBlock Text="{Binding TempoLabel}" HorizontalAlignment="Right" Margin="0,0,6,0" FontWeight="Bold"/>
+                    </DockPanel>
+                    <Slider Minimum="-25" Maximum="25" Value="{Binding TempoPercent}" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="VOLUME" Style="{StaticResource SectionTitle}" Margin="0"/>
+                    <Slider Minimum="0" Maximum="1" Value="{Binding Volume}" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- EQ + loop -->
+            <Grid Grid.Row="6" Margin="0,8,0,0">
+                <Grid.Resources>
+                    <Style x:Key="EqSlider" TargetType="Slider" BasedOn="{StaticResource {x:Type Slider}}">
+                        <Setter Property="Width" Value="46"/>
+                        <Setter Property="Minimum" Value="-30"/>
+                        <Setter Property="Maximum" Value="8"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="Margin" Value="2,0"/>
+                        <Setter Property="ToolTip" Value="EQ: −30 dB (kill) … +8 dB. Doppio click sul nome per il kill."/>
+                    </Style>
+                    <Style x:Key="EqKill" TargetType="Button" BasedOn="{StaticResource SmallButton}">
+                        <Setter Property="Padding" Value="4,1"/>
+                        <Setter Property="FontSize" Value="10"/>
+                        <Setter Property="FontWeight" Value="Black"/>
+                        <Setter Property="MinWidth" Value="28"/>
+                    </Style>
+                    <Style x:Key="LoopBtn" TargetType="Button" BasedOn="{StaticResource SmallButton}">
+                        <Setter Property="Padding" Value="5,1"/>
+                        <Setter Property="FontSize" Value="11"/>
+                        <Setter Property="FontFamily" Value="Consolas"/>
+                        <Setter Property="Margin" Value="1,0"/>
+                        <Setter Property="ToolTip" Value="Click: loop di N battute dalla posizione attuale. Tasto destro tenuto premuto: loop roll (al rilascio il brano riprende da dove sarebbe arrivato)"/>
+                        <EventSetter Event="PreviewMouseRightButtonDown" Handler="Loop_RightDown"/>
+                        <EventSetter Event="PreviewMouseRightButtonUp" Handler="Loop_RightUp"/>
+                    </Style>
+                </Grid.Resources>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Button Style="{StaticResource EqKill}" Content="LOW" Command="{Binding KillLowCommand}" ToolTip="Kill bassi"/>
+                    <Slider Style="{StaticResource EqSlider}" Value="{Binding EqLow}" Foreground="{StaticResource MagentaBrush}"/>
+                    <Button Style="{StaticResource EqKill}" Content="MID" Command="{Binding KillMidCommand}" ToolTip="Kill medi"/>
+                    <Slider Style="{StaticResource EqSlider}" Value="{Binding EqMid}" Foreground="{StaticResource WarnBrush}"/>
+                    <Button Style="{StaticResource EqKill}" Content="HI" Command="{Binding KillHighCommand}" ToolTip="Kill alti"/>
+                    <Slider Style="{StaticResource EqSlider}" Value="{Binding EqHigh}"/>
+                    <Button Style="{StaticResource EqKill}" Content="↺" Command="{Binding EqResetCommand}" ToolTip="EQ piatto" MinWidth="22" Margin="2,0,8,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding LoopLabel}" Foreground="{StaticResource WarnBrush}" FontWeight="Black" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <Button Style="{StaticResource LoopBtn}" Content="¼" Tag="0.25" Click="Loop_Click"/>
+                    <Button Style="{StaticResource LoopBtn}" Content="½" Tag="0.5" Click="Loop_Click"/>
+                    <Button Style="{StaticResource LoopBtn}" Content="1" Tag="1" Click="Loop_Click"/>
+                    <Button Style="{StaticResource LoopBtn}" Content="2" Tag="2" Click="Loop_Click"/>
+                    <Button Style="{StaticResource LoopBtn}" Content="4" Tag="4" Click="Loop_Click"/>
+                    <Button Style="{StaticResource LoopBtn}" Content="8" Tag="8" Click="Loop_Click"/>
+                    <Button Style="{StaticResource LoopBtn}" Content="÷2" Command="{Binding LoopHalfCommand}" ToolTip="Dimezza il loop"/>
+                    <Button Style="{StaticResource LoopBtn}" Content="×2" Command="{Binding LoopDoubleCommand}" ToolTip="Raddoppia il loop"/>
+                    <Button Style="{StaticResource LoopBtn}" Content="EXIT" Command="{Binding LoopExitCommand}" ToolTip="Esci dal loop" Foreground="{StaticResource DangerBrush}"/>
+                </StackPanel>
+            </Grid>
+            <!-- effetti -->
+            <Border Grid.Row="7" Background="#FF0D0D12" CornerRadius="8" Padding="8,6" Margin="0,8,0,0"
+                    Visibility="{Binding FxVisible, Converter={StaticResource BoolToVis}}">
+                <Border.Resources>
+                    <Style x:Key="FxToggle" TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
+                        <Setter Property="Padding" Value="8,3"/>
+                        <Setter Property="FontSize" Value="11"/>
+                        <Setter Property="FontWeight" Value="Black"/>
+                        <Setter Property="MinWidth" Value="62"/>
+                    </Style>
+                    <Style x:Key="FxSlider" TargetType="Slider" BasedOn="{StaticResource {x:Type Slider}}">
+                        <Setter Property="Width" Value="70"/>
+                        <Setter Property="Margin" Value="4,0"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                    </Style>
+                    <Style x:Key="FxLabel" TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="FontSize" Value="10"/>
+                        <Setter Property="Margin" Value="6,0,0,0"/>
+                    </Style>
+                </Border.Resources>
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,6">
+                        <ToggleButton Style="{StaticResource FxToggle}" IsChecked="{Binding VocalRemove}" Content="🎤 VOCE OFF" ToolTip="Rimozione voce (cancellazione del centro). Funziona bene sui mix con voce al centro."/>
+                        <Slider Style="{StaticResource FxSlider}" Minimum="0" Maximum="1" Value="{Binding VocalStrength}" ToolTip="Intensità rimozione"/>
+                        <TextBlock Style="{StaticResource FxLabel}" Text="FILTER"/>
+                        <TextBlock Style="{StaticResource FxLabel}" Text="{Binding FilterLabel}" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" MinWidth="44"/>
+                        <Button DockPanel.Dock="Right" Content="ECHO OUT" Style="{StaticResource AccentButton}" Padding="10,3" FontSize="11" Margin="8,0,0,0"
+                                Command="{Binding EchoOutCommand}" ToolTip="Taglia il brano lasciando ripetere la coda dell'eco, poi mette in pausa"/>
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource FxToggle}" IsChecked="{Binding FlangerOn}" Content="FLANGER" Margin="6,0,0,0"/>
+                        <Button DockPanel.Dock="Right" Content="reset" Style="{StaticResource SmallButton}" Padding="6,2" FontSize="10" Command="{Binding FilterResetCommand}"/>
+                        <Slider Minimum="-1" Maximum="1" Value="{Binding FilterValue}" VerticalAlignment="Center" Margin="4,0" ToolTip="Sinistra = low-pass, destra = high-pass"/>
+                    </DockPanel>
+                    <DockPanel>
+                        <ToggleButton Style="{StaticResource FxToggle}" IsChecked="{Binding EchoOn}" Content="ECHO"/>
+                        <Button Content="{Binding EchoBeatsLabel}" Style="{StaticResource SmallButton}" Padding="6,2" FontSize="11" FontFamily="Consolas" Command="{Binding EchoBeatsCycleCommand}" Margin="4,0,0,0" ToolTip="Tempo dell'eco in battute (agganciato ai BPM)"/>
+                        <TextBlock Style="{StaticResource FxLabel}" Text="FB"/>
+                        <Slider Style="{StaticResource FxSlider}" Minimum="0" Maximum="0.9" Value="{Binding EchoFeedback}" Width="56"/>
+                        <TextBlock Style="{StaticResource FxLabel}" Text="MIX"/>
+                        <Slider Style="{StaticResource FxSlider}" Minimum="0" Maximum="1" Value="{Binding EchoMix}" Width="56"/>
+                        <ToggleButton Style="{StaticResource FxToggle}" IsChecked="{Binding ReverbOn}" Content="REVERB" Margin="10,0,0,0"/>
+                        <TextBlock Style="{StaticResource FxLabel}" Text="SIZE"/>
+                        <Slider Style="{StaticResource FxSlider}" Minimum="0" Maximum="1" Value="{Binding ReverbSize}" Width="50"/>
+                        <TextBlock Style="{StaticResource FxLabel}" Text="MIX"/>
+                        <Slider Style="{StaticResource FxSlider}" Minimum="0" Maximum="1" Value="{Binding ReverbMix}" Width="50"/>
+                        <Button DockPanel.Dock="Right" Content="✕" Style="{StaticResource SmallButton}" Padding="6,2" FontSize="10" Command="{Binding FxResetCommand}" ToolTip="Spegne tutti gli effetti" Margin="4,0,0,0"/>
+                        <TextBlock/>
+                    </DockPanel>
+                    <DockPanel Margin="0,6,0,0">
+                        <ToggleButton Style="{StaticResource FxToggle}" IsChecked="{Binding PhaserOn}" Content="PHASER"/>
+                        <ToggleButton Style="{StaticResource FxToggle}" IsChecked="{Binding CrushOn}" Content="CRUSH" Margin="6,0,0,0" ToolTip="Bitcrusher (lo-fi)"/>
+                        <Slider Style="{StaticResource FxSlider}" Minimum="0" Maximum="1" Value="{Binding CrushAmount}" Width="50"/>
+                        <ToggleButton Style="{StaticResource FxToggle}" IsChecked="{Binding GateOn}" Content="GATE" Margin="6,0,0,0" ToolTip="Trans/gate a tempo"/>
+                        <Button Content="{Binding GateBeatsLabel}" Style="{StaticResource SmallButton}" Padding="6,2" FontSize="11" FontFamily="Consolas" Command="{Binding GateBeatsCycleCommand}" Margin="4,0,0,0"/>
+                        <Button Content="BRAKE" Style="{StaticResource SmallButton}" Padding="8,2" FontSize="11" FontWeight="Black" Command="{Binding BrakeCommand}" Margin="8,0,0,0" ToolTip="Frenata vinile (poi pausa)"/>
+                        <Button Content="BACKSPIN" Style="{StaticResource SmallButton}" Padding="8,2" FontSize="11" FontWeight="Black" Command="{Binding BackspinCommand}" Margin="4,0,0,0" ToolTip="Riavvolgimento vinile (poi pausa)"/>
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding AiStatus}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="6,0,0,0" MaxWidth="120" TextTrimming="CharacterEllipsis"/>
+                        <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding AiVocalOff}" Content="🤖 VOCE AI" Padding="8,3" FontSize="11" FontWeight="Black" Margin="8,0,0,0"
+                                      Command="{Binding ToggleAiVocalCommand}" ToolTip="Rimozione voce con Demucs (AI). La prima volta genera la base senza voce (1–3 min), poi si attiva/disattiva al volo."
+                                      IsEnabled="{Binding IsSeparating, Converter={StaticResource InverseBool}}"/>
+                        <TextBlock/>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
+        </Grid>
+    </Border>
+</UserControl>
