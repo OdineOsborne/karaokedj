@@ -1,0 +1,140 @@
+<Window x:Class="KaraokeDJ.Views.AnimationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:m="clr-namespace:KaraokeDJ.Models"
+        Title="Animazione – Parlaci di lui/lei/loro" Width="1000" Height="720" MinWidth="860" MinHeight="600"
+        WindowStartupLocation="CenterOwner" Background="{StaticResource WindowBgBrush}">
+    <Grid Margin="14">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ═══ sinistra: festeggiato + messaggi ═══ -->
+        <Border Grid.Column="0" Style="{StaticResource Panel}" Margin="0,0,8,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="🎉 FESTEGGIATO" Style="{StaticResource SectionTitle}"/>
+                <Grid Grid.Row="1" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0" Text="{Binding Celebration.Name, UpdateSourceTrigger=PropertyChanged}" FontSize="16" FontWeight="Bold" ToolTip="Nome del festeggiato (o dei festeggiati)"/>
+                    <ComboBox Grid.Column="1" x:Name="PronounCombo" Width="70" Margin="6,0,0,0" SelectedValuePath="Content" SelectedValue="{Binding Celebration.Pronoun}">
+                        <ComboBoxItem Content="lui"/><ComboBoxItem Content="lei"/><ComboBoxItem Content="loro"/>
+                    </ComboBox>
+                    <ComboBox Grid.Column="2" Width="130" Margin="6,0,0,0" IsEditable="True" Text="{Binding Celebration.Occasion, UpdateSourceTrigger=LostFocus}">
+                        <ComboBoxItem Content="compleanno"/><ComboBoxItem Content="addio al celibato"/><ComboBoxItem Content="addio al nubilato"/>
+                        <ComboBoxItem Content="matrimonio"/><ComboBoxItem Content="laurea"/><ComboBoxItem Content="pensione"/><ComboBoxItem Content="anniversario"/>
+                    </ComboBox>
+                </Grid>
+                <DockPanel Grid.Row="2" Margin="0,0,0,6">
+                    <TextBlock Text="💬 PARLACI DI LUI / LEI / LORO" Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center"/>
+                    <Button DockPanel.Dock="Right" Content="＋ Messaggio" Style="{StaticResource SmallButton}" Command="{Binding AddGuestMessageCommand}"/>
+                    <TextBlock Text="{Binding Celebration.Messages.Count, StringFormat={} ({0})}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="4,0"/>
+                </DockPanel>
+                <ListBox Grid.Row="3" ItemsSource="{Binding Celebration.Messages}" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type m:GuestMessage}">
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" Text="{Binding From, UpdateSourceTrigger=PropertyChanged}" ToolTip="Da parte di (opzionale)" Margin="0,0,4,0"/>
+                                <TextBox Grid.Column="1" Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="30" ToolTip="Cosa vuoi dire al festeggiato? Aneddoti, soprannomi, difetti simpatici…"/>
+                                <Button Grid.Column="2" Content="✕" Style="{StaticResource SmallButton}" Margin="4,0,0,0"
+                                        Command="{Binding DataContext.RemoveGuestMessageCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Grid.Row="4" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,8,0,0"
+                           Text="Quando ci sarà la pagina web con il QR, i messaggi degli invitati arriveranno qui da soli. Intanto puoi inserirli a mano o dettarli."/>
+            </Grid>
+        </Border>
+
+        <!-- ═══ destra: testo, Suno, dedica ═══ -->
+        <Border Grid.Column="1" Style="{StaticResource Panel}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="🎵 CANZONE PER IL FESTEGGIATO (SUNO)" Style="{StaticResource SectionTitle}"/>
+                <DockPanel Grid.Row="1" Margin="0,0,0,6">
+                    <TextBlock Text="Stile" Width="44" VerticalAlignment="Center"/>
+                    <Button DockPanel.Dock="Right" Content="📋" Style="{StaticResource SmallButton}" Command="{Binding CopyStyleCommand}" ToolTip="Copia lo stile negli appunti" Margin="4,0,0,0"/>
+                    <ComboBox IsEditable="True" Text="{Binding Celebration.Style, UpdateSourceTrigger=LostFocus}">
+                        <ComboBoxItem Content="pop italiano allegro, cantabile, festa"/>
+                        <ComboBoxItem Content="rock anni 80, chitarre, coro da stadio"/>
+                        <ComboBoxItem Content="rap italiano, ritmato, ironico"/>
+                        <ComboBoxItem Content="ballad romantica, pianoforte, voce femminile"/>
+                        <ComboBoxItem Content="dance anni 90, eurodance, energica"/>
+                        <ComboBoxItem Content="liscio / balera, fisarmonica"/>
+                        <ComboBoxItem Content="reggaeton estivo, festa in spiaggia"/>
+                    </ComboBox>
+                </DockPanel>
+                <DockPanel Grid.Row="2" Margin="0,0,0,6">
+                    <TextBlock Text="Titolo" Width="44" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding Celebration.SongTitle, UpdateSourceTrigger=PropertyChanged}"/>
+                </DockPanel>
+                <TextBox Grid.Row="3" Text="{Binding Celebration.Lyrics, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12" ToolTip="Testo della canzone (formato Suno con [Verse]/[Chorus])"/>
+                <WrapPanel Grid.Row="4" Margin="0,8,0,0">
+                    <Button Content="✨ Genera testo con AI" Style="{StaticResource AccentButton}" Command="{Binding GenerateLyricsCommand}" Margin="0,0,6,6"
+                            IsEnabled="{Binding LyricsBusy, Converter={StaticResource InverseBool}}" ToolTip="Claude trasforma i messaggi in strofe e ritornello (serve la chiave API nelle Impostazioni)"/>
+                    <Button Content="Usa i messaggi così come sono" Command="{Binding UseMessagesAsLyricsCommand}" Margin="0,0,6,6"/>
+                    <Button Content="📋 Copia e apri Suno" Style="{StaticResource AccentButton}" Command="{Binding CopyAndOpenSunoCommand}" Margin="0,0,6,6"
+                            ToolTip="Copia il testo negli appunti e apre suno.com/create: scegli Custom, incolla il testo, imposta stile e titolo, genera, scarica l'MP3 nella cartella Suno"/>
+                </WrapPanel>
+                <TextBlock Grid.Row="5" Text="{Binding LyricsStatus}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                <Border Grid.Row="6" Background="#FF0D0D12" CornerRadius="8" Padding="8">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <DockPanel Grid.Row="0">
+                            <TextBlock Text="📥 BRANI IMPORTATI DA SUNO" Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center"/>
+                            <Button DockPanel.Dock="Right" Content="Apri cartella" Style="{StaticResource SmallButton}" Command="{Binding OpenSunoFolderCommand}"/>
+                            <TextBlock/>
+                        </DockPanel>
+                        <CheckBox Grid.Row="1" IsChecked="{Binding AssignDedicationToNextSuno}" Content="Assegna la dedica al prossimo brano scaricato" Margin="0,6,0,6"
+                                  ToolTip="Il brano che arriva nella cartella Suno riceve titolo e dedica (mostrata sul proiettore mentre suona)"/>
+                        <ItemsControl Grid.Row="2" ItemsSource="{Binding SunoTracks}" MaxHeight="120">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type m:Track}">
+                                    <DockPanel Margin="0,2">
+                                        <Button DockPanel.Dock="Right" Content="→ coda" Style="{StaticResource SmallButton}" Padding="6,1" Margin="2,0"
+                                                Command="{Binding DataContext.SunoTrackToQueueCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                        <Button DockPanel.Dock="Right" Content="🎁 dedica" Style="{StaticResource SmallButton}" Padding="6,1" Margin="2,0"
+                                                Command="{Binding DataContext.AssignDedicationCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
+                                                ToolTip="Assegna la dedica corrente a questo brano"/>
+                                        <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

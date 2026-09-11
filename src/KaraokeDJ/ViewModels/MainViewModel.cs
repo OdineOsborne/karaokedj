@@ -144,6 +144,7 @@ public sealed partial class MainViewModel : ObservableObject
             });
         };
         WireStems();
+        StartAnimation();
         Midi.LoadMappings(Settings.MidiMappings);
         if (!string.IsNullOrEmpty(Settings.MidiDeviceName) && !Midi.Open(Settings.MidiDeviceName))
             StatusText = "Controller MIDI non trovato: " + Settings.MidiDeviceName;
@@ -162,6 +163,8 @@ public sealed partial class MainViewModel : ObservableObject
         SaveSettings();
         SaveQueue();
         Midi.Dispose();
+        _suno?.Dispose();
+        SaveCelebration();
         Engine.Dispose();
     }
 
@@ -228,6 +231,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         if (AutoMix) CheckAutoMix();
         UpdateActiveKaraokeDeck();
+        UpdateDedication();
     }
 
     partial void OnCrossfaderChanged(double value) => Engine.Crossfader = value;
@@ -426,8 +430,14 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ---------------------------------------------------------------- deck
 
-    public bool LoadToDeck(DeckViewModel deck, Track track, string singer = "", int keyShift = 0)
+    public bool LoadToDeck(DeckViewModel deck, Track track, string singer = "", int keyShift = 0, bool confirmIfPlaying = true)
     {
+        if (confirmIfPlaying && deck.IsPlaying)
+        {
+            var r = MessageBox.Show($"Il DECK {deck.Name} sta suonando \"{deck.Title}\".\nSostituirlo con \"{track.Display}\"?",
+                "Deck in riproduzione", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+            if (r != MessageBoxResult.Yes) return false;
+        }
         try
         {
             deck.TempoPercent = 0;
@@ -531,7 +541,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (d.Deck.PositionSec < mixAt) continue;
 
             var e = Queue[0];
-            if (!LoadToDeck(other, e.Track, e.Singer, e.KeyShift)) { _autoMixTriggeredFor = d; continue; }
+            if (!LoadToDeck(other, e.Track, e.Singer, e.KeyShift, confirmIfPlaying: false)) { _autoMixTriggeredFor = d; continue; }
             Queue.Remove(e);
             MatchIncomingTempo(other, d);
             if (AutoMixUseCues && e.Track.IntroEndSec > 2 && !e.Track.IsKaraoke) other.Deck.Seek(Math.Max(0, e.Track.IntroEndSec - 1));
@@ -550,7 +560,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var other = d == DeckA ? DeckB : DeckA;
             var e = Queue[0];
-            if (LoadToDeck(other, e.Track, e.Singer, e.KeyShift))
+            if (LoadToDeck(other, e.Track, e.Singer, e.KeyShift, confirmIfPlaying: false))
             {
                 Queue.Remove(e);
                 MatchIncomingTempo(other, d);
@@ -1113,6 +1123,180 @@ public sealed partial class MainViewModel : ObservableObject
             await Updater.DownloadAndApplyAsync(new Progress<int>(p => UpdateStatus = $"Scarico aggiornamento… {p}%"));
         }
         catch (Exception ex) { UpdateStatus = "Aggiornamento fallito: " + ex.Message; Updating = false; }
+    }
+
+    // ---------------------------------------------------------------- Animazione: festeggiato, messaggi, Suno
+
+    public Celebration Celebration { get; private set; } = new();
+    public ObservableCollection<Track> SunoTracks { get; } = new();
+    private SunoWatcher? _suno;
+    [ObservableProperty] private bool _assignDedicationToNextSuno = true;
+    [ObservableProperty] private bool _lyricsBusy;
+    [ObservableProperty] private string _lyricsStatus = "";
+    [ObservableProperty] private string _dedicationTitle = "";
+    [ObservableProperty] private string _dedicationText = "";
+    public string SunoFolder => SunoWatcher.Folder;
+    public bool HasAnthropicKey => !string.IsNullOrEmpty(Secret.Unprotect(Settings.AnthropicApiKeyProtected));
+
+    private void StartAnimation()
+    {
+        Celebration = JsonStore.Load<Celebration>(AppPaths.CelebrationFile);
+        Celebration.Messages ??= new();
+        foreach (var t in Tracks.Where(t => t.IsSuno)) SunoTracks.Add(t);
+        try
+        {
+            _suno = new SunoWatcher();
+            _suno.FileReady += OnSunoFile;
+        }
+        catch (Exception ex) { StatusText = "Cartella Suno non monitorabile: " + ex.Message; }
+    }
+
+    public void SaveCelebration() { try { JsonStore.Save(AppPaths.CelebrationFile, Celebration); } catch { } }
+
+    public void SetAnthropicApiKey(string? key)
+    {
+        Settings.AnthropicApiKeyProtected = Secret.Protect(key?.Trim());
+        OnPropertyChanged(nameof(HasAnthropicKey));
+        SaveSettings();
+    }
+
+    private void OnSunoFile(string path)
+    {
+        var track = Library.AddFile(path);
+        if (track == null) return;
+        track.IsSuno = true;
+        TitleCleaner.Apply(track, writeTags: false);
+        if (string.IsNullOrWhiteSpace(track.Artist)) track.Artist = "Suno";
+        if (AssignDedicationToNextSuno && !string.IsNullOrWhiteSpace(Celebration.Name))
+        {
+            track.Dedication = Celebration.DedicationText;
+            track.DedicationTitle = string.IsNullOrWhiteSpace(Celebration.SongTitle) ? $"Per {Celebration.Name}" : Celebration.SongTitle;
+            if (!string.IsNullOrWhiteSpace(Celebration.SongTitle)) track.Title = Celebration.SongTitle;
+        }
+        Library.Save();
+        var old = Tracks.FirstOrDefault(t => string.Equals(t.FilePath, path, StringComparison.OrdinalIgnoreCase));
+        if (old != null) Tracks.Remove(old);
+        Tracks.Add(track);
+        SunoTracks.Insert(0, track);
+        LibraryCount = Tracks.Count;
+        AnalyzeInBackground(track);
+        StatusText = $"Importato da Suno: {track.Display}" + (track.Dedication != null ? " (con dedica)" : "");
+    }
+
+    [RelayCommand]
+    private void AddGuestMessage()
+    {
+        Celebration.Messages.Add(new GuestMessage());
+        SaveCelebration();
+    }
+
+    [RelayCommand]
+    private void RemoveGuestMessage(GuestMessage? m)
+    {
+        if (m != null) Celebration.Messages.Remove(m);
+        SaveCelebration();
+    }
+
+    [RelayCommand]
+    private async Task GenerateLyricsAsync()
+    {
+        if (LyricsBusy) return;
+        var key = Secret.Unprotect(Settings.AnthropicApiKeyProtected);
+        if (string.IsNullOrWhiteSpace(Celebration.Name)) { LyricsStatus = "Inserisci il nome del festeggiato"; return; }
+        LyricsBusy = true;
+        try
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                LyricsStatus = "Nessuna chiave API: uso i messaggi così come sono (Impostazioni → chiave Anthropic per il testo AI)";
+                var (t0, l0) = LyricsService.BuildFromMessages(Celebration);
+                Celebration.SongTitle = t0; Celebration.Lyrics = l0;
+            }
+            else
+            {
+                LyricsStatus = "Scrivo il testo con Claude…";
+                var (t, l) = await LyricsService.GenerateAsync(Celebration, key, CancellationToken.None);
+                Celebration.SongTitle = t; Celebration.Lyrics = l;
+                LyricsStatus = "Testo pronto: rileggilo, modificalo se vuoi, poi \"Copia e apri Suno\"";
+            }
+            SaveCelebration();
+        }
+        catch (Exception ex) { LyricsStatus = "Errore: " + ex.Message; }
+        finally { LyricsBusy = false; }
+    }
+
+    [RelayCommand]
+    private void UseMessagesAsLyrics()
+    {
+        var (t, l) = LyricsService.BuildFromMessages(Celebration);
+        Celebration.SongTitle = t; Celebration.Lyrics = l;
+        LyricsStatus = "Testo montato dai messaggi (senza AI)";
+        SaveCelebration();
+    }
+
+    /// <summary>Copia il testo negli appunti e apre Suno (modalità Custom: incolla testo, stile e titolo).</summary>
+    [RelayCommand]
+    private void CopyAndOpenSuno()
+    {
+        if (string.IsNullOrWhiteSpace(Celebration.Lyrics)) { LyricsStatus = "Prima genera il testo"; return; }
+        try { Clipboard.SetText(Celebration.Lyrics.Trim()); } catch { }
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(SunoWatcher.SunoCreateUrl) { UseShellExecute = true }); } catch { }
+        SaveCelebration();
+        LyricsStatus = $"Testo copiato. Su Suno: Custom → incolla il testo, stile \"{Celebration.Style}\", titolo \"{Celebration.SongTitle}\". Scarica l'MP3 in {SunoFolder}";
+    }
+
+    [RelayCommand]
+    private void CopyStyle()
+    {
+        try { Clipboard.SetText(Celebration.Style); LyricsStatus = "Stile copiato negli appunti"; } catch { }
+    }
+
+    [RelayCommand]
+    private void OpenSunoFolder()
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(SunoFolder) { UseShellExecute = true }); } catch { }
+    }
+
+    [RelayCommand]
+    private void AssignDedication(Track? t)
+    {
+        if (t == null) return;
+        t.Dedication = Celebration.DedicationText;
+        t.DedicationTitle = string.IsNullOrWhiteSpace(Celebration.SongTitle) ? $"Per {Celebration.Name}" : Celebration.SongTitle;
+        Library.Save();
+        UpdateProjectorState();
+        StatusText = "Dedica assegnata a " + t.Display;
+    }
+
+    [RelayCommand]
+    private void ClearDedication(Track? t)
+    {
+        if (t == null) return;
+        t.Dedication = null; t.DedicationTitle = null;
+        Library.Save();
+        UpdateProjectorState();
+    }
+
+    [RelayCommand]
+    private void SunoTrackToQueue(Track? t)
+    {
+        if (t == null) return;
+        Queue.Add(new QueueEntry { Track = t, Singer = string.IsNullOrWhiteSpace(Celebration.Name) ? "" : "🎉 " + Celebration.Name });
+        StatusText = "In coda: " + t.Display;
+    }
+
+    /// <summary>Dedica da mostrare: quella del brano che si sente di più (o dell'unico in riproduzione).</summary>
+    private void UpdateDedication()
+    {
+        DeckViewModel? d = null;
+        if (DeckA.IsPlaying && DeckB.IsPlaying) d = Crossfader <= 0 ? DeckA : DeckB;
+        else if (DeckA.IsPlaying) d = DeckA;
+        else if (DeckB.IsPlaying) d = DeckB;
+        var t = d?.Track;
+        var text = t?.Dedication ?? "";
+        var title = t?.DedicationTitle ?? "";
+        if (text != DedicationText) DedicationText = text;
+        if (title != DedicationTitle) DedicationTitle = title;
     }
 
     // ---------------------------------------------------------------- MIDI

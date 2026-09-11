@@ -139,6 +139,10 @@ public partial class ProjectorWindow : Window
         {
             BindDeck(Vm?.ActiveKaraokeDeck);
         }
+        else if (e.PropertyName is nameof(MainViewModel.DedicationText) or nameof(MainViewModel.DedicationTitle))
+        {
+            UpdateLayers();
+        }
     }
 
     private void BindDeck(DeckViewModel? deck)
@@ -176,9 +180,11 @@ public partial class ProjectorWindow : Window
         var d = _boundDeck;
         bool cdg = d?.IsCdg == true;
         bool video = d?.IsVideo == true && _mp != null;
+        bool dedication = !cdg && !video && !string.IsNullOrEmpty(Vm?.DedicationText);
         CdgLayer.Visibility = cdg ? Visibility.Visible : Visibility.Collapsed;
         VideoView.Visibility = video ? Visibility.Visible : Visibility.Collapsed;
-        IdleLayer.Visibility = (cdg || video) ? Visibility.Collapsed : Visibility.Visible;
+        DedicationLayer.Visibility = dedication ? Visibility.Visible : Visibility.Collapsed;
+        IdleLayer.Visibility = (cdg || video || dedication) ? Visibility.Collapsed : Visibility.Visible;
         if (cdg) d!.ForceCdgRefresh();
     }
 

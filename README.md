@@ -59,6 +59,8 @@ publish.cmd
 | **Altri effetti** | PHASER, CRUSH (bitcrusher), GATE/trans a tempo (1/8…1/1), **BRAKE** (frenata vinile), **BACKSPIN** (riavvolgimento vinile). |
 | **Voce AI (Demucs)** | **🤖 VOCE AI** nel pannello FX: la prima volta genera la base senza voce con Demucs (htdemucs, CPU: 1–3 min), poi si attiva/disattiva al volo restando in posizione. Menu destro → "Prepara base senza voce". Motore: Python 3.11 + PyTorch CPU + Demucs in `%AppData%\KaraokeDJ\tools\venv` (Impostazioni → *Installa motore AI*), stem in `%AppData%\KaraokeDJ\stems\<id>\`. |
 | **Rinomina intelligente** | Menu destro → "Rinomina intelligente": toglie dal titolo l'artista ripetuto e il rumore ("Official Video", "Remastered 2012"…), e se l'artista è un canale (…VEVO, "Karaoke Academy") lo sostituisce con quello vero preso dal titolo. Scrive i tag ID3; i nomi dei file non cambiano. Applicata automaticamente ai download. |
+| **🎉 Animazione (festeggiato)** | Pulsante in barra: nome, occasione, messaggi "Parlaci di lui/lei/loro" (a mano ora, dal QR in futuro). **Genera testo con AI** (Claude, chiave API in Impostazioni; senza chiave i messaggi diventano strofe così come sono) → **Copia e apri Suno** (testo in clipboard, si apre suno.com/create: Custom → incolla → stile → genera). Il file scaricato nella cartella `Musica\KaraokeDJ Downloads\Suno` entra da solo in libreria con titolo e **dedica**, mostrata sul proiettore mentre il brano suona. |
+| **Sicurezza deck** | Caricare un brano su un deck che sta suonando chiede conferma (i caricamenti automatici vanno sempre sul deck fermo). Pulsante **⬆ vX.Y.Z** in barra per cercare aggiornamenti. |
 
 ## Scorciatoie
 

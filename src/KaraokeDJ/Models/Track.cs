@@ -34,6 +34,11 @@ public sealed class Track
     /// <summary>Versione senza voce (Demucs), se generata.</summary>
     public string? InstrumentalPath { get; set; }
     public string? VocalsPath { get; set; }
+    /// <summary>Dedica mostrata sul proiettore mentre il brano suona (serata Animazione).</summary>
+    public string? Dedication { get; set; }
+    public string? DedicationTitle { get; set; }
+    /// <summary>Brano generato con Suno (importato dalla cartella monitorata).</summary>
+    public bool IsSuno { get; set; }
     [JsonIgnore] public bool HasInstrumental => !string.IsNullOrEmpty(InstrumentalPath) && File.Exists(InstrumentalPath);
     public DateTime? LastPlayedUtc { get; set; }
 

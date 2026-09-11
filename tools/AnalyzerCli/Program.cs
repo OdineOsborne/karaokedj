@@ -1,6 +1,7 @@
 using KaraokeDJ.Audio;
 
 // Uso: AnalyzerCli <file>...      oppure   AnalyzerCli --synth
+if (args.Length > 0 && args[0] == "--lyrics") { LyricsTest.Run(); return; }
 if (args.Length > 0 && args[0] == "--clean") { CleanTest.Run(); return; }
 if (args.Length > 0 && args[0] == "--fx") { FxTest.Run(); return; }
 if (args.Length > 0 && args[0] == "--synth")

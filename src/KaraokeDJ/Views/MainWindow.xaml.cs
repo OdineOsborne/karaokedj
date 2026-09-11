@@ -176,6 +176,19 @@ public partial class MainWindow : Window
 
     // ------------------------------------------------------------ impostazioni
 
+    private AnimationWindow? _animation;
+
+    private void Animation_Click(object sender, RoutedEventArgs e)
+    {
+        if (_animation == null || !_animation.IsLoaded)
+        {
+            _animation = new AnimationWindow(Vm) { Owner = this };
+            _animation.Closed += (_, _) => _animation = null;
+            _animation.Show();
+        }
+        else _animation.Activate();
+    }
+
     private void Settings_Click(object sender, RoutedEventArgs e)
     {
         var dlg = new SettingsWindow(Vm) { Owner = this };

@@ -40,11 +40,17 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="AUDIO" Style="{StaticResource SectionTitle}"/>
-                    <DockPanel Grid.Row="1" Margin="0,0,0,14">
-                        <TextBlock Text="Uscita audio" Width="140" VerticalAlignment="Center"/>
-                        <ComboBox x:Name="DeviceCombo" DisplayMemberPath="Name" SelectedValuePath="Id"/>
-                    </DockPanel>
+                    <TextBlock Grid.Row="0" Text="AUDIO / AI" Style="{StaticResource SectionTitle}"/>
+                    <StackPanel Grid.Row="1" Margin="0,0,0,14">
+                        <DockPanel Margin="0,0,0,8">
+                            <TextBlock Text="Uscita audio" Width="140" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="DeviceCombo" DisplayMemberPath="Name" SelectedValuePath="Id"/>
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBlock Text="Chiave API Anthropic" Width="140" VerticalAlignment="Center" ToolTip="Per generare i testi delle canzoni (Animazione). Salvata cifrata per l'utente Windows."/>
+                            <PasswordBox x:Name="ApiKeyBox" Background="#FF0D0D12" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource BorderBrush}" Padding="6,4"/>
+                        </DockPanel>
+                    </StackPanel>
 
                     <TextBlock Grid.Row="2" Text="PROIETTORE / SECONDO SCHERMO" Style="{StaticResource SectionTitle}"/>
                     <StackPanel Grid.Row="3" Margin="0,0,0,14">

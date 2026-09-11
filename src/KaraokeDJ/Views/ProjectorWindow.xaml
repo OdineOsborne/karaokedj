@@ -51,6 +51,26 @@
             </StackPanel>
         </Grid>
 
+        <!-- ═══ DEDICA (serata Animazione) ═══ -->
+        <Grid x:Name="DedicationLayer" Visibility="Collapsed">
+            <Grid.Background>
+                <RadialGradientBrush Center="0.5,0.4" RadiusX="0.9" RadiusY="0.9">
+                    <GradientStop Color="#FF3A0A2E" Offset="0"/>
+                    <GradientStop Color="#FF07080F" Offset="1"/>
+                </RadialGradientBrush>
+            </Grid.Background>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="1" Text="{Binding DedicationTitle}" FontSize="80" FontWeight="Black" Foreground="White" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1600" Margin="40,0">
+                <TextBlock.Effect><DropShadowEffect BlurRadius="34" ShadowDepth="0" Color="#FFFF2D95" Opacity="0.9"/></TextBlock.Effect>
+            </TextBlock>
+            <TextBlock Grid.Row="2" Text="{Binding DedicationText}" FontSize="36" Foreground="#FFFFD60A" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1500" Margin="40,24,40,0" LineHeight="52"/>
+        </Grid>
+
         <!-- ═══ CDG ═══ -->
         <Grid x:Name="CdgLayer" Background="Black" Visibility="Collapsed">
             <Image x:Name="CdgImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="Linear"/>

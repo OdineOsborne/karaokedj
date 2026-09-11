@@ -30,11 +30,13 @@
                 <Button Content="📁 Aggiungi cartella" Command="{Binding AddFolderCommand}" Margin="0,0,6,0"/>
                 <Button Content="🔄 Riscansiona" Command="{Binding RescanCommand}" Margin="0,0,6,0" IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBool}}"/>
                 <Button Content="⚙ Impostazioni" Click="Settings_Click" Margin="0,0,6,0"/>
+                <Button Content="🎉 Animazione" Click="Animation_Click" Margin="0,0,6,0" ToolTip="Festeggiato, messaggi degli invitati, canzone con Suno, dedica sul proiettore"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="{Binding UpdateStatus, StringFormat=⬆ {0} — installa e riavvia}" Style="{StaticResource AccentButton}" Command="{Binding InstallUpdateCommand}" Margin="0,0,10,0"
                         Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVis}}"/>
-                <TextBlock Text="{Binding AppVersion}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisInv}}"/>
+                <Button Content="{Binding AppVersion, StringFormat=⬆ {0}}" Style="{StaticResource SmallButton}" Command="{Binding CheckUpdatesCommand}" Margin="0,0,10,0" ToolTip="Controlla se ci sono aggiornamenti su GitHub"/>
                 <ToggleButton IsChecked="{Binding IsProjectorOpen}" Padding="14,6" FontWeight="Bold" ToolTip="Ctrl+P">
                     <TextBlock Text="🖥 PROIETTORE"/>
                 </ToggleButton>

@@ -46,6 +46,7 @@ public partial class SettingsWindow : Window
         OffsetLabel.Text = vm.Settings.CdgOffsetMs + " ms";
         FoldersList.ItemsSource = _folders;
         InfoLabel.Text = "Dati in: " + AppPaths.Root;
+        ApiKeyBox.Password = Secret.Unprotect(vm.Settings.AnthropicApiKeyProtected) ?? "";
 
         // MIDI
         var midiDevices = new List<string> { "(nessuno)" };
@@ -153,6 +154,7 @@ public partial class SettingsWindow : Window
         if (midi == "(nessuno)") midi = null;
         if (midi != _vm.Settings.MidiDeviceName) _vm.ApplyMidiDevice(midi);
 
+        _vm.SetAnthropicApiKey(ApiKeyBox.Password);
         _vm.SaveSettings();
         if (foldersChanged) _vm.RescanCommand.Execute(null);
         DialogResult = true;
