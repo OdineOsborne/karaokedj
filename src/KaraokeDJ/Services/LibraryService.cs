@@ -20,7 +20,7 @@ public sealed class LibraryService
     }
 
     /// <summary>Alzare quando ReadTags legge campi nuovi: forza la rilettura dei tag di tutta la libreria.</summary>
-    public const int TagsVersion = 1;
+    public const int TagsVersion = 2;
 
     private readonly Dictionary<string, Track> _byPath = new(StringComparer.OrdinalIgnoreCase);
 
@@ -207,6 +207,8 @@ public sealed class LibraryService
         if (tf.Tag.Year is > 1900 and < 2100) t.Year = (int)tf.Tag.Year;
         var genre = tf.Tag.FirstGenre?.Trim();
         if (!string.IsNullOrEmpty(genre)) t.Genre = genre;
+        var composers = tf.Tag.Composers;
+        if (composers is { Length: > 0 }) t.Composer = string.Join(", ", composers.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim()));
         var key = NormalizeKey(tf.Tag.InitialKey);
         if (key != null) t.Key = key;
     }

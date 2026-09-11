@@ -29,6 +29,7 @@
                 <Button Content="🔄 Riscansiona" Command="{Binding RescanCommand}" Margin="0,0,6,0" IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBool}}" ToolTip="Rilegge le cartelle: nuovi brani, tag (anno, genere), titoli/artisti sistemati, doppioni (chiede conferma), poi analisi BPM/tonalità di tutto ciò che manca"/>
                 <Button Content="🧹 Doppioni" Click="Duplicates_Click" Margin="0,0,6,0" ToolTip="Trova e rimuove i brani doppi (nel Cestino)"/>
                 <Button Content="🥁 Ritmi" Click="Rhythm_Click" Margin="0,0,6,0" ToolTip="Sequencer ritmico di supporto: batteria, percussioni o campioni tuoi agganciati ai BPM della serata"/>
+                <Button Content="📋 Borderò SIAE" Click="Bordero_Click" Margin="0,0,6,0" ToolTip="Programma musicale della serata: elenco dei brani riprodotti con titolo e autori, da stampare o copiare nel modulo SIAE"/>
                 <Button Content="⚙ Impostazioni" Click="Settings_Click" Margin="0,0,6,0"/>
                 <Button Content="🎉 Animazione" Click="Animation_Click" Margin="0,0,6,0" ToolTip="Festeggiato, messaggi degli invitati, canzone con Suno, dedica sul proiettore"/>
                 <Button Content="{Binding SupportLabel}" Click="Support_Click" Margin="0,0,6,0" ToolTip="VOXA è donationware: sostienilo o attiva la tua chiave">

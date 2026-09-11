@@ -30,6 +30,12 @@ public sealed class AppSettings
     public int CdgOffsetMs { get; set; } = 0;
     public double MasterVolume { get; set; } = 1.0;
     public string IdleTitle { get; set; } = "MIX · SING · TOGETHER";
+    /// <summary>Intestazione del borderò SIAE (programma musicale), ricordata fra le serate.</summary>
+    public string BorderoOrganizzatore { get; set; } = "";
+    public string BorderoLocale { get; set; } = "";
+    public string BorderoComune { get; set; } = "";
+    public string BorderoEsecutore { get; set; } = "";
+    public string BorderoPermesso { get; set; } = "";
     public string IdleSubtitle { get; set; } = "Prenota la tua canzone al DJ";
     public bool ShowNextSingersOnProjector { get; set; } = true;
     public List<PadDto> Pads { get; set; } = new();

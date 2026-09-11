@@ -30,6 +30,8 @@ public sealed class Track
     public int Year { get; set; }
     /// <summary>Genere dal tag ("" = sconosciuto).</summary>
     public string Genre { get; set; } = "";
+    /// <summary>Autori/compositori dal tag TCOM (per il borderò SIAE); "" se assenti.</summary>
+    public string Composer { get; set; } = "";
     /// <summary>Versione dei metadati letti: se inferiore a LibraryService.TagsVersion il file viene riletto alla scansione.</summary>
     public int TagsVersion { get; set; }
     [JsonIgnore] public string YearLabel => Year > 0 ? Year.ToString() : "";

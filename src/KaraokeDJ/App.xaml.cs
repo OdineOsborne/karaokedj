@@ -52,6 +52,7 @@ public partial class App : Application
                 new Views.SettingsWindow(Vm) { Owner = win },
                 new Views.AnimationWindow(Vm) { Owner = win },
                 new Views.SupportWindow(Vm) { Owner = win },
+                new Views.BorderoWindow(Vm) { Owner = win },
             };
             foreach (var w in wins) { w.Show(); await System.Threading.Tasks.Task.Delay(300); }
             Vm.IsProjectorOpen = true;

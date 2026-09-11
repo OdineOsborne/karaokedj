@@ -1165,6 +1165,7 @@ public sealed partial class MainViewModel : ObservableObject
         track.LastPlayedUtc = DateTime.UtcNow;
         track.PlayedThisSession = true;
         _playedThisSession.Add(track.Id);
+        PlayLog.Record(track, deck.Name);
         Library.Save();
         LibraryView.Refresh();
         UpdateSuggestions();
