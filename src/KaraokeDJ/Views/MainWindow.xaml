@@ -20,12 +20,24 @@
         </Grid.RowDefinitions>
 
         <!-- ═══════════ barra strumenti ═══════════ -->
-        <DockPanel Grid.Row="0" Margin="0,0,0,10">
-            <StackPanel Orientation="Horizontal">
+        <DockPanel Grid.Row="0" Margin="0,0,0,10" LastChildFill="True">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,0">
+                <Button Content="{Binding UpdateStatus, StringFormat=⬆ {0} — installa e riavvia}" Style="{StaticResource AccentButton}" Command="{Binding InstallUpdateCommand}" Margin="0,0,10,0"
+                        Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVis}}"/>
+                <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisInv}}"/>
+                <Button Content="{Binding AppVersion, StringFormat=⬆ {0}}" Style="{StaticResource SmallButton}" Command="{Binding CheckUpdatesCommand}" Margin="0,0,10,0" ToolTip="Controlla se ci sono aggiornamenti su GitHub"/>
+                <ToggleButton IsChecked="{Binding BottomStripVisible}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="🎛 PAD" ToolTip="Mostra/nascondi la striscia in basso (jingle e download) per dare spazio a libreria e coda"/>
+                <ToggleButton IsChecked="{Binding MixViewVisible}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="〰 MIX" ToolTip="Mostra/nascondi le onde sovrapposte dei due deck (per allineare i beat)"/>
+                <ToggleButton IsChecked="{Binding IsMonitorOpen}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="👁 MONITOR" v:Shortcut.Action="monitor" ToolTip="Finestrella sempre in primo piano con quello che vede il pubblico sul proiettore (CDG, testo, video, dediche, QR)"/>
+                <ToggleButton IsChecked="{Binding IsProjectorOpen}" Padding="14,6" FontWeight="Bold" ToolTip="Ctrl+P" v:Shortcut.Action="projector">
+                    <TextBlock Text="🖥 PROIETTORE"/>
+                </ToggleButton>
+            </StackPanel>
+            <WrapPanel Orientation="Horizontal">
                 <Image Source="pack://application:,,,/Assets/wordmark.png" Height="34" Margin="0,0,18,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" ToolTip="VOXA – Mix · Sing · Together">
                     <Image.Effect><DropShadowEffect Color="{StaticResource VioletColor}" BlurRadius="18" ShadowDepth="0" Opacity="0.6"/></Image.Effect>
                 </Image>
-                <Button Content="📁 Aggiungi cartella" Command="{Binding AddFolderCommand}" Margin="0,0,6,0"/>
+                <Button Content="📁 Aggiungi cartella" Command="{Binding AddFolderCommand}" Margin="0,0,6,4"/>
                 <Button Content="🔄 Riscansiona" Command="{Binding RescanCommand}" Margin="0,0,6,0" IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBool}}" ToolTip="Rilegge le cartelle: nuovi brani, tag (anno, genere), titoli/artisti sistemati, doppioni (chiede conferma), poi analisi BPM/tonalità di tutto ciò che manca"/>
                 <Button Content="🧹 Doppioni" Click="Duplicates_Click" Margin="0,0,6,0" ToolTip="Trova e rimuove i brani doppi (nel Cestino)"/>
                 <Button Content="🥁 Ritmi" Click="Rhythm_Click" Margin="0,0,6,0" ToolTip="Sequencer ritmico di supporto: batteria, percussioni o campioni tuoi agganciati ai BPM della serata"/>
@@ -45,19 +57,7 @@
                         </Style>
                     </Button.Style>
                 </Button>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="{Binding UpdateStatus, StringFormat=⬆ {0} — installa e riavvia}" Style="{StaticResource AccentButton}" Command="{Binding InstallUpdateCommand}" Margin="0,0,10,0"
-                        Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVis}}"/>
-                <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisInv}}"/>
-                <Button Content="{Binding AppVersion, StringFormat=⬆ {0}}" Style="{StaticResource SmallButton}" Command="{Binding CheckUpdatesCommand}" Margin="0,0,10,0" ToolTip="Controlla se ci sono aggiornamenti su GitHub"/>
-                <ToggleButton IsChecked="{Binding BottomStripVisible}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="🎛 PAD" ToolTip="Mostra/nascondi la striscia in basso (jingle e download) per dare spazio a libreria e coda"/>
-                <ToggleButton IsChecked="{Binding MixViewVisible}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="〰 MIX" ToolTip="Mostra/nascondi le onde sovrapposte dei due deck (per allineare i beat)"/>
-                <ToggleButton IsChecked="{Binding IsMonitorOpen}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="👁 MONITOR" v:Shortcut.Action="monitor" ToolTip="Finestrella sempre in primo piano con quello che vede il pubblico sul proiettore (CDG, testo, video, dediche, QR)"/>
-                <ToggleButton IsChecked="{Binding IsProjectorOpen}" Padding="14,6" FontWeight="Bold" ToolTip="Ctrl+P" v:Shortcut.Action="projector">
-                    <TextBlock Text="🖥 PROIETTORE"/>
-                </ToggleButton>
-            </StackPanel>
+            </WrapPanel>
         </DockPanel>
 
         <!-- ═══════════ vista di mixaggio: onde sovrapposte ═══════════ -->
