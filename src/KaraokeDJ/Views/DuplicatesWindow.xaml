@@ -12,7 +12,7 @@
         <DockPanel Grid.Row="0" Margin="0,0,0,10">
             <Button DockPanel.Dock="Right" x:Name="ScanBtn" Content="🔍 Cerca doppioni" Style="{StaticResource AccentButton}" Click="Scan_Click"/>
             <TextBlock x:Name="Summary" Style="{StaticResource Muted}" VerticalAlignment="Center" TextWrapping="Wrap"
-                       Text="Cerca file identici e brani uguali (stesso artista e titolo, durata simile). Per ogni gruppo viene tenuta la copia migliore (qualità, tag, analisi); le altre vanno nel Cestino, quindi recuperabili."/>
+                       Text="Cerca file identici e brani uguali (stesso artista, titolo ed estensione, durata simile). Per ogni gruppo viene tenuta la copia migliore (qualità, tag, analisi); le altre vanno nel Cestino, quindi recuperabili."/>
         </DockPanel>
         <ListBox Grid.Row="1" x:Name="List" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListBox.ItemTemplate>

@@ -20,6 +20,10 @@ public sealed class AppSettings
     /// <summary>Automix senza fine: coda vuota → pesca dai suggerimenti (mai silenzio).</summary>
     public bool AutoMixEndless { get; set; } = true;
     public bool MixViewVisible { get; set; } = true;
+    /// <summary>Pannelli FX dei deck aperti.</summary>
+    public bool FxPanelsVisible { get; set; }
+    /// <summary>Striscia in basso (pad + download) visibile.</summary>
+    public bool BottomStripVisible { get; set; } = true;
     /// <summary>Chiave API Anthropic, protetta con DPAPI (utente corrente).</summary>
     public string? AnthropicApiKeyProtected { get; set; }
     /// <summary>Chiave licenza donationware (legata alla macchina).</summary>

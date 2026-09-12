@@ -42,7 +42,7 @@
             </StackPanel>
 
             <!-- anteprima -->
-            <Border Grid.Row="2" Background="Black" CornerRadius="4" Margin="0,6" Height="72" ClipToBounds="True"
+            <Border Grid.Row="2" Background="Black" CornerRadius="4" Margin="0,4" Height="60" ClipToBounds="True"
                     Visibility="{Binding IsKaraoke, Converter={StaticResource BoolToVis}}">
                 <Grid>
                     <Image Source="{Binding CdgBitmap}" Stretch="Uniform" RenderOptions.BitmapScalingMode="Linear"
@@ -198,7 +198,7 @@
             </Grid>
 
             <!-- vinile: jog / scratch, reverse, avanti-indietro, spin, slow -->
-            <Border Grid.Row="6" Background="#FF0D0D12" CornerRadius="8" Padding="8,6" Margin="0,8,0,0">
+            <Border Grid.Row="6" Background="#FF0D0D12" CornerRadius="8" Padding="8,4" Margin="0,6,0,0">
                 <Border.Resources>
                     <Style x:Key="HoldBtn" TargetType="Button" BasedOn="{StaticResource SmallButton}">
                         <Setter Property="Padding" Value="7,3"/>
@@ -212,7 +212,7 @@
                     </Style>
                 </Border.Resources>
                 <DockPanel>
-                    <local:JogWheel x:Name="Jog" Width="92" Height="92" Accent="{Binding Accent, ElementName=Root}" Angle="{Binding JogAngle}" IsSpinning="{Binding IsPlaying}"
+                    <local:JogWheel x:Name="Jog" Width="70" Height="70" Accent="{Binding Accent, ElementName=Root}" Angle="{Binding JogAngle}" IsSpinning="{Binding IsPlaying}"
                                     JogStarted="Jog_Started" JogRateChanged="Jog_Rate" JogEnded="Jog_Ended" Nudged="Jog_Nudged" Margin="0,0,10,0"
                                     ToolTip="Piatto: trascina per fare scratch (anche all'indietro), rotella = pitch bend"/>
                     <StackPanel VerticalAlignment="Center">

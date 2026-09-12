@@ -22,7 +22,7 @@ public static class DuplicateFinder
 
         // 1) file identici: stessa dimensione → hash parziale (primo e ultimo MB)
         int n = 0;
-        foreach (var sizeGroup in all.GroupBy(t => t.FileSize).Where(g => g.Count() > 1))
+        foreach (var sizeGroup in all.GroupBy(t => (t.FileSize, Path.GetExtension(t.FilePath).ToLowerInvariant())).Where(g => g.Count() > 1))
         {
             ct.ThrowIfCancellationRequested();
             var byHash = new Dictionary<string, List<Track>>();
@@ -65,7 +65,8 @@ public static class DuplicateFinder
     {
         var a = DownloadService.NormalizeForCompare(t.Artist);
         var ti = DownloadService.NormalizeForCompare(t.Title);
-        return t.Kind + "|" + a + "|" + ti;
+        // stessa estensione obbligatoria: abc.mp3 e abc.mov non sono doppioni
+        return t.Kind + "|" + Path.GetExtension(t.FilePath).ToLowerInvariant() + "|" + a + "|" + ti;
     }
 
     /// <summary>Qualità stimata: bitrate (dimensione/durata), analisi fatta, tag presenti, non zip.</summary>

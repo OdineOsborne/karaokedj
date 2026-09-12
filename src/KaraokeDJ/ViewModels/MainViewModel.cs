@@ -66,6 +66,10 @@ public sealed partial class MainViewModel : ObservableObject
         AutoMixUseCues = Settings.AutoMixUseCues;
         AutoMixEndless = Settings.AutoMixEndless;
         MixViewVisible = Settings.MixViewVisible;
+        BottomStripVisible = Settings.BottomStripVisible;
+        DeckA.FxVisible = DeckB.FxVisible = Settings.FxPanelsVisible;
+        foreach (var d in new[] { DeckA, DeckB })
+            d.PropertyChanged += (s, e) => { if (e.PropertyName == nameof(DeckViewModel.FxVisible) && s is DeckViewModel dv) Settings.FxPanelsVisible = dv.FxVisible; };
         BpmLock = Settings.BpmLock;
         BpmLockValue = Settings.BpmLockValue;
         BpmMatch = Settings.BpmMatch;
@@ -121,6 +125,9 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Vista di mixaggio (onde sovrapposte) visibile.</summary>
     [ObservableProperty] private bool _mixViewVisible = true;
     partial void OnMixViewVisibleChanged(bool value) => Settings.MixViewVisible = value;
+    /// <summary>Striscia in basso (jingle + download) visibile: nascosta dà spazio a libreria e coda.</summary>
+    [ObservableProperty] private bool _bottomStripVisible = true;
+    partial void OnBottomStripVisibleChanged(bool value) => Settings.BottomStripVisible = value;
     partial void OnAutoMixEndlessChanged(bool value) => Settings.AutoMixEndless = value;
     [ObservableProperty] private double _crossfadeSeconds = 6;
     [ObservableProperty] private string _statusText = "Pronto";

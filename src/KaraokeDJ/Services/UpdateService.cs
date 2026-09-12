@@ -8,7 +8,8 @@ public sealed class UpdateService
 {
     public const string RepoUrl = "https://github.com/OdineOsborne/karaokedj";
 
-    private readonly UpdateManager _mgr = new(new GithubSource(RepoUrl, null, false));
+    // prerelease: true → riceve anche le beta (release GitHub marcate pre-release)
+    private readonly UpdateManager _mgr = new(new GithubSource(RepoUrl, null, true));
     private UpdateInfo? _pending;
 
     public bool IsInstalled => _mgr.IsInstalled;

@@ -51,6 +51,7 @@
                         Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVis}}"/>
                 <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisInv}}"/>
                 <Button Content="{Binding AppVersion, StringFormat=⬆ {0}}" Style="{StaticResource SmallButton}" Command="{Binding CheckUpdatesCommand}" Margin="0,0,10,0" ToolTip="Controlla se ci sono aggiornamenti su GitHub"/>
+                <ToggleButton IsChecked="{Binding BottomStripVisible}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="🎛 PAD" ToolTip="Mostra/nascondi la striscia in basso (jingle e download) per dare spazio a libreria e coda"/>
                 <ToggleButton IsChecked="{Binding MixViewVisible}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="〰 MIX" ToolTip="Mostra/nascondi le onde sovrapposte dei due deck (per allineare i beat)"/>
                 <ToggleButton IsChecked="{Binding IsProjectorOpen}" Padding="14,6" FontWeight="Bold" ToolTip="Ctrl+P" v:Shortcut.Action="projector">
                     <TextBlock Text="🖥 PROIETTORE"/>
@@ -60,7 +61,7 @@
 
         <!-- ═══════════ vista di mixaggio: onde sovrapposte ═══════════ -->
         <Border Grid.Row="1" Style="{StaticResource Panel}" Padding="4" Margin="0,0,0,8" Visibility="{Binding MixViewVisible, Converter={StaticResource BoolToVis}}">
-            <v:MixWaveView Height="84"
+            <v:MixWaveView Height="60"
                            DataA="{Binding DeckA.FineWaveform}" DataB="{Binding DeckB.FineWaveform}"
                            PosA="{Binding DeckA.PositionSec}" PosB="{Binding DeckB.PositionSec}"
                            BpmA="{Binding DeckA.NativeBpm}" BpmB="{Binding DeckB.NativeBpm}"
@@ -427,7 +428,7 @@
         </Grid>
 
         <!-- ═══════════ pad + download ═══════════ -->
-        <Grid Grid.Row="4" Margin="0,0,0,8">
+        <Grid Grid.Row="4" Margin="0,0,0,8" Visibility="{Binding BottomStripVisible, Converter={StaticResource BoolToVis}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="2*"/>
@@ -450,12 +451,12 @@
                     <ItemsControl Grid.Row="1" ItemsSource="{Binding Pads}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <UniformGrid Rows="2" Columns="6"/>
+                                <UniformGrid Rows="1" Columns="12"/>
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type m:PadItem}">
-                                <Button Margin="3" Height="42" Padding="2" AllowDrop="True" Drop="Pad_Drop" DragOver="Pad_DragOver" v:Shortcut.Action="{Binding ActionId}"
+                                <Button Margin="2" Height="34" Padding="2" AllowDrop="True" Drop="Pad_Drop" DragOver="Pad_DragOver" v:Shortcut.Action="{Binding ActionId}"
                                         Command="{Binding DataContext.TriggerPadCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}">
                                     <Button.Style>
                                         <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">

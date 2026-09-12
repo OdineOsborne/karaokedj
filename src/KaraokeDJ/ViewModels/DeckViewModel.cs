@@ -77,7 +77,7 @@ public sealed partial class DeckViewModel : ObservableObject
     [ObservableProperty] private double _levelR;
 
     // ---------------------------------------------------------------- effetti
-    [ObservableProperty] private bool _fxVisible = true;
+    [ObservableProperty] private bool _fxVisible;
     [ObservableProperty] private bool _vocalRemove;
     [ObservableProperty] private double _vocalStrength = 1.0;
     [ObservableProperty] private double _filterValue;
