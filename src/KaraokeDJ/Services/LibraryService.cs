@@ -115,6 +115,9 @@ public sealed class LibraryService
     {
         var name = Path.GetFileName(path);
         if (name.StartsWith("._") || name.StartsWith(".")) return false; // AppleDouble / nascosti
+        // Cestino di Windows e cartelle di sistema: non sono brani
+        if (path.Contains(@"\$Recycle.Bin\", StringComparison.OrdinalIgnoreCase) || path.Contains(@"\System Volume Information\", StringComparison.OrdinalIgnoreCase)) return false;
+        if ((name.StartsWith("$R") || name.StartsWith("$I")) && name.Length >= 8 && name.Skip(2).Take(6).All(char.IsLetterOrDigit)) return false;
         // versioni strumentali (base senza voce, stem Demucs, ecc.): non sono brani da scaletta
         if (System.Text.RegularExpressions.Regex.IsMatch(name, @"[(\[]\s*instrumental\s*[)\]]", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) return false;
         try { if ((File.GetAttributes(path) & (FileAttributes.Hidden | FileAttributes.System)) != 0) return false; } catch { }

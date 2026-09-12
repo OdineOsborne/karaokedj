@@ -20,6 +20,8 @@ public sealed class AppSettings
     /// <summary>Automix senza fine: coda vuota → pesca dai suggerimenti (mai silenzio).</summary>
     public bool AutoMixEndless { get; set; } = true;
     public bool MixViewVisible { get; set; } = true;
+    /// <summary>Nasconde in libreria i titoli incomprensibili.</summary>
+    public bool HideCryptic { get; set; } = true;
     /// <summary>Pannelli FX dei deck aperti.</summary>
     public bool FxPanelsVisible { get; set; }
     /// <summary>Striscia in basso (pad + download) visibile.</summary>

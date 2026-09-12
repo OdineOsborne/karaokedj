@@ -66,6 +66,7 @@ public sealed partial class MainViewModel : ObservableObject
         AutoMixUseCues = Settings.AutoMixUseCues;
         AutoMixEndless = Settings.AutoMixEndless;
         MixViewVisible = Settings.MixViewVisible;
+        HideCryptic = Settings.HideCryptic;
         BottomStripVisible = Settings.BottomStripVisible;
         DeckA.FxVisible = DeckB.FxVisible = Settings.FxPanelsVisible;
         foreach (var d in new[] { DeckA, DeckB })
@@ -284,6 +285,24 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ---------------------------------------------------------------- libreria
 
+    /// <summary>Nasconde i titoli incomprensibili (file del Cestino "$R…", codici senza vocali).</summary>
+    [ObservableProperty] private bool _hideCryptic = true;
+    partial void OnHideCrypticChanged(bool value) { Settings.HideCryptic = value; LibraryView.Refresh(); }
+
+    private static readonly System.Text.RegularExpressions.Regex CrypticRx = new(@"^[A-Z0-9$_-]{5,}$", System.Text.RegularExpressions.RegexOptions.Compiled);
+    public static bool IsCryptic(Track t)
+    {
+        var name = Path.GetFileNameWithoutExtension(t.FilePath);
+        if (name.StartsWith("$R") || name.StartsWith("$I")) return true;         // Cestino di Windows
+        if (!string.IsNullOrWhiteSpace(t.Artist)) return false;
+        var title = t.Title.Trim();
+        if (title.Length < 5 || title.Contains(' ')) return false;
+        if (!CrypticRx.IsMatch(title)) return false;
+        bool digits = title.Any(char.IsDigit), letters = title.Any(char.IsLetter);
+        bool vowels = title.Any(c => "AEIOU".Contains(c));
+        return (digits && letters) || !vowels;                                 // codici tipo RG3ORPK, BXKTRZ
+    }
+
     private bool FilterTrack(object o)
     {
         if (o is not Track t) return false;
@@ -298,6 +317,7 @@ public sealed partial class MainViewModel : ObservableObject
             _ => true,
         };
         if (!kindOk) return false;
+        if (HideCryptic && IsCryptic(t)) return false;
         if (string.IsNullOrWhiteSpace(SearchText)) return true;
         return SearchUtil.Matches(t, _searchWords);
     }
