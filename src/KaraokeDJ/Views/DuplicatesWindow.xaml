@@ -11,6 +11,7 @@
         </Grid.RowDefinitions>
         <DockPanel Grid.Row="0" Margin="0,0,0,10">
             <Button DockPanel.Dock="Right" x:Name="ScanBtn" Content="🔍 Cerca doppioni" Style="{StaticResource AccentButton}" Click="Scan_Click"/>
+            <Button DockPanel.Dock="Right" x:Name="CancelBtn" Content="Annulla" Click="Cancel_Click" Margin="0,0,8,0" Visibility="Collapsed"/>
             <TextBlock x:Name="Summary" Style="{StaticResource Muted}" VerticalAlignment="Center" TextWrapping="Wrap"
                        Text="Cerca file identici e brani uguali (stesso artista, titolo ed estensione, durata simile). Per ogni gruppo viene tenuta la copia migliore (qualità, tag, analisi); le altre vanno nel Cestino, quindi recuperabili."/>
         </DockPanel>
@@ -39,6 +40,7 @@
             </ListBox.ItemTemplate>
         </ListBox>
         <DockPanel Grid.Row="2" Margin="0,10,0,0">
+            <ProgressBar DockPanel.Dock="Top" x:Name="Bar" Height="8" Minimum="0" Maximum="100" Margin="0,0,0,8" Visibility="Collapsed"/>
             <Button DockPanel.Dock="Right" x:Name="DeleteBtn" Content="🗑 Sposta nel Cestino i selezionati" Style="{StaticResource DangerButton}" Click="Delete_Click" IsEnabled="False"/>
             <Button DockPanel.Dock="Right" Content="Chiudi" IsCancel="True" Margin="0,0,8,0"/>
             <TextBlock x:Name="Status" Style="{StaticResource Muted}" VerticalAlignment="Center"/>

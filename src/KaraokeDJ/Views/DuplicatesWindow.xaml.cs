@@ -35,15 +35,21 @@ public partial class DuplicatesWindow : Window
         List.ItemsSource = _rows;
     }
 
+    private CancellationTokenSource? _cts;
+
+    private void Cancel_Click(object sender, RoutedEventArgs e) => _cts?.Cancel();
+
     private async void Scan_Click(object sender, RoutedEventArgs e)
     {
-        ScanBtn.IsEnabled = false; DeleteBtn.IsEnabled = false;
+        ScanBtn.IsEnabled = false; DeleteBtn.IsEnabled = false; CancelBtn.Visibility = Visibility.Visible;
+        Bar.Visibility = Visibility.Visible; Bar.IsIndeterminate = true; Bar.Value = 0;
         _rows.Clear();
-        var progress = new Progress<string>(s => Status.Text = s);
+        _cts = new CancellationTokenSource();
+        var progress = new Progress<DuplicateProgress>(p => { Status.Text = p.Message; if (p.Percent > 0) { Bar.IsIndeterminate = false; Bar.Value = p.Percent; } });
         var tracks = _vm.Tracks.ToList();
         try
         {
-            var groups = await Task.Run(() => DuplicateFinder.Find(tracks, progress, CancellationToken.None));
+            var groups = await Task.Run(() => DuplicateFinder.Find(tracks, progress, _cts.Token));
             foreach (var g in groups)
                 _rows.Add(new GroupRow { Group = g, Items = g.Remove.Select(t => new ItemRow { Track = t }).ToList() });
             long bytes = groups.Sum(g => g.BytesSaved);
@@ -52,8 +58,9 @@ public partial class DuplicatesWindow : Window
             Status.Text = "";
             DeleteBtn.IsEnabled = groups.Count > 0;
         }
+        catch (OperationCanceledException) { Status.Text = "Ricerca annullata"; }
         catch (Exception ex) { Status.Text = "Errore: " + ex.Message; }
-        finally { ScanBtn.IsEnabled = true; }
+        finally { ScanBtn.IsEnabled = true; CancelBtn.Visibility = Visibility.Collapsed; Bar.Visibility = Visibility.Collapsed; }
     }
 
     private void Delete_Click(object sender, RoutedEventArgs e)

@@ -246,6 +246,8 @@ public sealed partial class MainViewModel : ObservableObject
 
         DeckA.Tick();
         DeckB.Tick();
+        if (IsAnalyzing && _analyzeTotal > 0 && DateTime.UtcNow.Millisecond < 120)
+            AnalyzeStatus = $"Analisi {_analyzeDone}/{_analyzeTotal} · {(int)(DateTime.UtcNow - _analyzeStartedUtc).TotalSeconds} s: {_analyzeCurrent}";
         double ml = Views.LevelMeter.ToScale(Engine.MasterPeakL), mr = Views.LevelMeter.ToScale(Engine.MasterPeakR);
         MasterL = ml > MasterL ? ml : Math.Max(0, MasterL - 0.06);
         MasterR = mr > MasterR ? mr : Math.Max(0, MasterR - 0.06);
@@ -396,7 +398,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (cleaned > 0) { Library.Save(); LibraryView.Refresh(); }
 
             // 2) doppioni: li cerco e propongo di mandarli nel Cestino (recuperabili)
-            var dupProgress = new Progress<string>(s => StatusText = s);
+            var dupProgress = new Progress<DuplicateProgress>(p => { StatusText = "Doppioni: " + p.Message; ScanPercent = p.Percent; });
             var tracksNow = Tracks.ToList();
             var groups = await Task.Run(() => DuplicateFinder.Find(tracksNow, dupProgress, _scanCts.Token));
             if (groups.Count > 0)
@@ -942,6 +944,9 @@ public sealed partial class MainViewModel : ObservableObject
     // ---------------------------------------------------------------- analisi BPM / tonalità
 
     private readonly SemaphoreSlim _analyzeGate = new(1, 1);
+    private string _analyzeCurrent = "";
+    private DateTime _analyzeStartedUtc;
+    private int _analyzeDone, _analyzeTotal;
     private CancellationTokenSource? _analyzeCts;
     [ObservableProperty] private bool _isAnalyzing;
     [ObservableProperty] private string _analyzeStatus = "";
@@ -953,8 +958,19 @@ public sealed partial class MainViewModel : ObservableObject
         await _analyzeGate.WaitAsync(ct);
         try
         {
+            _analyzeCurrent = track.Display; _analyzeStartedUtc = DateTime.UtcNow;
             var (audioPath, _) = LibraryService.PrepareForPlayback(track);
-            var r = await Task.Run(() => AudioAnalyzer.Analyze(audioPath, ct), ct);
+            // un file che non si lascia decodificare (o un disco lentissimo) non deve bloccare la coda: massimo 3 minuti a brano
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromMinutes(3));
+            AnalysisResult r;
+            try { r = await Task.Run(() => AudioAnalyzer.Analyze(audioPath, timeout.Token), timeout.Token); }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                track.Analyzed = true; // saltato: non riprovare all'infinito
+                StatusText = $"Analisi saltata (troppo lenta): {track.Display}";
+                return;
+            }
             track.Bpm = r.Bpm;
             track.Key = r.Key;
             if (!track.CuesManual) { track.IntroEndSec = r.IntroEndSec; track.OutroStartSec = r.OutroStartSec; }
@@ -1006,7 +1022,8 @@ public sealed partial class MainViewModel : ObservableObject
             foreach (var t in todo)
             {
                 _analyzeCts.Token.ThrowIfCancellationRequested();
-                AnalyzeStatus = $"Analisi {++done}/{todo.Count}: {t.Display}";
+                _analyzeDone = ++done; _analyzeTotal = todo.Count;
+                AnalyzeStatus = $"Analisi {done}/{todo.Count}: {t.Display}";
                 await AnalyzeTrackAsync(t, _analyzeCts.Token);
             }
             AnalyzeStatus = $"Analisi completata: {todo.Count} brani";

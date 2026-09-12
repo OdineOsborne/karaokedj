@@ -11,24 +11,35 @@ public sealed class DuplicateGroup
     public long BytesSaved => Remove.Sum(t => t.FileSize);
 }
 
+/// <summary>Avanzamento della ricerca doppioni: fase, contatore e percentuale (0-100).</summary>
+public sealed record DuplicateProgress(string Message, double Percent);
+
 /// <summary>Trova doppioni in libreria: file identici (hash) e stesso brano (artista+titolo normalizzati, durata simile).</summary>
 public static class DuplicateFinder
 {
-    public static List<DuplicateGroup> Find(IEnumerable<Track> tracks, IProgress<string>? progress, CancellationToken ct)
+    public static List<DuplicateGroup> Find(IEnumerable<Track> tracks, IProgress<DuplicateProgress>? progress, CancellationToken ct)
     {
+        progress?.Report(new("Controllo i file presenti…", 0));
         var all = tracks.Where(t => File.Exists(t.FilePath)).ToList();
         var groups = new List<DuplicateGroup>();
         var used = new HashSet<string>();
 
-        // 1) file identici: stessa dimensione → hash parziale (primo e ultimo MB)
+        // 1) file identici: stessa dimensione ed estensione → hash parziale (primo e ultimo MB)
+        var sizeGroups = all.GroupBy(t => (t.FileSize, Path.GetExtension(t.FilePath).ToLowerInvariant())).Where(g => g.Count() > 1).ToList();
+        int toHash = sizeGroups.Sum(g => g.Count());
         int n = 0;
-        foreach (var sizeGroup in all.GroupBy(t => (t.FileSize, Path.GetExtension(t.FilePath).ToLowerInvariant())).Where(g => g.Count() > 1))
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        progress?.Report(new($"{all.Count} brani · {toHash} file con stessa dimensione da confrontare…", 0));
+        foreach (var sizeGroup in sizeGroups)
         {
             ct.ThrowIfCancellationRequested();
             var byHash = new Dictionary<string, List<Track>>();
             foreach (var t in sizeGroup)
             {
-                progress?.Report($"Confronto file {++n}…");
+                ct.ThrowIfCancellationRequested();
+                n++;
+                if (n % 5 == 0 || n == toHash)
+                    progress?.Report(new($"Confronto file {n}/{toHash} · {Elapsed(sw)} · {Path.GetFileName(t.FilePath)}", toHash == 0 ? 90 : 90.0 * n / toHash));
                 try
                 {
                     var h = QuickHash(t.FilePath);
@@ -45,7 +56,8 @@ public static class DuplicateFinder
             }
         }
 
-        // 2) stesso brano: chiave artista+titolo (stesso tipo), durata entro 3 s
+        // 2) stesso brano: chiave artista+titolo (stesso tipo ed estensione), durata entro 3 s
+        progress?.Report(new("Confronto artista e titolo…", 92));
         foreach (var g in all.Where(t => !used.Contains(t.Id)).GroupBy(t => Key(t)).Where(g => g.Key.Length >= 4 && g.Count() > 1))
         {
             var remaining = g.OrderByDescending(Score).ToList();
@@ -58,8 +70,11 @@ public static class DuplicateFinder
                 remaining.RemoveAll(t => t == keep || same.Contains(t));
             }
         }
+        progress?.Report(new($"Fatto in {Elapsed(sw)}", 100));
         return groups.OrderByDescending(g => g.BytesSaved).ToList();
     }
+
+    private static string Elapsed(System.Diagnostics.Stopwatch sw) => sw.Elapsed.ToString(@"m\:ss");
 
     private static string Key(Track t)
     {
