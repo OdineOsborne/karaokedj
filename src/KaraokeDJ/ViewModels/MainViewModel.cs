@@ -1499,7 +1499,7 @@ public sealed partial class MainViewModel : ObservableObject
         var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var t in Tracks)
             foreach (var g in t.Genres) counts[g] = counts.GetValueOrDefault(g) + 1;
-        var top = counts.OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key, StringComparer.CurrentCultureIgnoreCase).Take(30).ToList();
+        var top = counts.Where(kv => IsSaneGenre(kv.Key) && kv.Value >= 2).OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key, StringComparer.CurrentCultureIgnoreCase).Take(40).ToList();
         GenreChips.Clear();
         foreach (var kv in top) GenreChips.Add(new GenreChip { Name = kv.Key, Count = kv.Value, IsSelected = _genreFilter.Contains(kv.Key) });
         // filtri su generi spariti: via
@@ -1540,7 +1540,13 @@ public sealed partial class MainViewModel : ObservableObject
         get
         {
             var t = SelectedTrack;
-            return GenreClassifier.Genres.Concat(Tracks.SelectMany(x => x.Genres))
+            // tag della libreria: solo quelli "veri" (almeno 3 brani, niente codici numerici o sigle strane); il catalogo AI sempre
+            var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var x in Tracks) foreach (var g in x.Genres) counts[g] = counts.GetValueOrDefault(g) + 1;
+            var fromLibrary = counts.Where(kv => kv.Value >= 3 && IsSaneGenre(kv.Key)).Select(kv => kv.Key);
+            var list = GenreClassifier.Genres.Concat(fromLibrary);
+            if (t != null) list = list.Concat(t.Genres); // i tag del brano selezionato compaiono sempre (per poterli togliere)
+            return list
                 .Select(g => g.Trim()).Where(g => g.Length > 0)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(g => g, StringComparer.CurrentCultureIgnoreCase)
@@ -1548,6 +1554,18 @@ public sealed partial class MainViewModel : ObservableObject
                 .ToList();
         }
     }
+
+    /// <summary>Un genere "vero": almeno una lettera e non un codice (es. "168", "AIL", "alt z").</summary>
+    public static bool IsSaneGenre(string g)
+    {
+        g = g.Trim();
+        if (g.Length < 3 || !g.Any(char.IsLetter)) return false;
+        if (g.All(c => char.IsUpper(c) || char.IsDigit(c)) && g.Length <= 4) return false; // sigle
+        return true;
+    }
+
+    /// <summary>Raccolte per genere: riga singola oppure tutte (pulsante "altri…").</summary>
+    [ObservableProperty] private bool _genreChipsExpanded;
 
     /// <summary>Aggiunge/toglie un tag di genere al brano selezionato (un brano può averne più d'uno). Scrive anche il tag nel file.</summary>
     [RelayCommand]

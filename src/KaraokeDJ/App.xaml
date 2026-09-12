@@ -605,7 +605,7 @@
                     <ControlTemplate TargetType="ContextMenu">
                         <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="4">
                             <Border.Effect><DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.6"/></Border.Effect>
-                            <ItemsPresenter/>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="{TemplateBinding MaxHeight}"><ItemsPresenter/></ScrollViewer>
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>

@@ -205,8 +205,30 @@
                     </DockPanel>
 
                     <!-- raccolte rapide per genere: un click filtra per tag (più tag = unione), di nuovo per togliere -->
-                    <ItemsControl Grid.Row="1" ItemsSource="{Binding GenreChips}" Margin="0,0,0,6" VerticalAlignment="Top"
-                                  Visibility="{Binding GenreChips.Count, Converter={StaticResource NullToVis}}">
+                    <DockPanel Grid.Row="1" Margin="0,0,0,6" Visibility="{Binding GenreChips.Count, Converter={StaticResource NullToVis}}">
+                        <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding GenreChipsExpanded}" Padding="8,2" FontSize="11" Margin="6,0,0,4" VerticalAlignment="Top"
+                                      ToolTip="Raccolte per genere&#10;Chiuso: una riga sola. Aperto: tutti i generi.">
+                            <ToggleButton.Content>
+                                <TextBlock Text="▾ altri"/>
+                            </ToggleButton.Content>
+                            <ToggleButton.Style>
+                                <Style TargetType="ToggleButton" BasedOn="{StaticResource GenreChip}">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsChecked" Value="True"><Setter Property="Content" Value="▴ meno"/></Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ToggleButton.Style>
+                        </ToggleButton>
+                        <Border ClipToBounds="True">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="MaxHeight" Value="28"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding GenreChipsExpanded}" Value="True"><Setter Property="MaxHeight" Value="400"/></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                    <ItemsControl ItemsSource="{Binding GenreChips}" VerticalAlignment="Top">
                         <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -218,6 +240,8 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                        </Border>
+                    </DockPanel>
                     <!-- playlist interne -->
                     <DockPanel Grid.Row="2" Margin="0,0,0,6">
                         <TextBlock Text="PLAYLIST" Style="{StaticResource SectionTitle}" VerticalAlignment="Center" Margin="0,0,8,0"/>
