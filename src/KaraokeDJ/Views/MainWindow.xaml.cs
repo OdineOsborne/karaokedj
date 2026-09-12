@@ -27,6 +27,7 @@ public partial class MainWindow : Window
             }
         };
         PreviewKeyDown += MainWindow_PreviewKeyDown;
+        SourceInitialized += (_, _) => { if (Vm.Settings.GlassEffect) WindowBackdrop.Apply(this); };
         PreviewKeyUp += MainWindow_PreviewKeyUp;
         Closing += MainWindow_Closing;
         Loaded += async (_, _) =>

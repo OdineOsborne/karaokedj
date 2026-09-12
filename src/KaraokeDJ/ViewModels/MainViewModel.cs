@@ -340,6 +340,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (!kindOk) return false;
         if (HideCryptic && IsCryptic(t)) return false;
         if (!ShowDuplicates && t.HiddenDuplicateOf != null) return false;
+        if (_genreFilter.Count > 0 && !t.Genres.Any(g => _genreFilter.Contains(g))) return false;
         if (t.Missing) return false;
         if (string.IsNullOrWhiteSpace(SearchText)) return true;
         return SearchUtil.Matches(t, _searchWords);
@@ -403,6 +404,7 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var t in Library.Tracks) Tracks.Add(t);
         LibraryCount = Tracks.Count;
         CollapseDuplicates();
+        RebuildGenreChips();
         _remote?.LibraryChanged();
     }
 
@@ -1477,6 +1479,50 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ---------------------------------------------------------------- rinomina intelligente
 
+    // ---------------------------------------------------------------- raccolte rapide per genere
+
+    public sealed partial class GenreChip : ObservableObject
+    {
+        public string Name { get; init; } = "";
+        public int Count { get; set; }
+        [ObservableProperty] private bool _isSelected;
+    }
+
+    /// <summary>Chip dei generi più usati in libreria (max 30), cliccabili per filtrare.</summary>
+    public ObservableCollection<GenreChip> GenreChips { get; } = new();
+    private readonly HashSet<string> _genreFilter = new(StringComparer.OrdinalIgnoreCase);
+
+    private void RebuildGenreChips()
+    {
+        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var t in Tracks)
+            foreach (var g in t.Genres) counts[g] = counts.GetValueOrDefault(g) + 1;
+        var top = counts.OrderByDescending(kv => kv.Value).ThenBy(kv => kv.Key, StringComparer.CurrentCultureIgnoreCase).Take(30).ToList();
+        GenreChips.Clear();
+        foreach (var kv in top) GenreChips.Add(new GenreChip { Name = kv.Key, Count = kv.Value, IsSelected = _genreFilter.Contains(kv.Key) });
+        // filtri su generi spariti: via
+        foreach (var g in _genreFilter.Where(g => !counts.ContainsKey(g)).ToList()) _genreFilter.Remove(g);
+        OnPropertyChanged(nameof(GenreChips));
+    }
+
+    /// <summary>Click su una raccolta: aggiunge/toglie il genere dal filtro (più generi = unione).</summary>
+    [RelayCommand]
+    private void ToggleGenreFilter(GenreChip? chip)
+    {
+        if (chip == null) return;
+        if (chip.IsSelected) _genreFilter.Add(chip.Name); else _genreFilter.Remove(chip.Name);
+        LibraryView.Refresh();
+        StatusText = _genreFilter.Count == 0 ? "Filtro generi tolto" : "Libreria: " + string.Join(" + ", _genreFilter);
+    }
+
+    [RelayCommand]
+    private void ClearGenreFilter()
+    {
+        _genreFilter.Clear();
+        foreach (var c in GenreChips) c.IsSelected = false;
+        LibraryView.Refresh();
+    }
+
     // ---------------------------------------------------------------- genere / anno a mano
 
     /// <summary>Voce del menu Genere: nome e se il brano selezionato ce l'ha già.</summary>
@@ -1534,6 +1580,7 @@ public sealed partial class MainViewModel : ObservableObject
         UpdateSuggestions();
         StatusText = t.Genre.Length == 0 ? $"Nessun genere: {t.Display}" : $"Generi \"{t.Genre}\": {t.Display}";
         OnPropertyChanged(nameof(GenreOptions));
+        RebuildGenreChips();
     }
 
     /// <summary>Imposta l'anno del brano selezionato (chiede).</summary>
@@ -2129,6 +2176,7 @@ public sealed partial class MainViewModel : ObservableObject
                 LibraryView.Refresh();
             }
             StatusText = $"Generi AI: assegnati {set} su {todo.Count}";
+            RebuildGenreChips();
         }
         catch (OperationCanceledException) { StatusText = $"Generi AI interrotto ({done}/{todo.Count})"; }
         catch (Exception ex) { StatusText = "Generi AI: " + ex.Message; }

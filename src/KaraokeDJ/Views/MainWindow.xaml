@@ -112,41 +112,44 @@
                     </StackPanel>
 
                     <StackPanel Grid.Row="3" VerticalAlignment="Center">
-                        <DockPanel Margin="0,4">
-                            <CheckBox IsChecked="{Binding AutoMix}" Content="Auto-mix dalla coda" v:Shortcut.Action="automix" ToolTip="A fine brano parte automaticamente il prossimo in coda con dissolvenza"/>
-                        </DockPanel>
-                        <DockPanel Margin="0,4">
-                            <CheckBox IsChecked="{Binding AutoMixUseCues}" Content="Usa intro/uscita rilevate" ToolTip="Mixa all'inizio dell'uscita e fa partire il brano successivo dopo l'intro (serve l'analisi del brano)"/>
-                        </DockPanel>
-                        <DockPanel Margin="0,4">
-                            <CheckBox IsChecked="{Binding BpmMatch}" Content="Aggancia BPM nel passaggio" ToolTip="Il brano entrante viene portato ai BPM di quello in uscita (×1, ×2 o ×½, max ±25 %)"/>
-                        </DockPanel>
-                        <DockPanel Margin="0,4">
-                            <CheckBox IsChecked="{Binding BpmLock}" Content="Blocca BPM a" ToolTip="Tutti i brani caricati vengono velocizzati/rallentati a questo tempo"/>
-                            <TextBox Text="{Binding BpmLockValue, StringFormat={}{0:0}, UpdateSourceTrigger=LostFocus}" Width="66" Margin="6,0,0,0" TextAlignment="Center" FontWeight="Bold"/>
-                        </DockPanel>
-                        <DockPanel Margin="0,4">
-                            <TextBlock Text="Passaggio" Width="80" VerticalAlignment="Center"/>
-                            <ComboBox SelectedValue="{Binding TransitionStyle}" SelectedValuePath="Tag" FontSize="11" Padding="6,2"
-                                      ToolTip="Come viene fatto il passaggio automatico tra i due brani">
-                                <ComboBoxItem Tag="fade" Content="Dissolvenza semplice"/>
-                                <ComboBoxItem Tag="glide" Content="Cross-BPM (il tempo scivola al brano nuovo)"/>
-                                <ComboBoxItem Tag="bass" Content="Cross-BPM + scambio bassi (da DJ)"/>
-                                <ComboBoxItem Tag="echo" Content="Cross-BPM + bassi + filtro ed echo-out"/>
-                            </ComboBox>
-                        </DockPanel>
-                        <DockPanel Margin="0,4">
-                            <CheckBox IsChecked="{Binding AutoMixEndless}" Content="Mai fermarsi: coda vuota → suggeriti" ToolTip="Con l'auto-mix attivo, se la coda è vuota il prossimo brano viene preso dai suggeriti (compatibile, non ancora suonato stasera)"/>
-                        </DockPanel>
-                        <DockPanel Margin="0,4">
-                            <TextBlock Text="Generi serata" Width="80" VerticalAlignment="Center" ToolTip="Quando l'automix sceglie da solo, pesca solo in questi generi (es. Dance, House). Vuoto = segue il genere del brano in corso."/>
-                            <TextBox Text="{Binding SetGenres, UpdateSourceTrigger=LostFocus}" FontSize="12" Padding="6,3" ToolTip="Generi separati da virgola, come nei tag (es. Dance, House, Pop italiano). Vuoto = segue il genere del brano in corso. I brani senza genere: Impostazioni → Generi con AI."/>
-                        </DockPanel>
-                        <DockPanel Margin="0,4">
-                            <TextBlock Text="Dissolvenza" Width="80" VerticalAlignment="Center"/>
-                            <TextBlock DockPanel.Dock="Right" Text="{Binding CrossfadeSeconds, StringFormat={}{0:0} s}" Width="34" TextAlignment="Right" VerticalAlignment="Center"/>
-                            <Slider Minimum="1" Maximum="15" Value="{Binding CrossfadeSeconds}" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"/>
-                        </DockPanel>
+                        <!-- AUTO-MIX: le tre scelte principali sempre visibili, il resto in "Avanzate" -->
+                        <Border Background="{StaticResource InnerPanelBrush}" CornerRadius="10" Padding="10,8" Margin="0,4,0,0">
+                            <StackPanel>
+                                <TextBlock Text="AUTO-MIX" Style="{StaticResource SectionTitle}" Margin="0,0,0,4"/>
+                                <CheckBox IsChecked="{Binding AutoMix}" Content="Auto-mix dalla coda" v:Shortcut.Action="automix" Margin="0,3" ToolTip="A fine brano parte automaticamente il prossimo in coda con dissolvenza"/>
+                                <CheckBox IsChecked="{Binding AutoMixEndless}" Content="Mai fermarsi: coda vuota → suggeriti" Margin="0,3" ToolTip="Con l'auto-mix attivo, se la coda è vuota il prossimo brano viene preso dai suggeriti (compatibile, non ancora suonato stasera)"/>
+                                <CheckBox IsChecked="{Binding BpmMatch}" Content="Aggancia BPM nel passaggio" Margin="0,3" ToolTip="Il brano entrante viene portato ai BPM di quello in uscita (×1, ×2 o ×½, max ±25 %)"/>
+                                <DockPanel Margin="0,6,0,0">
+                                    <TextBlock Text="Generi serata" Width="80" VerticalAlignment="Center" Style="{StaticResource Muted}" FontSize="11" ToolTip="Quando l'automix sceglie da solo, pesca solo in questi generi (es. Dance, House). Vuoto = segue il genere del brano in corso."/>
+                                    <TextBox Text="{Binding SetGenres, UpdateSourceTrigger=LostFocus}" FontSize="12" Padding="6,3" ToolTip="Generi separati da virgola, come nei tag (es. Dance, House, Pop italiano). Vuoto = segue il genere del brano in corso. I brani senza genere: Impostazioni → Generi con AI."/>
+                                </DockPanel>
+                                <Expander Margin="0,6,0,0" IsExpanded="False" Foreground="{StaticResource MutedBrush}">
+                                    <Expander.Header><TextBlock Text="Avanzate" Style="{StaticResource Muted}" FontSize="11" FontWeight="Bold"/></Expander.Header>
+                                    <StackPanel Margin="0,4,0,0">
+                                        <CheckBox IsChecked="{Binding AutoMixUseCues}" Content="Usa intro/uscita rilevate" Margin="0,3" ToolTip="Mixa all'inizio dell'uscita e fa partire il brano successivo dopo l'intro (serve l'analisi del brano)"/>
+                                        <DockPanel Margin="0,3">
+                                            <CheckBox IsChecked="{Binding BpmLock}" Content="Blocca BPM a" ToolTip="Tutti i brani caricati vengono velocizzati/rallentati a questo tempo"/>
+                                            <TextBox Text="{Binding BpmLockValue, StringFormat={}{0:0}, UpdateSourceTrigger=LostFocus}" Width="60" Margin="6,0,0,0" TextAlignment="Center" FontWeight="Bold"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,3">
+                                            <TextBlock Text="Passaggio" Width="80" VerticalAlignment="Center" Style="{StaticResource Muted}" FontSize="11"/>
+                                            <ComboBox SelectedValue="{Binding TransitionStyle}" SelectedValuePath="Tag" FontSize="11" Padding="6,2"
+                                                      ToolTip="Come viene fatto il passaggio automatico tra i due brani">
+                                                <ComboBoxItem Tag="fade" Content="Dissolvenza semplice"/>
+                                                <ComboBoxItem Tag="glide" Content="Cross-BPM (il tempo scivola al brano nuovo)"/>
+                                                <ComboBoxItem Tag="bass" Content="Cross-BPM + scambio bassi (da DJ)"/>
+                                                <ComboBoxItem Tag="echo" Content="Cross-BPM + bassi + filtro ed echo-out"/>
+                                            </ComboBox>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,3">
+                                            <TextBlock Text="Dissolvenza" Width="80" VerticalAlignment="Center" Style="{StaticResource Muted}" FontSize="11"/>
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding CrossfadeSeconds, StringFormat={}{0:0} s}" Width="34" TextAlignment="Right" VerticalAlignment="Center"/>
+                                            <Slider Minimum="1" Maximum="15" Value="{Binding CrossfadeSeconds}" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Expander>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
 
                     <StackPanel Grid.Row="4">
@@ -171,6 +174,7 @@
             <Border Grid.Column="0" Style="{StaticResource Panel}" Margin="0,0,10,0">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
@@ -222,7 +226,7 @@
                                 Visibility="{Binding IsPlaylistSelected, Converter={StaticResource BoolToVis}}"/>
                     </DockPanel>
 
-                    <DataGrid Grid.Row="2" x:Name="LibraryGrid" ItemsSource="{Binding LibraryView}" SelectedItem="{Binding SelectedTrack}"
+                    <DataGrid Grid.Row="3" x:Name="LibraryGrid" ItemsSource="{Binding LibraryView}" SelectedItem="{Binding SelectedTrack}"
                               MouseDoubleClick="LibraryGrid_MouseDoubleClick" EnableRowVirtualization="True">
                         <DataGrid.RowStyle>
                             <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
@@ -288,7 +292,7 @@
                         </DataGrid.ContextMenu>
                     </DataGrid>
 
-                    <Grid Grid.Row="3" Margin="0,8,0,0">
+                    <Grid Grid.Row="4" Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
@@ -387,7 +391,7 @@
                     </StackPanel>
 
                     <!-- suggeritore prossimo brano -->
-                    <Border Grid.Row="3" Background="#FF0D0D12" CornerRadius="8" Padding="8,6" Margin="0,8,0,0" MaxHeight="290">
+                    <Border Grid.Row="3" Background="{StaticResource InnerPanelBrush}" CornerRadius="8" Padding="8,6" Margin="0,8,0,0" MaxHeight="290">
                         <DockPanel>
                             <!-- fuori libreria: proposte AI da scaricare e mettere in coda -->
                             <DockPanel DockPanel.Dock="Bottom" Margin="0,6,0,0" Visibility="{Binding ExternalSuggestionsLabel, Converter={StaticResource NullToVis}}">

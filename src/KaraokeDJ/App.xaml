@@ -13,9 +13,14 @@
         <Color x:Key="MagentaColor">#FFFF2D6D</Color>
         <SolidColorBrush x:Key="BgBrush" Color="#FF0B0B0F"/>
         <SolidColorBrush x:Key="VioletBrush" Color="{StaticResource VioletColor}"/>
-        <SolidColorBrush x:Key="PanelBrush" Color="#FF121218"/>
-        <SolidColorBrush x:Key="PanelAltBrush" Color="#FF1B1B24"/>
-        <SolidColorBrush x:Key="BorderBrush" Color="#FF2A2A38"/>
+        <SolidColorBrush x:Key="PanelBrush" Color="#B3121219"/>
+        <SolidColorBrush x:Key="PanelAltBrush" Color="#8C1C1C2A"/>
+        <!-- pannello interno (dentro deck/mixer): vetro più scuro -->
+        <SolidColorBrush x:Key="InnerPanelBrush" Color="#7A08080E"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#2EFFFFFF"/>
+        <SolidColorBrush x:Key="BorderSoftBrush" Color="#18FFFFFF"/>
+        <SolidColorBrush x:Key="GlassBrush" Color="#1AFFFFFF"/>
+        <SolidColorBrush x:Key="GlassHoverBrush" Color="#2EFFFFFF"/>
         <SolidColorBrush x:Key="TextBrush" Color="#FFF4F4F8"/>
         <SolidColorBrush x:Key="MutedBrush" Color="#FF8A8AA0"/>
         <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
@@ -25,22 +30,57 @@
         <SolidColorBrush x:Key="DangerBrush" Color="#FFFF3B3B"/>
         <SolidColorBrush x:Key="WarnBrush" Color="#FFFFD60A"/>
 
-        <LinearGradientBrush x:Key="WindowBgBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#FF17122A" Offset="0"/>
-            <GradientStop Color="#FF0B0B0F" Offset="0.5"/>
-            <GradientStop Color="#FF160B1C" Offset="1"/>
-        </LinearGradientBrush>
+        <!-- sfondo finestra: notte con due bagliori (viola in alto a sinistra, rosa in basso a destra) -->
+        <DrawingBrush x:Key="WindowBgBrush" Stretch="Fill" Viewbox="0,0,1,1" ViewboxUnits="Absolute">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <GeometryDrawing Geometry="M0,0 L1,0 L1,1 L0,1 Z">
+                        <GeometryDrawing.Brush>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#FF110E1F" Offset="0"/>
+                                <GradientStop Color="#FF0A0A10" Offset="0.55"/>
+                                <GradientStop Color="#FF150A18" Offset="1"/>
+                            </LinearGradientBrush>
+                        </GeometryDrawing.Brush>
+                    </GeometryDrawing>
+                    <GeometryDrawing Geometry="M0,0 L1,0 L1,1 L0,1 Z">
+                        <GeometryDrawing.Brush>
+                            <RadialGradientBrush Center="0.08,0.05" GradientOrigin="0.08,0.05" RadiusX="0.55" RadiusY="0.6">
+                                <GradientStop Color="#4A8A2BFF" Offset="0"/>
+                                <GradientStop Color="#008A2BFF" Offset="1"/>
+                            </RadialGradientBrush>
+                        </GeometryDrawing.Brush>
+                    </GeometryDrawing>
+                    <GeometryDrawing Geometry="M0,0 L1,0 L1,1 L0,1 Z">
+                        <GeometryDrawing.Brush>
+                            <RadialGradientBrush Center="0.95,0.95" GradientOrigin="0.95,0.95" RadiusX="0.5" RadiusY="0.55">
+                                <GradientStop Color="#38FF2D6D" Offset="0"/>
+                                <GradientStop Color="#00FF2D6D" Offset="1"/>
+                            </RadialGradientBrush>
+                        </GeometryDrawing.Brush>
+                    </GeometryDrawing>
+                    <GeometryDrawing Geometry="M0,0 L1,0 L1,1 L0,1 Z">
+                        <GeometryDrawing.Brush>
+                            <RadialGradientBrush Center="0.6,0.5" GradientOrigin="0.6,0.5" RadiusX="0.45" RadiusY="0.5">
+                                <GradientStop Color="#1400E5FF" Offset="0"/>
+                                <GradientStop Color="#0000E5FF" Offset="1"/>
+                            </RadialGradientBrush>
+                        </GeometryDrawing.Brush>
+                    </GeometryDrawing>
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
         <LinearGradientBrush x:Key="PanelGradient" StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#FF17171F" Offset="0"/>
-            <GradientStop Color="#FF0F0F14" Offset="1"/>
+            <GradientStop Color="#B8171722" Offset="0"/>
+            <GradientStop Color="#B80E0E15" Offset="1"/>
         </LinearGradientBrush>
         <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#FF8A2BFF" Offset="0"/>
             <GradientStop Color="#FF00E5FF" Offset="1"/>
         </LinearGradientBrush>
         <LinearGradientBrush x:Key="ButtonGradient" StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#FF242430" Offset="0"/>
-            <GradientStop Color="#FF17171F" Offset="1"/>
+            <GradientStop Color="#33FFFFFF" Offset="0"/>
+            <GradientStop Color="#14FFFFFF" Offset="1"/>
         </LinearGradientBrush>
 
         <FontFamily x:Key="BrandFont">pack://application:,,,/Assets/Fonts/#Montserrat</FontFamily>
@@ -63,10 +103,12 @@
             <Setter Property="FontSize" Value="11"/>
         </Style>
         <Style x:Key="SectionTitle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontSize" Value="10.5"/>
             <Setter Property="FontWeight" Value="Black"/>
             <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
             <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="Typography.Capitals" Value="AllSmallCaps"/>
+            <Setter Property="Opacity" Value="0.95"/>
             <Setter Property="FontFamily" Value="{StaticResource BrandFont}"/>
         </Style>
         <Style x:Key="Wordmark" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
@@ -95,6 +137,7 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource GlassHoverBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="bd" Property="Opacity" Value="0.7"/>
@@ -185,6 +228,64 @@
             <Setter Property="ToolTipService.ShowDuration" Value="20000"/>
         </Style>
 
+        <!-- chip toggle per le raccolte rapide (generi) -->
+        <Style x:Key="GenreChip" TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
+            <Setter Property="Padding" Value="9,2"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="bd" Background="{StaticResource GlassBrush}" BorderBrush="{StaticResource BorderSoftBrush}" BorderThickness="1" CornerRadius="12" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource AccentGradient}"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- expander minimale (freccia + intestazione), senza cornice bianca di sistema -->
+        <Style TargetType="Expander">
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Expander">
+                        <StackPanel>
+                            <ToggleButton x:Name="hdr" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}" Cursor="Hand" HorizontalAlignment="Left">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <StackPanel Orientation="Horizontal" Background="Transparent">
+                                            <Path x:Name="arrow" Data="M0,0 L4,4 L8,0" Stroke="{StaticResource MutedBrush}" StrokeThickness="1.5" VerticalAlignment="Center" Margin="2,1,8,0"/>
+                                            <ContentPresenter Content="{Binding Header, RelativeSource={RelativeSource AncestorType=Expander}}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter TargetName="arrow" Property="Data" Value="M0,4 L4,0 L8,4"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="content" Visibility="Collapsed"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter TargetName="content" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <!-- chip radio (filtri libreria) -->
         <Style x:Key="Chip" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
@@ -215,7 +316,7 @@
 
         <!-- ═══════════ input ═══════════ -->
         <Style TargetType="TextBox">
-            <Setter Property="Background" Value="#FF0D0D12"/>
+            <Setter Property="Background" Value="{StaticResource InnerPanelBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
             <Setter Property="CaretBrush" Value="{StaticResource AccentBrush}"/>
@@ -410,7 +511,7 @@
             <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
         </Style>
         <Style TargetType="ListBox">
-            <Setter Property="Background" Value="#FF0D0D12"/>
+            <Setter Property="Background" Value="{StaticResource InnerPanelBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
             <Setter Property="Template">
@@ -446,11 +547,11 @@
         </Style>
 
         <Style TargetType="DataGrid">
-            <Setter Property="Background" Value="#FF0D0D12"/>
+            <Setter Property="Background" Value="{StaticResource InnerPanelBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
-            <Setter Property="RowBackground" Value="#FF0D0D12"/>
-            <Setter Property="AlternatingRowBackground" Value="#FF111117"/>
+            <Setter Property="RowBackground" Value="Transparent"/>
+            <Setter Property="AlternatingRowBackground" Value="#14FFFFFF"/>
             <Setter Property="GridLinesVisibility" Value="None"/>
             <Setter Property="HeadersVisibility" Value="Column"/>
             <Setter Property="AutoGenerateColumns" Value="False"/>
@@ -559,6 +660,7 @@
         <!-- ═══════════ pannelli ═══════════ -->
         <Style x:Key="Panel" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource PanelGradient}"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="12"/>

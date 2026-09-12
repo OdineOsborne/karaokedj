@@ -53,7 +53,7 @@
                         </DockPanel>
                         <DockPanel>
                             <TextBlock Text="Chiave API Anthropic" Width="140" VerticalAlignment="Center" ToolTip="Per generare i testi delle canzoni (Animazione). Salvata cifrata per l'utente Windows."/>
-                            <PasswordBox x:Name="ApiKeyBox" Background="#FF0D0D12" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource BorderBrush}" Padding="6,4"/>
+                            <PasswordBox x:Name="ApiKeyBox" Background="{StaticResource InnerPanelBrush}" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource BorderBrush}" Padding="6,4"/>
                         </DockPanel>
                     </StackPanel>
 
@@ -70,6 +70,10 @@
                         <DockPanel Margin="0,0,0,8">
                             <TextBlock Text="Sottotitolo" Width="140" VerticalAlignment="Center"/>
                             <TextBox x:Name="IdleSubtitleBox"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,8">
+                            <TextBlock Text="Aspetto" Width="140" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="GlassBox" Content="Effetto vetro dietro la finestra (Windows 11, riavvio)" VerticalAlignment="Center" ToolTip="Sfondo Mica: i pannelli semitrasparenti lasciano intravedere il desktop. Se non ti piace o dà problemi grafici, toglilo."/>
                         </DockPanel>
                         <DockPanel>
                             <TextBlock Text="Offset testi (ms)" Width="140" VerticalAlignment="Center" ToolTip="Positivo = i testi/video anticipano rispetto all'audio"/>

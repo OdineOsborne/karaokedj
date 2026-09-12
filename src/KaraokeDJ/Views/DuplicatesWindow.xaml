@@ -18,7 +18,7 @@
         <ListBox Grid.Row="1" x:Name="List" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <Border Background="#FF0D0D12" CornerRadius="8" Padding="10" Margin="0,2">
+                    <Border Background="{StaticResource InnerPanelBrush}" CornerRadius="8" Padding="10" Margin="0,2">
                         <StackPanel>
                             <DockPanel>
                                 <TextBlock DockPanel.Dock="Right" Text="{Binding Saved}" Style="{StaticResource Muted}"/>

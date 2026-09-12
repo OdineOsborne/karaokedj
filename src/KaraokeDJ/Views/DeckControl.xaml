@@ -331,7 +331,7 @@
                 </StackPanel>
             </Grid>
             <!-- effetti -->
-            <Border Grid.Row="7" Background="#FF0D0D12" CornerRadius="8" Padding="8,6" Margin="0,8,0,0"
+            <Border Grid.Row="7" Background="{StaticResource InnerPanelBrush}" CornerRadius="8" Padding="8,6" Margin="0,8,0,0"
                     Visibility="{Binding FxVisible, Converter={StaticResource BoolToVis}}">
                 <Border.Resources>
                     <Style x:Key="FxToggle" TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">

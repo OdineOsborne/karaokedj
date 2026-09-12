@@ -46,6 +46,7 @@ public partial class SettingsWindow : Window
         IdleTitleBox.Text = vm.IdleTitle;
         IdleSubtitleBox.Text = vm.IdleSubtitle;
         OffsetSlider.Value = vm.Settings.CdgOffsetMs;
+        GlassBox.IsChecked = vm.Settings.GlassEffect;
         OffsetLabel.Text = vm.Settings.CdgOffsetMs + " ms";
         FoldersList.ItemsSource = _folders;
         InfoLabel.Text = "Dati in: " + AppPaths.Root;
@@ -238,6 +239,7 @@ public partial class SettingsWindow : Window
         _vm.IdleTitle = IdleTitleBox.Text;
         _vm.IdleSubtitle = IdleSubtitleBox.Text;
         _vm.ApplyCdgOffset((int)OffsetSlider.Value);
+        _vm.Settings.GlassEffect = GlassBox.IsChecked == true;
 
         var newDevice = DeviceCombo.SelectedValue as string;
         if (string.IsNullOrEmpty(newDevice)) newDevice = null;

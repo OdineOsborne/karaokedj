@@ -104,7 +104,7 @@
                 </WrapPanel>
                 <TextBlock Grid.Row="5" Text="{Binding LyricsStatus}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,8"/>
 
-                <Border Grid.Row="6" Background="#FF0D0D12" CornerRadius="8" Padding="8">
+                <Border Grid.Row="6" Background="{StaticResource InnerPanelBrush}" CornerRadius="8" Padding="8">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>

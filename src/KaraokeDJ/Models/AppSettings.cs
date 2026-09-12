@@ -22,6 +22,8 @@ public sealed class AppSettings
     /// <summary>Generi della serata per l'automix (testo, separati da virgola).</summary>
     public string SetGenres { get; set; } = "";
     public bool MixViewVisible { get; set; } = true;
+    /// <summary>Effetto vetro di Windows 11 (Mica) dietro la finestra principale.</summary>
+    public bool GlassEffect { get; set; } = true;
     /// <summary>Nasconde in libreria i titoli incomprensibili.</summary>
     public bool HideCryptic { get; set; } = true;
     /// <summary>Pannelli FX dei deck aperti.</summary>
