@@ -264,6 +264,18 @@
                                 <MenuItem Header="Analizza tutti i brani mancanti" Command="{Binding AnalyzeMissingCommand}"/>
                                 <MenuItem Header="Azzera i segni 'suonato stasera'" Command="{Binding ClearPlayedMarksCommand}"/>
                                 <Separator/>
+                                <MenuItem Header="🏷 Genere" ItemsSource="{Binding KnownGenres}">
+                                    <MenuItem.ItemContainerStyle>
+                                        <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                            <Setter Property="Header" Value="{Binding}"/>
+                                            <Setter Property="Command" Value="{Binding DataContext.SetGenreCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                            <Setter Property="CommandParameter" Value="{Binding}"/>
+                                        </Style>
+                                    </MenuItem.ItemContainerStyle>
+                                </MenuItem>
+                                <MenuItem Header="🏷 Genere: altro / correggi…" Command="{Binding SetGenreCommand}" ToolTip="Scrivi il genere a mano (vuoto = nessun genere). Viene salvato anche nel tag del file."/>
+                                <MenuItem Header="📅 Anno…" Command="{Binding SetYearCommand}"/>
+                                <Separator/>
                                 <MenuItem Header="✎ Rinomina intelligente (brano selezionato)" Command="{Binding CleanSelectedTitleCommand}"/>
                                 <MenuItem Header="✎ Rinomina intelligente (tutta la libreria)" Command="{Binding CleanAllTitlesCommand}"/>
                                 <MenuItem Header="🤖 Prepara base senza voce (Demucs)" Command="{Binding PrepareStemsSelectedCommand}"/>

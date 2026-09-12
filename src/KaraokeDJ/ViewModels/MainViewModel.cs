@@ -1448,6 +1448,63 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ---------------------------------------------------------------- rinomina intelligente
 
+    // ---------------------------------------------------------------- genere / anno a mano
+
+    /// <summary>Generi proponibili nel menu: quelli del catalogo AI più quelli già presenti in libreria.</summary>
+    public IEnumerable<string> KnownGenres =>
+        GenreClassifier.Genres.Concat(Tracks.Select(t => t.Genre).Where(g => !string.IsNullOrWhiteSpace(g)))
+            .Select(g => g.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(g => g, StringComparer.CurrentCultureIgnoreCase).ToList();
+
+    /// <summary>Imposta il genere del brano selezionato (parametro = genere; vuoto/null = chiede). Scrive anche il tag nel file.</summary>
+    [RelayCommand]
+    private void SetGenre(string? genre)
+    {
+        var t = SelectedTrack;
+        if (t == null) return;
+        if (string.IsNullOrWhiteSpace(genre))
+        {
+            genre = Views.InputDialog.Show("Genere", $"Genere per \"{t.Display}\":", t.Genre);
+            if (genre == null) return;
+        }
+        t.Genre = genre.Trim();
+        t.InvalidateSearchCache();
+        WriteGenreYearTag(t);
+        Library.Save();
+        LibraryView.Refresh();
+        UpdateSuggestions();
+        StatusText = t.Genre.Length == 0 ? $"Genere tolto: {t.Display}" : $"Genere \"{t.Genre}\": {t.Display}";
+        OnPropertyChanged(nameof(KnownGenres));
+    }
+
+    /// <summary>Imposta l'anno del brano selezionato (chiede).</summary>
+    [RelayCommand]
+    private void SetYear()
+    {
+        var t = SelectedTrack;
+        if (t == null) return;
+        var s = Views.InputDialog.Show("Anno", $"Anno di uscita per \"{t.Display}\" (vuoto = sconosciuto):", t.Year > 0 ? t.Year.ToString() : "");
+        if (s == null) return;
+        t.Year = int.TryParse(s.Trim(), out var y) && y is > 1900 and < 2100 ? y : 0;
+        t.InvalidateSearchCache();
+        WriteGenreYearTag(t);
+        Library.Save();
+        LibraryView.Refresh();
+        StatusText = t.Year > 0 ? $"Anno {t.Year}: {t.Display}" : $"Anno tolto: {t.Display}";
+    }
+
+    private static void WriteGenreYearTag(Track t)
+    {
+        if (t.Kind is TrackKind.CdgZip or TrackKind.Midi) return;
+        try
+        {
+            using var tf = TagLib.File.Create(t.FilePath);
+            tf.Tag.Genres = string.IsNullOrEmpty(t.Genre) ? Array.Empty<string>() : new[] { t.Genre };
+            if (t.Year > 0) tf.Tag.Year = (uint)t.Year;
+            tf.Save();
+        }
+        catch { /* file in sola lettura o formato senza tag: resta solo in libreria */ }
+    }
+
     [RelayCommand]
     private void CleanSelectedTitle()
     {
