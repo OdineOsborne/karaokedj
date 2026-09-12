@@ -182,28 +182,43 @@
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="0,0,0,8">
                         <TextBlock DockPanel.Dock="Left" Text="LIBRERIA" Style="{StaticResource SectionTitle}" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <CheckBox DockPanel.Dock="Right" IsChecked="{Binding ShowDuplicates}" VerticalAlignment="Center" Margin="10,0,0,0" FontSize="11"
-                                  ToolTip="I brani uguali (stesso artista e titolo, durata simile) vengono mostrati una volta sola: la copia migliore. Spunta per vedere anche le altre copie.">
-                            <TextBlock><Run Text="mostra doppioni ("/><Run Text="{Binding HiddenDuplicates, Mode=OneWay}"/><Run Text=")"/></TextBlock>
-                        </CheckBox>
-                        <CheckBox DockPanel.Dock="Right" IsChecked="{Binding HideCryptic}" Content="nascondi titoli senza senso" VerticalAlignment="Center" Margin="10,0,0,0" FontSize="11"
-                                  ToolTip="Nasconde i file con nome incomprensibile (es. $RFXPGZ2 del Cestino di Windows, codici senza vocali): li puoi comunque cercare togliendo la spunta"/>
                         <TextBlock DockPanel.Dock="Right" Text="{Binding LibraryCount, StringFormat={}{0} brani}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        <!-- filtri e opzioni: solo icone, descrizione al passaggio del mouse -->
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="8,0,0,0">
-                            <RadioButton Style="{StaticResource Chip}" Content="Tutti" GroupName="LibFilter" IsChecked="True" Command="{Binding SetLibraryFilterCommand}" CommandParameter="all"/>
-                            <RadioButton Style="{StaticResource Chip}" Content="♪ Audio" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="audio" ToolTip="Solo brani musicali (senza testo)"/>
-                            <RadioButton Style="{StaticResource Chip}" Content="CDG" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="cdg" ToolTip="Basi karaoke MP3+G"/>
-                            <RadioButton Style="{StaticResource Chip}" Content="🎬 Video" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="video" ToolTip="Basi karaoke video"/>
-                            <RadioButton Style="{StaticResource Chip}" Content="🎹 MIDI/KAR" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="midi" ToolTip="Basi MIDI/KAR (sintetizzate con FluidSynth, testo sul proiettore). Mai nel mix automatico."/>
-                            <RadioButton Style="{StaticResource Chip}" Content="🎯 Compatibili" GroupName="LibFilter" Command="{Binding RefreshCompatibilityCommand}"
-                                         ToolTip="Ordina la libreria per affinità (BPM ±8 %, tonalità Camelot vicina) con il brano in riproduzione o selezionato. Clicca di nuovo per aggiornare."/>
+                            <RadioButton Style="{StaticResource Chip}" Content="📚" GroupName="LibFilter" IsChecked="True" Command="{Binding SetLibraryFilterCommand}" CommandParameter="all" ToolTip="Tutti&#10;Tutta la libreria."/>
+                            <RadioButton Style="{StaticResource Chip}" Content="♪" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="audio" ToolTip="Audio&#10;Solo brani musicali (senza testo)."/>
+                            <RadioButton Style="{StaticResource Chip}" Content="🎤" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="cdg" ToolTip="CDG&#10;Basi karaoke MP3+G."/>
+                            <RadioButton Style="{StaticResource Chip}" Content="🎬" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="video" ToolTip="Video&#10;Basi karaoke video."/>
+                            <RadioButton Style="{StaticResource Chip}" Content="🎹" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="midi" ToolTip="MIDI / KAR&#10;Basi MIDI sintetizzate con FluidSynth, testo sul proiettore. Mai nel mix automatico."/>
+                            <RadioButton Style="{StaticResource Chip}" Content="🎯" GroupName="LibFilter" Command="{Binding RefreshCompatibilityCommand}"
+                                         ToolTip="Compatibili&#10;Ordina per affinità (BPM ±8 %, tonalità Camelot vicina) con il brano in riproduzione o selezionato. Clicca di nuovo per aggiornare."/>
+                            <ToggleButton Style="{StaticResource GenreChip}" IsChecked="{Binding HideCryptic}" Content="🙈" Margin="8,0,0,0" Padding="8,2" FontSize="12"
+                                          ToolTip="Nascondi titoli senza senso&#10;File con nome incomprensibile (es. $RFXPGZ2 del Cestino, codici senza vocali). Acceso = nascosti."/>
+                            <ToggleButton Style="{StaticResource GenreChip}" IsChecked="{Binding ShowDuplicates}" Margin="4,0,0,0" Padding="8,2" FontSize="12"
+                                          ToolTip="Mostra doppioni&#10;I brani uguali (stesso artista e titolo, durata simile) si vedono una volta sola: la copia migliore. Acceso = vedi anche le altre copie.">
+                                <TextBlock><Run Text="👥 "/><Run Text="{Binding HiddenDuplicates, Mode=OneWay}"/></TextBlock>
+                            </ToggleButton>
                         </StackPanel>
-                        <TextBox x:Name="SearchBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" FontSize="15" Padding="8,6"
+                        <TextBox x:Name="SearchBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" FontSize="15" Padding="8,6" MinWidth="220"
                                  ToolTip="Cerca per artista o titolo, anche con refusi (Ctrl+F). Un numero cerca per BPM (es. 120), '8a' o 'Am' per tonalità."/>
                     </DockPanel>
 
+                    <!-- raccolte rapide per genere: un click filtra per tag (più tag = unione), di nuovo per togliere -->
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding GenreChips}" Margin="0,0,0,6" VerticalAlignment="Top"
+                                  Visibility="{Binding GenreChips.Count, Converter={StaticResource NullToVis}}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ToggleButton IsChecked="{Binding IsSelected}" Padding="9,2" FontSize="11" Margin="0,0,4,4" Style="{StaticResource GenreChip}"
+                                              Command="{Binding DataContext.ToggleGenreFilterCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
+                                              ToolTip="{Binding Count, StringFormat={}{0} brani}">
+                                    <TextBlock><Run Text="{Binding Name, Mode=OneWay}"/><Run Text="  "/><Run Text="{Binding Count, Mode=OneWay}" Foreground="{StaticResource MutedBrush}" FontSize="10"/></TextBlock>
+                                </ToggleButton>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                     <!-- playlist interne -->
-                    <DockPanel Grid.Row="1" Margin="0,0,0,6">
+                    <DockPanel Grid.Row="2" Margin="0,0,0,6">
                         <TextBlock Text="PLAYLIST" Style="{StaticResource SectionTitle}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <Button DockPanel.Dock="Right" Content="▶ In coda" Style="{StaticResource SmallButton}" Command="{Binding PlaylistToQueueCommand}" Margin="4,0,0,0"
                                 Visibility="{Binding IsPlaylistSelected, Converter={StaticResource BoolToVis}}" ToolTip="Mette tutta la playlist nella coda"/>
