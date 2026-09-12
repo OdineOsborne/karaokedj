@@ -197,6 +197,12 @@
                     <Slider Minimum="-24" Maximum="12" Value="{Binding GainDb}" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,4,0,0"
                             ToolTip="Gain di ingresso del deck: pareggia il livello dei brani (0 dB = originale). Il livello in uscita si dosa col crossfader."
                             MouseDoubleClick="Gain_DoubleClick"/>
+                    <DockPanel Margin="0,4,0,0">
+                        <TextBlock Text="PAN" Style="{StaticResource SectionTitle}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding PanLabel}" FontFamily="Consolas" FontWeight="Bold" MinWidth="34" TextAlignment="Right" VerticalAlignment="Center"/>
+                        <Slider Minimum="-1" Maximum="1" Value="{Binding Pan}" TickFrequency="1" TickPlacement="BottomRight" VerticalAlignment="Center" local:Shortcut.Action="pan"
+                                ToolTip="Bilanciamento sinistra/destra del deck (doppio click = centro)" MouseDoubleClick="Pan_DoubleClick"/>
+                    </DockPanel>
                 </StackPanel>
             </Grid>
 
@@ -329,6 +335,7 @@
                     </DockPanel>
                     <DockPanel>
                         <ToggleButton Style="{StaticResource FxToggle}" IsChecked="{Binding EchoOn}" Content="ECHO" local:Shortcut.Action="echo"/>
+                        <ToggleButton Style="{StaticResource FxToggle}" IsChecked="{Binding EchoPingPong}" Content="PING PONG" Margin="4,0,0,0" MinWidth="80" local:Shortcut.Action="pingpong" ToolTip="Le ripetizioni dell'eco rimbalzano fra sinistra e destra"/>
                         <Button Content="{Binding EchoBeatsLabel}" Style="{StaticResource SmallButton}" Padding="6,2" FontSize="11" FontFamily="Consolas" Command="{Binding EchoBeatsCycleCommand}" Margin="4,0,0,0" ToolTip="Tempo dell'eco in battute (agganciato ai BPM)"/>
                         <TextBlock Style="{StaticResource FxLabel}" Text="FB"/>
                         <Slider Style="{StaticResource FxSlider}" Minimum="0" Maximum="0.9" Value="{Binding EchoFeedback}" Width="56"/>

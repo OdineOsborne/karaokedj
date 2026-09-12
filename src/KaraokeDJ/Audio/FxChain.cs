@@ -36,6 +36,8 @@ public sealed class FxChain
 
     // ---------------- echo (delay)
     public volatile bool EchoOn;
+    /// <summary>Eco ping-pong: le ripetizioni rimbalzano fra sinistra e destra.</summary>
+    public volatile bool EchoPingPong;
     public float EchoTimeSec = 0.375f;
     public float EchoFeedback = 0.45f;
     public float EchoMix = 0.35f;
@@ -211,11 +213,26 @@ public sealed class FxChain
         // rampa fissa di ~30 ms verso il target, indipendente dalla dimensione del buffer
         float dryStep = Math.Sign(dryTarget - _dryApplied) * (1f / (0.03f * Fs));
         bool on = EchoOn;
+        bool pingPong = EchoPingPong;
 
         for (int i = 0; i < frames; i++)
         {
             if (Math.Abs(dryTarget - _dryApplied) <= Math.Abs(dryStep)) _dryApplied = dryTarget; else _dryApplied += dryStep;
             int rp = _dlPos - delay; if (rp < 0) rp += len;
+            if (pingPong)
+            {
+                // ping-pong: l'ingresso (mono) entra solo a sinistra; ogni linea rialimenta l'altra → le ripetizioni rimbalzano L→R→L
+                int iL = o + 2 * i, iR = iL + 1;
+                float xL = buf[iL] * _dryApplied, xR = buf[iR] * _dryApplied;
+                float echoL = _dlBuf[rp * 2], echoR = _dlBuf[rp * 2 + 1];
+                float mono = on ? (xL + xR) * 0.5f : 0f;
+                _dlBuf[_dlPos * 2] = _dlTone[0].Transform(mono + echoR * fb);
+                _dlBuf[_dlPos * 2 + 1] = _dlTone[1].Transform(echoL * fb);
+                buf[iL] = xL + echoL * mix;
+                buf[iR] = xR + echoR * mix;
+                _dlPos = (_dlPos + 1) % len;
+                continue;
+            }
             for (int ch = 0; ch < 2; ch++)
             {
                 int idx = o + 2 * i + ch;

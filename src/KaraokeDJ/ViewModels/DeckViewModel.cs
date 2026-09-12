@@ -95,6 +95,13 @@ public sealed partial class DeckViewModel : ObservableObject
     partial void OnFilterOnChanged(bool v) => Deck.Fx.FilterOn = v;
     partial void OnFilterResonanceChanged(double v) => Deck.Fx.FilterResonance = (float)v;
     [ObservableProperty] private bool _echoOn;
+    [ObservableProperty] private bool _echoPingPong;
+    partial void OnEchoPingPongChanged(bool v) => Deck.Fx.EchoPingPong = v;
+    /// <summary>Pan del deck: -1 sinistra … +1 destra.</summary>
+    [ObservableProperty] private double _pan;
+    partial void OnPanChanged(double v) { Deck.Pan = (float)v; OnPropertyChanged(nameof(PanLabel)); }
+    public string PanLabel => Math.Abs(Pan) < 0.02 ? "C" : Pan < 0 ? $"L{-Pan * 100:0}" : $"R{Pan * 100:0}";
+    [RelayCommand] private void PanReset() => Pan = 0;
     [ObservableProperty] private double _echoBeats = 0.5;   // frazione di battuta
     [ObservableProperty] private double _echoFeedback = 0.45;
     [ObservableProperty] private double _echoMix = 0.35;
@@ -490,7 +497,7 @@ public sealed partial class DeckViewModel : ObservableObject
     [RelayCommand]
     private void FxReset()
     {
-        VocalRemove = false; FilterValue = 0; FilterOn = true; EchoOn = false; ReverbOn = false; FlangerOn = false;
+        VocalRemove = false; FilterValue = 0; FilterOn = true; EchoOn = false; EchoPingPong = false; ReverbOn = false; FlangerOn = false;
         PhaserOn = false; CrushOn = false; GateOn = false; Deck.CancelSpin();
         Deck.Fx.Dry = 1f;
         EchoOutRunning = false;

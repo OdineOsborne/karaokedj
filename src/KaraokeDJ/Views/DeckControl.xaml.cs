@@ -65,6 +65,11 @@ public partial class DeckControl : UserControl
         if (sender is Slider s) s.Value = 0;
     }
 
+    private void Pan_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (DataContext is DeckViewModel vm) vm.Pan = 0;
+    }
+
     private void Gain_DoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (DataContext is DeckViewModel vm) vm.GainDb = 0;

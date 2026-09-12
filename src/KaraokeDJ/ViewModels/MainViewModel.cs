@@ -1823,6 +1823,9 @@ public sealed partial class MainViewModel : ObservableObject
                 case "volume": if (continuous) deck.GainDb = (norm - 0.5) * 24; break;      // −12 … +12 dB, centro = unity
                 case "tempo": if (continuous) deck.TempoPercent = (int)Math.Round((norm - 0.5) * 50); break; // −25 … +25
                 case "temporeset": deck.TempoReset(); break;
+                case "pan": if (continuous) deck.Pan = norm * 2 - 1; break;
+                case "panreset": deck.Pan = 0; break;
+                case "pingpong": deck.EchoPingPong = !deck.EchoPingPong; break;
                 case "keyup": deck.KeyUp(); break;
                 case "keydown": deck.KeyDown(); break;
                 case "keyreset": deck.KeyReset(); break;

@@ -47,6 +47,9 @@ public sealed class Deck : ISampleProvider
     /// <summary>Gain lineare del deck (1 = unity). Fino a +12 dB.</summary>
     public float Volume { get => _volume; set => _volume = Math.Clamp(value, 0f, 4f); }
     public float CrossGain { get => _crossGain; set => _crossGain = Math.Clamp(value, 0f, 1f); }
+    /// <summary>Pan -1 (sinistra) … +1 (destra), potenza costante.</summary>
+    public float Pan { get => _pan; set => _pan = Math.Clamp(value, -1f, 1f); }
+    private float _pan, _lastPanL = 1f, _lastPanR = 1f;
     public float EffectiveGain => _volume * _crossGain;
 
     public int KeyShift
@@ -594,5 +597,25 @@ public sealed class Deck : ISampleProvider
             }
         }
         _lastGain = target;
+        ApplyPan(buffer, offset, n);
+    }
+
+    // Pan a potenza costante con rampa (niente click girando la manopola)
+    private void ApplyPan(float[] buffer, int offset, int n)
+    {
+        double a = (_pan + 1) / 4.0 * Math.PI;                 // 0 … π/2
+        float tl = (float)(Math.Cos(a) * 1.41421356), tr = (float)(Math.Sin(a) * 1.41421356); // centro = 1/1
+        if (Math.Abs(tl - 1f) < 1e-4f && Math.Abs(tr - 1f) < 1e-4f && Math.Abs(_lastPanL - 1f) < 1e-4f && Math.Abs(_lastPanR - 1f) < 1e-4f) return;
+        int frames = n / 2;
+        if (frames == 0) return;
+        float sl = (tl - _lastPanL) / frames, sr = (tr - _lastPanR) / frames;
+        float gl = _lastPanL, gr = _lastPanR;
+        for (int f = 0; f < frames; f++)
+        {
+            int idx = offset + f * 2;
+            buffer[idx] *= gl; buffer[idx + 1] *= gr;
+            gl += sl; gr += sr;
+        }
+        _lastPanL = tl; _lastPanR = tr;
     }
 }
