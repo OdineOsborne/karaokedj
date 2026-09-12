@@ -42,7 +42,7 @@ public sealed partial class MainViewModel : ObservableObject
             d.TrackEnded += OnDeckEnded;
             d.TrackLoaded += dv => { if (_autoMixTriggeredFor == dv) _autoMixTriggeredFor = null; UpdateProjectorState(); UpdateSuggestions(); };
             d.Played += OnTrackPlayed;
-            d.CuesChanged += _ => { Library.Save(); LibraryView.Refresh(); };
+            d.CuesChanged += dv => { if (dv.Track != null) Library.Save(dv.Track); LibraryView.Refresh(); };
             d.CdgOffsetMs = Settings.CdgOffsetMs;
         }
 
@@ -188,8 +188,8 @@ public sealed partial class MainViewModel : ObservableObject
             StatusText = "Controller MIDI non trovato: " + Settings.MidiDeviceName;
         _timer.Start();
         StatusText = $"Uscita: {Engine.OutputDescription} · {Tracks.Count} brani";
-        if (Settings.LibraryFolders.Count > 0)
-            _ = RescanAsync();
+        if (Settings.LibraryFolders.Count > 0) StartFolderWatchers();
+        _ = VerifyDbAsync();
         _ = CheckForUpdatesAsync(silent: true);
     }
 
@@ -338,6 +338,8 @@ public sealed partial class MainViewModel : ObservableObject
         };
         if (!kindOk) return false;
         if (HideCryptic && IsCryptic(t)) return false;
+        if (!ShowDuplicates && t.HiddenDuplicateOf != null) return false;
+        if (t.Missing) return false;
         if (string.IsNullOrWhiteSpace(SearchText)) return true;
         return SearchUtil.Matches(t, _searchWords);
     }
@@ -399,8 +401,38 @@ public sealed partial class MainViewModel : ObservableObject
         Tracks.Clear();
         foreach (var t in Library.Tracks) Tracks.Add(t);
         LibraryCount = Tracks.Count;
+        CollapseDuplicates();
         _remote?.LibraryChanged();
     }
+
+    /// <summary>
+    /// Brani uguali (stesso tipo, artista e titolo, durata simile) vengono mostrati una volta sola: resta visibile la copia migliore
+    /// (qualità/tag/analisi), le altre sono "doppioni nascosti" e restano nel database. Solo raggruppamento: nessun file viene toccato.
+    /// </summary>
+    private void CollapseDuplicates()
+    {
+        foreach (var t in Tracks) t.HiddenDuplicateOf = null;
+        int hidden = 0;
+        foreach (var g in Tracks.Where(t => !t.IsMidi).GroupBy(t => t.Kind + "|" + SearchUtil.NormalizeForCompare(t.Artist) + "|" + SearchUtil.NormalizeForCompare(t.Title)))
+        {
+            if (g.Key.Length < 6 || g.Count() < 2) continue;
+            var remaining = g.OrderByDescending(DuplicateFinder.Score).ToList();
+            while (remaining.Count > 1)
+            {
+                var keep = remaining[0];
+                var same = remaining.Skip(1).Where(t => keep.DurationSec <= 0 || t.DurationSec <= 0 || Math.Abs(t.DurationSec - keep.DurationSec) <= 3).ToList();
+                foreach (var t in same) { t.HiddenDuplicateOf = keep; hidden++; }
+                remaining.RemoveAll(t => t == keep || same.Contains(t));
+            }
+        }
+        HiddenDuplicates = hidden;
+    }
+
+    /// <summary>Numero di copie nascoste perché doppioni di un altro brano.</summary>
+    [ObservableProperty] private int _hiddenDuplicates;
+    /// <summary>Mostra anche le copie doppie (per scegliere/eliminare a mano).</summary>
+    [ObservableProperty] private bool _showDuplicates;
+    partial void OnShowDuplicatesChanged(bool value) => LibraryView.Refresh();
 
     [RelayCommand]
     private async Task AddFolderAsync()
@@ -430,35 +462,15 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var added = await Library.ScanAsync(Settings.LibraryFolders, progress, _scanCts.Token);
             RefreshTracks();
+            StartFolderWatchers();
             StatusText = $"Libreria: {Tracks.Count} brani";
 
             // 1) rinomina intelligente dei brani nuovi/riletti (titolo senza artista, artista corretto), senza toccare i file
             int cleaned = 0;
             await Task.Run(() => { foreach (var t in added) if (TitleCleaner.Apply(t, writeTags: false)) cleaned++; });
-            if (cleaned > 0) { Library.Save(); LibraryView.Refresh(); }
+            if (cleaned > 0) { Library.Save(added); LibraryView.Refresh(); }
 
-            // 2) doppioni: li cerco e propongo di mandarli nel Cestino (recuperabili)
-            var dupProgress = new Progress<DuplicateProgress>(p => { StatusText = "Doppioni: " + p.Message; ScanPercent = p.Percent; });
-            var tracksNow = Tracks.ToList();
-            var groups = await Task.Run(() => DuplicateFinder.Find(tracksNow, dupProgress, _scanCts.Token));
-            if (groups.Count > 0)
-            {
-                int files = groups.Sum(g => g.Remove.Count);
-                long mb = groups.Sum(g => g.BytesSaved) / 1048576;
-                var r = MessageBox.Show($"Trovati {files} file doppi in {groups.Count} gruppi ({mb} MB).\nSpostarli nel Cestino di Windows tenendo la copia migliore?\n\n(No = li rivedi con calma dal pulsante Doppioni)",
-                    "Riscansione: doppioni", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
-                if (r == MessageBoxResult.Yes)
-                {
-                    int ok = 0;
-                    foreach (var g in groups)
-                        foreach (var t in g.Remove)
-                        {
-                            if (DeckA.Track == t || DeckB.Track == t) continue;
-                            if (DuplicateFinder.RecycleFile(t.FilePath)) { RemoveTrackFromLibrary(t, replaceWith: g.Keep); ok++; }
-                        }
-                    StatusText = $"Doppioni: {ok} file spostati nel Cestino";
-                }
-            }
+            // 2) i doppioni non si toccano: in libreria se ne vede uno solo (CollapseDuplicates); il pulsante Doppioni serve per liberare spazio
 
             // 3) analisi BPM/tonalità/forma d'onda di tutti i brani non ancora analizzati, in background
             if (!IsAnalyzing && Tracks.Any(t => !t.Analyzed)) _ = AnalyzeMissingAsync();
@@ -965,12 +977,21 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void LoadPlaylists()
     {
-        foreach (var p in JsonStore.Load<List<Playlist>>(AppPaths.PlaylistsFile)) Playlists.Add(p);
+        var list = Library.Db.LoadPlaylists();
+        if (list.Count == 0 && File.Exists(AppPaths.PlaylistsFile))
+        {
+            // prima apertura con il database: importa le playlist dal vecchio json
+            list = JsonStore.Load<List<Playlist>>(AppPaths.PlaylistsFile);
+            if (list.Count > 0) Library.Db.SaveAllPlaylists(list);
+            // il vecchio playlists.json resta al suo posto
+        }
+        foreach (var p in list) Playlists.Add(p);
     }
 
+    /// <summary>Salva tutte le playlist nel database (poche righe: veloce).</summary>
     public void SavePlaylists()
     {
-        try { JsonStore.Save(AppPaths.PlaylistsFile, Playlists.ToList()); } catch { }
+        try { Library.Db.SaveAllPlaylists(Playlists); } catch (Exception ex) { StatusText = "Playlist non salvate: " + ex.Message; }
     }
 
     [RelayCommand]
@@ -1101,7 +1122,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
         finally { _analyzeGate.Release(); }
 
-        Library.Save();
+        Library.Save(track);
         LibraryView.Refresh();
         foreach (var d in new[] { DeckA, DeckB })
             if (d.Track == track) d.RefreshAnalysisLabels();
@@ -1310,7 +1331,7 @@ public sealed partial class MainViewModel : ObservableObject
         track.PlayedThisSession = true;
         _playedThisSession.Add(track.Id);
         PlayLog.Record(track, deck.Name);
-        Library.Save();
+        Library.Save(track);
         LibraryView.Refresh();
         UpdateSuggestions();
     }
@@ -1505,7 +1526,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         t.InvalidateSearchCache();
         WriteGenreYearTag(t);
-        Library.Save();
+        Library.Save(t);
         LibraryView.Refresh();
         UpdateSuggestions();
         StatusText = t.Genre.Length == 0 ? $"Nessun genere: {t.Display}" : $"Generi \"{t.Genre}\": {t.Display}";
@@ -1523,7 +1544,7 @@ public sealed partial class MainViewModel : ObservableObject
         t.Year = int.TryParse(s.Trim(), out var y) && y is > 1900 and < 2100 ? y : 0;
         t.InvalidateSearchCache();
         WriteGenreYearTag(t);
-        Library.Save();
+        Library.Save(t);
         LibraryView.Refresh();
         StatusText = t.Year > 0 ? $"Anno {t.Year}: {t.Display}" : $"Anno tolto: {t.Display}";
     }
@@ -1591,7 +1612,7 @@ public sealed partial class MainViewModel : ObservableObject
             track.InstrumentalPath = inst;
             track.VocalsPath = voc;
             track.StemsDir = dir;
-            Library.Save();
+            Library.Save(track);
             StatusText = $"Stem pronti (voce, batteria, basso, altro): {track.Display}";
             foreach (var d in new[] { DeckA, DeckB }) if (d.Track == track) { d.HasInstrumental = true; d.HasStems = track.HasStems; }
             return true;
@@ -1709,7 +1730,7 @@ public sealed partial class MainViewModel : ObservableObject
             track.DedicationTitle = string.IsNullOrWhiteSpace(Celebration.SongTitle) ? $"Per {Celebration.Name}" : Celebration.SongTitle;
             if (!string.IsNullOrWhiteSpace(Celebration.SongTitle)) track.Title = Celebration.SongTitle;
         }
-        Library.Save();
+        Library.Save(track);
         var old = Tracks.FirstOrDefault(t => string.Equals(t.FilePath, path, StringComparison.OrdinalIgnoreCase));
         if (old != null) Tracks.Remove(old);
         Tracks.Add(track);
@@ -1799,7 +1820,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (t == null) return;
         t.Dedication = Celebration.DedicationText;
         t.DedicationTitle = string.IsNullOrWhiteSpace(Celebration.SongTitle) ? $"Per {Celebration.Name}" : Celebration.SongTitle;
-        Library.Save();
+        Library.Save(t);
         UpdateProjectorState();
         StatusText = "Dedica assegnata a " + t.Display;
     }
@@ -1809,7 +1830,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (t == null) return;
         t.Dedication = null; t.DedicationTitle = null;
-        Library.Save();
+        Library.Save(t);
         UpdateProjectorState();
     }
 
@@ -2111,6 +2132,114 @@ public sealed partial class MainViewModel : ObservableObject
         finally { IsClassifying = false; }
     }
 
+    // ---------------------------------------------------------------- database: verifica all'avvio e cartelle sorvegliate
+
+    private readonly List<FileSystemWatcher> _watchers = new();
+    private readonly HashSet<string> _pendingFiles = new(StringComparer.OrdinalIgnoreCase);
+    private DispatcherTimer? _watchTimer;
+    /// <summary>Brani il cui file non è raggiungibile ora (disco scollegato?): restano nel database, non si vedono.</summary>
+    [ObservableProperty] private int _missingTracks;
+
+    /// <summary>
+    /// All'avvio non si riscansiona nulla: il database è la verità. In background si verifica che i file esistano
+    /// (quelli mancanti vengono nascosti, non cancellati), si preparano gli indici di ricerca e si ottimizza il DB.
+    /// </summary>
+    private async Task VerifyDbAsync()
+    {
+        var all = Tracks.ToList();
+        if (all.Count == 0) return;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var missing = await Task.Run(() =>
+        {
+            int n = 0;
+            // un solo Exists per cartella prima: se la radice non c'è (disco scollegato) evitiamo 20.000 accessi lenti
+            var dirOk = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            foreach (var t in all)
+            {
+                var dir = Path.GetDirectoryName(t.FilePath) ?? "";
+                if (!dirOk.TryGetValue(dir, out var ok)) dirOk[dir] = ok = Directory.Exists(dir);
+                t.Missing = !ok || !File.Exists(t.FilePath);
+                if (t.Missing) n++;
+                _ = t.SearchWords; // pre-calcola l'indice di ricerca
+            }
+            return n;
+        });
+        MissingTracks = missing;
+        CollapseDuplicates();
+        LibraryView.Refresh();
+        try { await Task.Run(() => Library.Db.Optimize()); } catch { }
+        if (missing > 0) StatusText = $"Libreria pronta ({sw.ElapsedMilliseconds} ms) · {missing} brani non raggiungibili ora (disco scollegato?): nascosti, non cancellati";
+    }
+
+    /// <summary>Sorveglia le cartelle della libreria: i file nuovi/rinominati/cancellati entrano ed escono da soli, senza riscansione.</summary>
+    private void StartFolderWatchers()
+    {
+        foreach (var w in _watchers) { try { w.Dispose(); } catch { } }
+        _watchers.Clear();
+        foreach (var folder in Settings.LibraryFolders.Where(Directory.Exists))
+        {
+            try
+            {
+                var w = new FileSystemWatcher(folder) { IncludeSubdirectories = true, NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size, InternalBufferSize = 64 * 1024 };
+                w.Created += (_, e) => QueueFile(e.FullPath);
+                w.Changed += (_, e) => QueueFile(e.FullPath);
+                w.Renamed += (_, e) => { QueueFile(e.OldFullPath); QueueFile(e.FullPath); };
+                w.Deleted += (_, e) => QueueFile(e.FullPath);
+                w.EnableRaisingEvents = true;
+                _watchers.Add(w);
+            }
+            catch { /* percorsi di rete o permessi: si usa Riscansiona */ }
+        }
+        _watchTimer ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        _watchTimer.Tick -= WatchTick; _watchTimer.Tick += WatchTick;
+        _watchTimer.Start();
+    }
+
+    private void QueueFile(string path)
+    {
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        if (!(SourceFactory.AudioExtensions.Contains(ext) || SourceFactory.VideoExtensions.Contains(ext) || ext == ".zip" || ext == ".cdg" || MidiRenderService.IsMidi(path))) return;
+        lock (_pendingFiles) _pendingFiles.Add(path);
+    }
+
+    /// <summary>Applica i cambiamenti accumulati (debounce: i file grandi arrivano a pezzi).</summary>
+    private async void WatchTick(object? sender, EventArgs e)
+    {
+        List<string> batch;
+        lock (_pendingFiles) { if (_pendingFiles.Count == 0) return; batch = _pendingFiles.ToList(); _pendingFiles.Clear(); }
+        int added = 0, removed = 0;
+        foreach (var path in batch)
+        {
+            var p = Path.GetExtension(path).Equals(".cdg", StringComparison.OrdinalIgnoreCase) ? Path.ChangeExtension(path, ".mp3") : path;
+            var existing = Library.FindByPath(p);
+            if (!File.Exists(p))
+            {
+                if (existing != null) { RemoveTrackFromLibrary(existing); removed++; }
+                continue;
+            }
+            // file ancora in scrittura? riprova al prossimo giro
+            try { using var fs = File.Open(p, FileMode.Open, FileAccess.Read, FileShare.ReadWrite); }
+            catch { lock (_pendingFiles) _pendingFiles.Add(path); continue; }
+            var t = await Task.Run(() => Library.AddFile(p));
+            if (t == null) continue;
+            TitleCleaner.Apply(t, writeTags: false);
+            Library.Save(t);
+            var old = Tracks.FirstOrDefault(x => string.Equals(x.FilePath, p, StringComparison.OrdinalIgnoreCase));
+            if (old != null) { if (old.Id == t.Id) continue; Tracks.Remove(old); }
+            Tracks.Add(t);
+            added++;
+            if (Settings.AutoAnalyze) AnalyzeInBackground(t);
+        }
+        if (added + removed > 0)
+        {
+            LibraryCount = Tracks.Count;
+            CollapseDuplicates();
+            LibraryView.Refresh();
+            _remote?.LibraryChanged();
+            StatusText = $"Libreria aggiornata: +{added} −{removed}";
+        }
+    }
+
     // ---------------------------------------------------------------- QR sul proiettore
 
     [ObservableProperty] private bool _qrOverlayVisible;
@@ -2277,7 +2406,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (!string.IsNullOrWhiteSpace(s.Title)) track.Title = s.Title;
         track.InvalidateSearchCache();
         TitleCleaner.Apply(track, writeTags: true);
-        Library.Save();
+        Library.Save(track);
         LibraryView.Refresh();
         ExternalSuggestions.Remove(s);
         AddToQueue(track, "", 0);

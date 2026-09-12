@@ -180,6 +180,10 @@
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="0,0,0,8">
                         <TextBlock DockPanel.Dock="Left" Text="LIBRERIA" Style="{StaticResource SectionTitle}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <CheckBox DockPanel.Dock="Right" IsChecked="{Binding ShowDuplicates}" VerticalAlignment="Center" Margin="10,0,0,0" FontSize="11"
+                                  ToolTip="I brani uguali (stesso artista e titolo, durata simile) vengono mostrati una volta sola: la copia migliore. Spunta per vedere anche le altre copie.">
+                            <TextBlock><Run Text="mostra doppioni ("/><Run Text="{Binding HiddenDuplicates, Mode=OneWay}"/><Run Text=")"/></TextBlock>
+                        </CheckBox>
                         <CheckBox DockPanel.Dock="Right" IsChecked="{Binding HideCryptic}" Content="nascondi titoli senza senso" VerticalAlignment="Center" Margin="10,0,0,0" FontSize="11"
                                   ToolTip="Nasconde i file con nome incomprensibile (es. $RFXPGZ2 del Cestino di Windows, codici senza vocali): li puoi comunque cercare togliendo la spunta"/>
                         <TextBlock DockPanel.Dock="Right" Text="{Binding LibraryCount, StringFormat={}{0} brani}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="10,0,0,0"/>

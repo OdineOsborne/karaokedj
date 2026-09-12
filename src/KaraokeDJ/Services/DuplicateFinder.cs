@@ -85,7 +85,7 @@ public static class DuplicateFinder
     }
 
     /// <summary>Qualità stimata: bitrate (dimensione/durata), analisi fatta, tag presenti, non zip.</summary>
-    private static double Score(Track t)
+    public static double Score(Track t)
     {
         double kbps = t.DurationSec > 0 ? t.FileSize * 8.0 / t.DurationSec / 1000 : 0;
         double s = Math.Min(kbps, 320);

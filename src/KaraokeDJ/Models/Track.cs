@@ -103,6 +103,10 @@ public sealed class Track
     [JsonIgnore] public string DurationLabel => DurationSec <= 0 ? "--:--" : TimeSpan.FromSeconds(DurationSec).ToString(@"m\:ss");
 
     [JsonIgnore] public string MatchLabel { get; set; } = "";
+    /// <summary>Se non null, questo brano è una copia doppia di un altro e viene nascosto in libreria (il file resta).</summary>
+    [JsonIgnore] public Track? HiddenDuplicateOf { get; set; }
+    /// <summary>File non raggiungibile in questo momento (disco scollegato): nascosto, non cancellato.</summary>
+    [JsonIgnore] public bool Missing { get; set; }
 
     private string[]? _words;
     [JsonIgnore] public string[] SearchWords => _words ??= Services.SearchUtil.Words(Artist + " " + Title + " " + Genre + " " + Decade + " " + Path.GetFileNameWithoutExtension(FilePath));

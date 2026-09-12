@@ -23,21 +23,39 @@ public sealed class LibraryService
     public const int TagsVersion = 2;
 
     private readonly Dictionary<string, Track> _byPath = new(StringComparer.OrdinalIgnoreCase);
+    private readonly LibraryDb _db = new();
+    public LibraryDb Db => _db;
 
     public IReadOnlyCollection<Track> Tracks => _byPath.Values;
 
+    /// <summary>Carica dal database locale; la prima volta importa il vecchio library.json.</summary>
     public void Load()
     {
-        var lib = JsonStore.Load<LibraryFile>(AppPaths.LibraryFile);
         _byPath.Clear();
-        foreach (var t in lib.Tracks) _byPath[t.FilePath] = t;
+        var rows = _db.LoadAll();
+        if (rows.Count == 0 && File.Exists(AppPaths.LibraryFile))
+        {
+            var lib = JsonStore.Load<LibraryFile>(AppPaths.LibraryFile);
+            rows = lib.Tracks;
+            if (rows.Count > 0)
+            {
+                _db.UpsertAll(rows);
+                // il vecchio library.json resta al suo posto (una versione precedente dell'app potrebbe ancora usarlo)
+            }
+        }
+        foreach (var t in rows) _byPath[t.FilePath] = t;
     }
 
-    public void Save() => JsonStore.Save(AppPaths.LibraryFile, new LibraryFile { Tracks = _byPath.Values.ToList() });
+    /// <summary>Salva tutta la libreria (dopo scansioni o modifiche di massa).</summary>
+    public void Save() => _db.UpsertAll(_byPath.Values);
+
+    /// <summary>Salva un solo brano (posizione cue, contatore, genere…): aggiorna solo la sua riga.</summary>
+    public void Save(Track t) => _db.Upsert(t);
+    public void Save(IEnumerable<Track> tracks) => _db.UpsertAll(tracks);
 
     public Track? FindById(string id) => _byPath.Values.FirstOrDefault(t => t.Id == id);
 
-    public void Remove(Track t) => _byPath.Remove(t.FilePath);
+    public void Remove(Track t) { _byPath.Remove(t.FilePath); _db.Delete(t.Id); }
 
     public Track? FindByPath(string path) => _byPath.TryGetValue(path, out var t) ? t : null;
 
@@ -45,7 +63,7 @@ public sealed class LibraryService
     public Track? AddFile(string path)
     {
         var t = BuildTrack(path);
-        if (t != null) _byPath[path] = t;
+        if (t != null) { _byPath[path] = t; _db.Upsert(t); }
         return t;
     }
 
@@ -66,8 +84,8 @@ public sealed class LibraryService
 
             // Rimuove dalla cache i file spariti
             var set = new HashSet<string>(files, StringComparer.OrdinalIgnoreCase);
-            foreach (var key in _byPath.Keys.Where(k => !set.Contains(k)).ToList())
-                _byPath.Remove(key);
+            var gone = _byPath.Keys.Where(k => !set.Contains(k)).ToList();
+            if (gone.Count > 0) { _db.DeleteMany(gone.Select(k => _byPath[k].Id).ToList()); foreach (var key in gone) _byPath.Remove(key); }
 
             int done = 0;
             var added = new List<Track>();
@@ -91,7 +109,7 @@ public sealed class LibraryService
                 }
 
                 var t = BuildTrack(f);
-                if (t == null) { if (existing != null) _byPath.Remove(f); continue; }
+                if (t == null) { if (existing != null) { _byPath.Remove(f); _db.Delete(existing.Id); } continue; }
                 if (existing != null)
                 {
                     t.Id = existing.Id;
@@ -106,7 +124,7 @@ public sealed class LibraryService
                 _byPath[f] = t;
                 added.Add(t);
             }
-            Save();
+            if (added.Count > 0) _db.UpsertAll(added);
             return added;
         }, ct);
     }
