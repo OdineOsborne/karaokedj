@@ -264,16 +264,19 @@
                                 <MenuItem Header="Analizza tutti i brani mancanti" Command="{Binding AnalyzeMissingCommand}"/>
                                 <MenuItem Header="Azzera i segni 'suonato stasera'" Command="{Binding ClearPlayedMarksCommand}"/>
                                 <Separator/>
-                                <MenuItem Header="🏷 Genere" ItemsSource="{Binding KnownGenres}">
+                                <MenuItem Header="🏷 Generi (tag)" ItemsSource="{Binding GenreOptions}" ToolTip="Un brano può avere più generi: spunta quelli che c'entrano">
                                     <MenuItem.ItemContainerStyle>
                                         <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
-                                            <Setter Property="Header" Value="{Binding}"/>
-                                            <Setter Property="Command" Value="{Binding DataContext.SetGenreCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                                            <Setter Property="CommandParameter" Value="{Binding}"/>
+                                            <Setter Property="Header" Value="{Binding Name}"/>
+                                            <Setter Property="IsCheckable" Value="True"/>
+                                            <Setter Property="IsChecked" Value="{Binding IsChecked, Mode=OneTime}"/>
+                                            <Setter Property="StaysOpenOnClick" Value="True"/>
+                                            <Setter Property="Command" Value="{Binding DataContext.ToggleGenreCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                            <Setter Property="CommandParameter" Value="{Binding Name}"/>
                                         </Style>
                                     </MenuItem.ItemContainerStyle>
                                 </MenuItem>
-                                <MenuItem Header="🏷 Genere: altro / correggi…" Command="{Binding SetGenreCommand}" ToolTip="Scrivi il genere a mano (vuoto = nessun genere). Viene salvato anche nel tag del file."/>
+                                <MenuItem Header="🏷 Generi: scrivi a mano…" Command="{Binding SetGenreCommand}" ToolTip="Più generi separati da ; o virgola (vuoto = nessuno). Salvati anche nel tag del file."/>
                                 <MenuItem Header="📅 Anno…" Command="{Binding SetYearCommand}"/>
                                 <Separator/>
                                 <MenuItem Header="✎ Rinomina intelligente (brano selezionato)" Command="{Binding CleanSelectedTitleCommand}"/>

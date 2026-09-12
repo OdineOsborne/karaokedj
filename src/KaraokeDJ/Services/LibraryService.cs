@@ -218,7 +218,7 @@ public sealed class LibraryService
         // BPM e tonalità dai tag (TBPM / TKEY), se presenti
         if (tf.Tag.BeatsPerMinute > 0) t.Bpm = tf.Tag.BeatsPerMinute;
         if (tf.Tag.Year is > 1900 and < 2100) t.Year = (int)tf.Tag.Year;
-        var genre = tf.Tag.FirstGenre?.Trim();
+        var genre = string.Join("; ", (tf.Tag.Genres ?? Array.Empty<string>()).Select(g => g.Trim()).Where(g => g.Length > 0));
         if (!string.IsNullOrEmpty(genre)) t.Genre = genre;
         var composers = tf.Tag.Composers;
         if (composers is { Length: > 0 }) t.Composer = string.Join(", ", composers.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim()));

@@ -31,6 +31,19 @@ public sealed class Track
     public int Year { get; set; }
     /// <summary>Genere dal tag ("" = sconosciuto).</summary>
     public string Genre { get; set; } = "";
+    /// <summary>Generi come tag multipli: "Dance; Pop italiano" → ["Dance", "Pop italiano"].</summary>
+    [JsonIgnore] public IEnumerable<string> Genres => SplitGenres(Genre);
+    public static IEnumerable<string> SplitGenres(string? s) =>
+        (s ?? "").Split(new[] { ';', ',', '/', '|' }, StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).Where(x => x.Length > 0);
+    public bool HasGenre(string g) => Genres.Any(x => string.Equals(x, g.Trim(), StringComparison.OrdinalIgnoreCase));
+    /// <summary>Aggiunge o toglie un tag di genere.</summary>
+    public void ToggleGenre(string g)
+    {
+        var list = Genres.ToList();
+        var i = list.FindIndex(x => string.Equals(x, g.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (i >= 0) list.RemoveAt(i); else list.Add(g.Trim());
+        Genre = string.Join("; ", list);
+    }
     /// <summary>Autori/compositori dal tag TCOM (per il borderò SIAE); "" se assenti.</summary>
     public string Composer { get; set; } = "";
     /// <summary>Versione dei metadati letti: se inferiore a LibraryService.TagsVersion il file viene riletto alla scansione.</summary>

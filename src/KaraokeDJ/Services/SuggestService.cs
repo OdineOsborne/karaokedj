@@ -107,11 +107,11 @@ public static class GenreClassifier
         var client = new AnthropicClient { ApiKey = apiKey };
         var lines = batch.Select((t, i) => $"{i}|{t.Artist}|{t.Title}");
         var prompt = $$"""
-            Per ogni brano (formato "n|artista|titolo") indica il genere più adatto per un DJ di feste, scelto SOLO da questa lista:
+            Per ogni brano (formato "n|artista|titolo") indica il genere più adatto per un DJ di feste, scelto SOLO da questa lista (uno o due generi separati da "; " se il brano sta bene in entrambi):
             {{string.Join(", ", Genres)}}
             e l'anno di uscita se lo conosci (altrimenti 0). Brani:
             {{string.Join("\n", lines)}}
-            Rispondi SOLO con un array JSON: [{"n":0,"genre":"Pop italiano","year":1985}, ...] con una voce per ogni n.
+            Rispondi SOLO con un array JSON: [{"n":0,"genre":"Pop italiano; Dance","year":1985}, ...] con una voce per ogni n.
             """;
         var response = await client.Messages.Create(new MessageCreateParams
         {

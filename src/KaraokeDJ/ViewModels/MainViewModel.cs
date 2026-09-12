@@ -120,6 +120,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _searchText = "";
     [ObservableProperty] private string _libraryFilter = "all"; // all | audio | cdg | video
     [ObservableProperty] private Track? _selectedTrack;
+    partial void OnSelectedTrackChanged(Track? value) => OnPropertyChanged(nameof(GenreOptions));
     [ObservableProperty] private QueueEntry? _selectedQueueEntry;
     [ObservableProperty] private string _singerName = "";
     [ObservableProperty] private int _queueKeyShift;
@@ -792,10 +793,14 @@ public sealed partial class MainViewModel : ObservableObject
 
     private static bool MatchesSetGenres(Track t, List<string[]> genres)
     {
-        var w = SearchUtil.Words(t.Genre);
-        if (w.Length == 0) return false;
-        foreach (var g in genres)
-            if (g.All(x => w.Contains(x)) || (g.Length == 1 && w.Any(x => x.StartsWith(g[0])))) return true;
+        // ogni tag del brano viene confrontato con ogni genere della serata (tutte le parole, o prefisso per i generi a una parola)
+        foreach (var tag in t.Genres)
+        {
+            var w = SearchUtil.Words(tag);
+            if (w.Length == 0) continue;
+            foreach (var g in genres)
+                if (g.All(x => w.Contains(x)) || (g.Length == 1 && w.Any(x => x.StartsWith(g[0])))) return true;
+        }
         return false;
     }
 
@@ -1412,12 +1417,14 @@ public sealed partial class MainViewModel : ObservableObject
         return d switch { 0 => 1.0, 1 => 0.65, _ => 0.2 };
     }
 
+    /// <summary>Affinità di genere fra due brani (tag multipli): 1 = un tag in comune, 0.8 = parole in comune ("Pop Rock"/"Rock"), 0.5 = ignoto, 0.2 = diversi.</summary>
     private static double GenreAffinity(Track r, Track t)
     {
+        var ga = r.Genres.ToList(); var gb = t.Genres.ToList();
+        if (ga.Count == 0 || gb.Count == 0) return 0.5;
+        if (ga.Any(x => gb.Any(y => string.Equals(x, y, StringComparison.OrdinalIgnoreCase)))) return 1.0;
         var a = SearchUtil.Words(r.Genre); var b = SearchUtil.Words(t.Genre);
-        if (a.Length == 0 || b.Length == 0) return 0.5;
-        if (string.Equals(r.Genre, t.Genre, StringComparison.OrdinalIgnoreCase)) return 1.0;
-        return a.Intersect(b).Any() ? 0.8 : 0.2;              // "Pop Rock" vs "Rock": affine
+        return a.Intersect(b).Any() ? 0.8 : 0.2;
     }
 
     [RelayCommand]
@@ -1450,30 +1457,59 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ---------------------------------------------------------------- genere / anno a mano
 
-    /// <summary>Generi proponibili nel menu: quelli del catalogo AI più quelli già presenti in libreria.</summary>
-    public IEnumerable<string> KnownGenres =>
-        GenreClassifier.Genres.Concat(Tracks.Select(t => t.Genre).Where(g => !string.IsNullOrWhiteSpace(g)))
-            .Select(g => g.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(g => g, StringComparer.CurrentCultureIgnoreCase).ToList();
+    /// <summary>Voce del menu Genere: nome e se il brano selezionato ce l'ha già.</summary>
+    public sealed class GenreOption
+    {
+        public string Name { get; init; } = "";
+        public bool IsChecked { get; init; }
+    }
 
-    /// <summary>Imposta il genere del brano selezionato (parametro = genere; vuoto/null = chiede). Scrive anche il tag nel file.</summary>
+    /// <summary>Generi proponibili nel menu (catalogo AI + tag già presenti in libreria), con la spunta per il brano selezionato.</summary>
+    public List<GenreOption> GenreOptions
+    {
+        get
+        {
+            var t = SelectedTrack;
+            return GenreClassifier.Genres.Concat(Tracks.SelectMany(x => x.Genres))
+                .Select(g => g.Trim()).Where(g => g.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => g, StringComparer.CurrentCultureIgnoreCase)
+                .Select(g => new GenreOption { Name = g, IsChecked = t?.HasGenre(g) == true })
+                .ToList();
+        }
+    }
+
+    /// <summary>Aggiunge/toglie un tag di genere al brano selezionato (un brano può averne più d'uno). Scrive anche il tag nel file.</summary>
     [RelayCommand]
-    private void SetGenre(string? genre)
+    private void ToggleGenre(string? genre)
+    {
+        var t = SelectedTrack;
+        if (t == null || string.IsNullOrWhiteSpace(genre)) return;
+        t.ToggleGenre(genre);
+        AfterGenreChange(t);
+    }
+
+    /// <summary>Scrive i generi a mano (separati da ; o virgola), vuoto = nessuno.</summary>
+    [RelayCommand]
+    private void SetGenre()
     {
         var t = SelectedTrack;
         if (t == null) return;
-        if (string.IsNullOrWhiteSpace(genre))
-        {
-            genre = Views.InputDialog.Show("Genere", $"Genere per \"{t.Display}\":", t.Genre);
-            if (genre == null) return;
-        }
-        t.Genre = genre.Trim();
+        var s = Views.InputDialog.Show("Generi", $"Generi per \"{t.Display}\" (più tag separati da ; o virgola):", t.Genre);
+        if (s == null) return;
+        t.Genre = string.Join("; ", Track.SplitGenres(s));
+        AfterGenreChange(t);
+    }
+
+    private void AfterGenreChange(Track t)
+    {
         t.InvalidateSearchCache();
         WriteGenreYearTag(t);
         Library.Save();
         LibraryView.Refresh();
         UpdateSuggestions();
-        StatusText = t.Genre.Length == 0 ? $"Genere tolto: {t.Display}" : $"Genere \"{t.Genre}\": {t.Display}";
-        OnPropertyChanged(nameof(KnownGenres));
+        StatusText = t.Genre.Length == 0 ? $"Nessun genere: {t.Display}" : $"Generi \"{t.Genre}\": {t.Display}";
+        OnPropertyChanged(nameof(GenreOptions));
     }
 
     /// <summary>Imposta l'anno del brano selezionato (chiede).</summary>
@@ -1498,7 +1534,7 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             using var tf = TagLib.File.Create(t.FilePath);
-            tf.Tag.Genres = string.IsNullOrEmpty(t.Genre) ? Array.Empty<string>() : new[] { t.Genre };
+            tf.Tag.Genres = t.Genres.ToArray();
             if (t.Year > 0) tf.Tag.Year = (uint)t.Year;
             tf.Save();
         }
