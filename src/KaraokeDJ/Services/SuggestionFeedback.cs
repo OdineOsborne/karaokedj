@@ -71,4 +71,7 @@ public sealed class SuggestionFeedback
     }
 
     public void ResetSession() => _rejectedThisSession.Clear();
+
+    /// <summary>Scarta un brano solo per stasera (es. tolto dalla coda dopo che l'automix l'aveva scelto), senza memorizzare un giudizio.</summary>
+    public void RejectForSession(Track t) => _rejectedThisSession.Add(t.Id);
 }

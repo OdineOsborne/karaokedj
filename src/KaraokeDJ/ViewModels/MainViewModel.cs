@@ -538,7 +538,11 @@ public sealed partial class MainViewModel : ObservableObject
     private void RemoveFromQueue(QueueEntry? entry)
     {
         entry ??= SelectedQueueEntry;
-        if (entry != null) Queue.Remove(entry);
+        if (entry == null) return;
+        // se l'aveva scelto l'automix e il DJ lo toglie, stasera non va riproposto (altrimenti tornerebbe subito)
+        if (entry.Note.StartsWith("automix", StringComparison.OrdinalIgnoreCase)) Feedback.RejectForSession(entry.Track);
+        Queue.Remove(entry);
+        UpdateSuggestions();
     }
 
     [RelayCommand]
@@ -2380,7 +2384,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             case "add": if (T(c.Id) is { } t1) AddToQueue(t1, c.Singer ?? "", 0); break;
             case "addtop": if (T(c.Id) is { } t2) { Queue.Insert(0, new QueueEntry { Track = t2, Singer = c.Singer ?? "" }); StatusText = $"Dal telefono, prossimo: {t2.Display}"; } break;
-            case "remove": if (c.Index is int ri && ri >= 0 && ri < Queue.Count) Queue.RemoveAt(ri); break;
+            case "remove": if (c.Index is int ri && ri >= 0 && ri < Queue.Count) RemoveFromQueue(Queue[ri]); break;
             case "up": if (c.Index is int ui && ui > 0 && ui < Queue.Count) Queue.Move(ui, ui - 1); break;
             case "down": if (c.Index is int di && di >= 0 && di < Queue.Count - 1) Queue.Move(di, di + 1); break;
             case "top": if (c.Index is int ti && ti > 0 && ti < Queue.Count) Queue.Move(ti, 0); break;
