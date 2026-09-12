@@ -17,7 +17,6 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- intestazione -->
@@ -38,11 +37,80 @@
                 <TextBlock/>
             </DockPanel>
 
-            <!-- titolo -->
-            <StackPanel Grid.Row="1">
-                <TextBlock Text="{Binding Title}" FontSize="19" FontWeight="Black" TextTrimming="CharacterEllipsis" FontFamily="Segoe UI Variable Display, Segoe UI Black, Segoe UI"/>
-                <TextBlock Text="{Binding Artist}" Style="{StaticResource Muted}" FontSize="13" TextTrimming="CharacterEllipsis"/>
-            </StackPanel>
+            <!-- titolo + controlli vinile (a destra) + riga dei tag genere -->
+            <Grid Grid.Row="1">
+                <Grid.Resources>
+                    <Style x:Key="HoldBtn" TargetType="Button" BasedOn="{StaticResource SmallButton}">
+                        <Setter Property="Padding" Value="6,2"/>
+                        <Setter Property="FontSize" Value="10"/>
+                        <Setter Property="FontWeight" Value="Black"/>
+                        <Setter Property="Margin" Value="0,0,3,0"/>
+                        <Setter Property="MinWidth" Value="40"/>
+                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="Hold_Down"/>
+                        <EventSetter Event="PreviewMouseLeftButtonUp" Handler="Hold_Up"/>
+                        <EventSetter Event="MouseLeave" Handler="Hold_Leave"/>
+                    </Style>
+                    <Style x:Key="VinylBtn" TargetType="Button" BasedOn="{StaticResource SmallButton}">
+                        <Setter Property="Padding" Value="6,2"/>
+                        <Setter Property="FontSize" Value="10"/>
+                        <Setter Property="FontWeight" Value="Black"/>
+                        <Setter Property="Margin" Value="0,0,3,0"/>
+                        <Setter Property="MinWidth" Value="40"/>
+                    </Style>
+                    <Style x:Key="TagChip" TargetType="Button" BasedOn="{StaticResource SmallButton}">
+                        <Setter Property="Padding" Value="7,1"/>
+                        <Setter Property="FontSize" Value="10"/>
+                        <Setter Property="Margin" Value="0,0,4,0"/>
+                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                    </Style>
+                </Grid.Resources>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Column="0" Grid.Row="0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="Black" TextTrimming="CharacterEllipsis" FontFamily="Segoe UI Variable Display, Segoe UI Black, Segoe UI"/>
+                    <TextBlock Text="{Binding Artist}" Style="{StaticResource Muted}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <!-- vinile: jog + comandi, accanto al titolo -->
+                <DockPanel Grid.Column="1" Grid.Row="0" Margin="8,0,0,0" VerticalAlignment="Center">
+                    <local:JogWheel x:Name="Jog" Width="52" Height="52" Accent="{Binding Accent, ElementName=Root}" Angle="{Binding JogAngle}" IsSpinning="{Binding IsPlaying}"
+                                    JogStarted="Jog_Started" JogRateChanged="Jog_Rate" JogEnded="Jog_Ended" Nudged="Jog_Nudged" Margin="0,0,8,0"
+                                    ToolTip="Piatto: trascina per fare scratch (anche all'indietro), rotella = pitch bend"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                            <Button Style="{StaticResource HoldBtn}" Content="◀◀" Tag="backward" local:Shortcut.Action="back" ToolTip="Tieni premuto: indietro veloce con audio"/>
+                            <Button Style="{StaticResource HoldBtn}" Content="▶▶" Tag="forward" local:Shortcut.Action="fwd" ToolTip="Tieni premuto: avanti veloce con audio"/>
+                            <Button Style="{StaticResource HoldBtn}" Content="REV" Tag="reverse" local:Shortcut.Action="rev" ToolTip="Tieni premuto: riproduzione al contrario; al rilascio riprende"/>
+                            <Button Style="{StaticResource HoldBtn}" Content="SLOW" Tag="slow" local:Shortcut.Action="slow" ToolTip="Tieni premuto: il disco rallenta fino a fermarsi; al rilascio riparte"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource VinylBtn}" Content="↶ SPIN" Command="{Binding SpinBackCommand}" local:Shortcut.Action="spinback" ToolTip="Girata secca all'indietro"/>
+                            <Button Style="{StaticResource VinylBtn}" Content="SPIN ↷" Command="{Binding SpinForwardCommand}" local:Shortcut.Action="spinfwd" ToolTip="Girata secca in avanti"/>
+                            <Button Style="{StaticResource VinylBtn}" Content="BRAKE" Command="{Binding BrakeCommand}" local:Shortcut.Action="brake" ToolTip="Frenata vinile fino allo stop (poi pausa)"/>
+                            <Button Style="{StaticResource VinylBtn}" Content="BACKSPIN" Command="{Binding BackspinCommand}" local:Shortcut.Action="backspin" ToolTip="Riavvolgimento vinile (poi pausa)"/>
+                        </StackPanel>
+                    </StackPanel>
+                </DockPanel>
+                <!-- tag genere del brano caricato: click su un tag lo toglie, ＋ ne aggiunge (max 5) -->
+                <DockPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" Margin="0,3,0,0" Visibility="{Binding HasTrack, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="🏷" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,6,0" FontSize="11"/>
+                    <Button DockPanel.Dock="Right" Content="＋ tag" Style="{StaticResource TagChip}" Foreground="{StaticResource MutedBrush}" Margin="0" Click="AddTag_Click"
+                            ToolTip="Aggiungi un genere al brano (fino a 5). Elenco dei generi conosciuti, oppure scrivine uno nuovo."/>
+                    <ItemsControl ItemsSource="{Binding GenreTags}" VerticalAlignment="Center">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource TagChip}" Content="{Binding}" Click="RemoveTag_Click" Tag="{Binding}" ToolTip="Click: togli questo genere dal brano"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Grid>
 
             <!-- anteprima -->
             <Border Grid.Row="2" Background="Black" CornerRadius="4" Margin="0,4" Height="60" ClipToBounds="True"
@@ -206,44 +274,8 @@
                 </StackPanel>
             </Grid>
 
-            <!-- vinile: jog / scratch, reverse, avanti-indietro, spin, slow -->
-            <Border Grid.Row="6" Background="#FF0D0D12" CornerRadius="8" Padding="8,4" Margin="0,6,0,0">
-                <Border.Resources>
-                    <Style x:Key="HoldBtn" TargetType="Button" BasedOn="{StaticResource SmallButton}">
-                        <Setter Property="Padding" Value="7,3"/>
-                        <Setter Property="FontSize" Value="11"/>
-                        <Setter Property="FontWeight" Value="Black"/>
-                        <Setter Property="Margin" Value="0,0,4,0"/>
-                        <Setter Property="MinWidth" Value="52"/>
-                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="Hold_Down"/>
-                        <EventSetter Event="PreviewMouseLeftButtonUp" Handler="Hold_Up"/>
-                        <EventSetter Event="MouseLeave" Handler="Hold_Leave"/>
-                    </Style>
-                </Border.Resources>
-                <DockPanel>
-                    <local:JogWheel x:Name="Jog" Width="70" Height="70" Accent="{Binding Accent, ElementName=Root}" Angle="{Binding JogAngle}" IsSpinning="{Binding IsPlaying}"
-                                    JogStarted="Jog_Started" JogRateChanged="Jog_Rate" JogEnded="Jog_Ended" Nudged="Jog_Nudged" Margin="0,0,10,0"
-                                    ToolTip="Piatto: trascina per fare scratch (anche all'indietro), rotella = pitch bend"/>
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="VINILE" Style="{StaticResource SectionTitle}" Margin="0,0,0,4"/>
-                        <WrapPanel>
-                            <Button Style="{StaticResource HoldBtn}" Content="◀◀" Tag="backward" local:Shortcut.Action="back" ToolTip="Tieni premuto: indietro veloce con audio"/>
-                            <Button Style="{StaticResource HoldBtn}" Content="▶▶" Tag="forward" local:Shortcut.Action="fwd" ToolTip="Tieni premuto: avanti veloce con audio"/>
-                            <Button Style="{StaticResource HoldBtn}" Content="REV" Tag="reverse" local:Shortcut.Action="rev" ToolTip="Tieni premuto: riproduzione al contrario; al rilascio riprende"/>
-                            <Button Style="{StaticResource HoldBtn}" Content="SLOW" Tag="slow" local:Shortcut.Action="slow" ToolTip="Tieni premuto: il disco rallenta fino a fermarsi; al rilascio riparte"/>
-                        </WrapPanel>
-                        <WrapPanel Margin="0,4,0,0">
-                            <Button Style="{StaticResource SmallButton}" Padding="7,3" FontSize="11" FontWeight="Black" Margin="0,0,4,0" MinWidth="52" Content="↶ SPIN" Command="{Binding SpinBackCommand}" local:Shortcut.Action="spinback" ToolTip="Girata secca all'indietro"/>
-                            <Button Style="{StaticResource SmallButton}" Padding="7,3" FontSize="11" FontWeight="Black" Margin="0,0,4,0" MinWidth="52" Content="SPIN ↷" Command="{Binding SpinForwardCommand}" local:Shortcut.Action="spinfwd" ToolTip="Girata secca in avanti"/>
-                            <Button Style="{StaticResource SmallButton}" Padding="7,3" FontSize="11" FontWeight="Black" Margin="0,0,4,0" MinWidth="52" Content="BRAKE" Command="{Binding BrakeCommand}" local:Shortcut.Action="brake" ToolTip="Frenata vinile fino allo stop (poi pausa)"/>
-                            <Button Style="{StaticResource SmallButton}" Padding="7,3" FontSize="11" FontWeight="Black" Margin="0,0,4,0" MinWidth="52" Content="BACKSPIN" Command="{Binding BackspinCommand}" local:Shortcut.Action="backspin" ToolTip="Riavvolgimento vinile (poi pausa)"/>
-                        </WrapPanel>
-                    </StackPanel>
-                </DockPanel>
-            </Border>
-
             <!-- EQ + loop -->
-            <Grid Grid.Row="7" Margin="0,8,0,0">
+            <Grid Grid.Row="6" Margin="0,6,0,0">
                 <Grid.Resources>
                     <Style x:Key="EqSlider" TargetType="Slider" BasedOn="{StaticResource {x:Type Slider}}">
                         <Setter Property="Width" Value="46"/>
@@ -299,7 +331,7 @@
                 </StackPanel>
             </Grid>
             <!-- effetti -->
-            <Border Grid.Row="8" Background="#FF0D0D12" CornerRadius="8" Padding="8,6" Margin="0,8,0,0"
+            <Border Grid.Row="7" Background="#FF0D0D12" CornerRadius="8" Padding="8,6" Margin="0,8,0,0"
                     Visibility="{Binding FxVisible, Converter={StaticResource BoolToVis}}">
                 <Border.Resources>
                     <Style x:Key="FxToggle" TargetType="ToggleButton" BasedOn="{StaticResource {x:Type ToggleButton}}">

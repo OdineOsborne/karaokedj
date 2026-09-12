@@ -55,6 +55,41 @@ public partial class DeckControl : UserControl
     private void Hold_Up(object sender, MouseButtonEventArgs e) { if (_holding && DataContext is DeckViewModel vm) { _holding = false; vm.HoldReleaseCommand.Execute(null); } }
     private void Hold_Leave(object sender, MouseEventArgs e) { if (_holding && e.LeftButton == MouseButtonState.Pressed && DataContext is DeckViewModel vm) { _holding = false; vm.HoldReleaseCommand.Execute(null); } }
 
+    // ---- tag genere sotto il titolo
+    private void RemoveTag_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button b && b.Tag is string g && DataContext is DeckViewModel vm) vm.RemoveGenreTag(g);
+    }
+
+    private void AddTag_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button b || DataContext is not DeckViewModel vm || vm.Track == null) return;
+        if (vm.Track.Genres.Count() >= DeckViewModel.MaxGenreTags)
+        {
+            MessageBox.Show($"Massimo {DeckViewModel.MaxGenreTags} generi per brano: togline uno cliccandolo.", "Generi", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        var menu = new ContextMenu { PlacementTarget = b, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom, MaxHeight = 520 };
+        var known = App.Vm?.GenreOptions.Select(o => o.Name) ?? Services.GenreClassifier.Genres.AsEnumerable();
+        foreach (var g in known)
+        {
+            if (vm.Track.HasGenre(g)) continue;
+            var item = new MenuItem { Header = g };
+            item.Click += (_, _) => vm.AddGenreTag(g);
+            menu.Items.Add(item);
+        }
+        menu.Items.Add(new Separator());
+        var custom = new MenuItem { Header = "Nuovo genere…" };
+        custom.Click += (_, _) =>
+        {
+            var s = InputDialog.Show("Nuovo genere", "Nome del genere (o più, separati da ;):", "");
+            if (s == null) return;
+            foreach (var g in Models.Track.SplitGenres(s)) if (!vm.AddGenreTag(g)) break;
+        };
+        menu.Items.Add(custom);
+        menu.IsOpen = true;
+    }
+
     private void Cue_Right(object sender, MouseButtonEventArgs e)
     {
         if (DataContext is DeckViewModel vm) vm.ClearCue();

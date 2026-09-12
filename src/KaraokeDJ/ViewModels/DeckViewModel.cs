@@ -147,6 +147,33 @@ public sealed partial class DeckViewModel : ObservableObject
     [RelayCommand] private void Brake() => Deck.Brake(1.5);
     [RelayCommand] private void Backspin() => Deck.Backspin(0.8);
 
+    // ---------------------------------------------------------------- tag genere del brano caricato
+    /// <summary>Tag genere del brano caricato (per la riga sotto il titolo).</summary>
+    public IEnumerable<string> GenreTags => Track?.Genres ?? Enumerable.Empty<string>();
+    /// <summary>Il MainViewModel salva e riallinea suggeriti/libreria.</summary>
+    public event Action<Track>? GenreChanged;
+    public const int MaxGenreTags = 5;
+    public void RefreshGenreTags() => OnPropertyChanged(nameof(GenreTags));
+
+    public bool AddGenreTag(string genre)
+    {
+        if (Track == null || string.IsNullOrWhiteSpace(genre)) return false;
+        if (Track.HasGenre(genre)) return true;
+        if (Track.Genres.Count() >= MaxGenreTags) return false;
+        Track.ToggleGenre(genre);
+        OnPropertyChanged(nameof(GenreTags));
+        GenreChanged?.Invoke(Track);
+        return true;
+    }
+
+    public void RemoveGenreTag(string genre)
+    {
+        if (Track == null || !Track.HasGenre(genre)) return;
+        Track.ToggleGenre(genre);
+        OnPropertyChanged(nameof(GenreTags));
+        GenreChanged?.Invoke(Track);
+    }
+
     // ---------------------------------------------------------------- griglia dei battiti
     /// <summary>Secondi del primo "1" della griglia (-1 = ignoto).</summary>
     [ObservableProperty] private double _beatOffsetSec = -1;
@@ -639,6 +666,7 @@ public sealed partial class DeckViewModel : ObservableObject
             CueSec = track.CueSec;
             NativeBpm = track.Bpm;
             BeatOffsetSec = track.BeatOffsetSec;
+            OnPropertyChanged(nameof(GenreTags));
             LoopExit();
             Tick();
             TrackLoaded?.Invoke(this);
@@ -665,6 +693,7 @@ public sealed partial class DeckViewModel : ObservableObject
         HasTrack = false;
         IsKaraoke = IsCdg = IsVideo = IsMidiLyrics = false;
         _lyrics = null; _lineStarts = null;
+        OnPropertyChanged(nameof(GenreTags));
         VideoPath = null;
         DurationSec = 0;
         IsEnding = false;

@@ -43,6 +43,7 @@ public sealed partial class MainViewModel : ObservableObject
             d.TrackLoaded += dv => { if (_autoMixTriggeredFor == dv) _autoMixTriggeredFor = null; UpdateProjectorState(); UpdateSuggestions(); };
             d.Played += OnTrackPlayed;
             d.CuesChanged += dv => { if (dv.Track != null) Library.Save(dv.Track); LibraryView.Refresh(); };
+            d.GenreChanged += t => AfterGenreChange(t);
             d.CdgOffsetMs = Settings.CdgOffsetMs;
         }
 
@@ -1506,6 +1507,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         var t = SelectedTrack;
         if (t == null || string.IsNullOrWhiteSpace(genre)) return;
+        if (!t.HasGenre(genre) && t.Genres.Count() >= DeckViewModel.MaxGenreTags) { StatusText = $"Massimo {DeckViewModel.MaxGenreTags} generi per brano"; return; }
         t.ToggleGenre(genre);
         AfterGenreChange(t);
     }
@@ -1518,13 +1520,14 @@ public sealed partial class MainViewModel : ObservableObject
         if (t == null) return;
         var s = Views.InputDialog.Show("Generi", $"Generi per \"{t.Display}\" (più tag separati da ; o virgola):", t.Genre);
         if (s == null) return;
-        t.Genre = string.Join("; ", Track.SplitGenres(s));
+        t.Genre = string.Join("; ", Track.SplitGenres(s).Take(DeckViewModel.MaxGenreTags));
         AfterGenreChange(t);
     }
 
     private void AfterGenreChange(Track t)
     {
         t.InvalidateSearchCache();
+        foreach (var d in new[] { DeckA, DeckB }) if (d.Track == t) d.RefreshGenreTags();
         WriteGenreYearTag(t);
         Library.Save(t);
         LibraryView.Refresh();
@@ -2118,7 +2121,7 @@ public sealed partial class MainViewModel : ObservableObject
                 foreach (var t in batch)
                 {
                     if (!res.TryGetValue(t.Id, out var r)) continue;
-                    t.Genre = r.genre; if (t.Year <= 0 && r.year > 0) t.Year = r.year;
+                    t.Genre = string.Join("; ", Track.SplitGenres(r.genre).Take(DeckViewModel.MaxGenreTags)); if (t.Year <= 0 && r.year > 0) t.Year = r.year;
                     t.InvalidateSearchCache(); set++;
                 }
                 done += batch.Length;

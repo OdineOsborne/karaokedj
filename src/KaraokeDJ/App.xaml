@@ -526,7 +526,7 @@
                                 <TextBlock x:Name="arrow" Grid.Column="1" Text="▸" Margin="12,0,0,0" Foreground="{StaticResource MutedBrush}" Visibility="Collapsed"/>
                                 <Popup x:Name="PART_Popup" Placement="Right" IsOpen="{TemplateBinding IsSubmenuOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
                                     <Border Background="#FF15151C" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="4">
-                                        <ItemsPresenter/>
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="520"><ItemsPresenter/></ScrollViewer>
                                     </Border>
                                 </Popup>
                             </Grid>
