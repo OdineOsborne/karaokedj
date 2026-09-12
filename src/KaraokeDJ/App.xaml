@@ -535,7 +535,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#3300E5FF"/>
+                                <Setter TargetName="bd" Property="Background" Value="#8C0077FF"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="bd" Property="Background" Value="#18FFFFFF"/>
@@ -586,11 +586,13 @@
         <Style TargetType="DataGridRow">
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
             <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#3300E5FF"/>
-                </Trigger>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#18FFFFFF"/>
+                    <Setter Property="Background" Value="#22FFFFFF"/>
+                </Trigger>
+                <!-- riga selezionata: blu pieno, ben visibile anche sul vetro (dichiarato dopo l'hover per avere la precedenza) -->
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#E00077FF"/>
+                    <Setter Property="Foreground" Value="White"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
