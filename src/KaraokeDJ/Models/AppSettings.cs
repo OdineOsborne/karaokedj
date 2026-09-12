@@ -30,6 +30,9 @@ public sealed class AppSettings
     public bool BottomStripVisible { get; set; } = true;
     /// <summary>Chiave API Anthropic, protetta con DPAPI (utente corrente).</summary>
     public string? AnthropicApiKeyProtected { get; set; }
+    /// <summary>Sorgente di importazione scelta (id) e client_id Jamendo (gratuito).</summary>
+    public string? ImportSourceId { get; set; }
+    public string? JamendoClientId { get; set; }
     /// <summary>Chiave licenza donationware (legata alla macchina).</summary>
     public string? LicenseCode { get; set; }
     /// <summary>Cartella dove salvare i download (vuota = MusicaKaraokeDJ Downloads).</summary>

@@ -4,7 +4,16 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace KaraokeDJ.Services;
+namespace VOXA.Plugin.YtDlp;
+
+/// <summary>Percorsi usati dal plugin (impostati dal plugin all'avvio tramite l'host).</summary>
+internal static class AppPaths
+{
+    public static string ToolsDir { get; set; } = "";
+    public static string Root { get; set; } = "";
+    public static string DownloadsDir { get; set; } = "";
+    public static void EnsureDirs() { Directory.CreateDirectory(ToolsDir); Directory.CreateDirectory(Root); Directory.CreateDirectory(DownloadsDir); }
+}
 
 public sealed class DownloadStatus
 {

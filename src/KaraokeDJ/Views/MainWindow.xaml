@@ -53,6 +53,7 @@
                 <Button Content="{Binding AppVersion, StringFormat=⬆ {0}}" Style="{StaticResource SmallButton}" Command="{Binding CheckUpdatesCommand}" Margin="0,0,10,0" ToolTip="Controlla se ci sono aggiornamenti su GitHub"/>
                 <ToggleButton IsChecked="{Binding BottomStripVisible}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="🎛 PAD" ToolTip="Mostra/nascondi la striscia in basso (jingle e download) per dare spazio a libreria e coda"/>
                 <ToggleButton IsChecked="{Binding MixViewVisible}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="〰 MIX" ToolTip="Mostra/nascondi le onde sovrapposte dei due deck (per allineare i beat)"/>
+                <ToggleButton IsChecked="{Binding IsMonitorOpen}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="👁 MONITOR" v:Shortcut.Action="monitor" ToolTip="Finestrella sempre in primo piano con quello che vede il pubblico sul proiettore (CDG, testo, video, dediche, QR)"/>
                 <ToggleButton IsChecked="{Binding IsProjectorOpen}" Padding="14,6" FontWeight="Bold" ToolTip="Ctrl+P" v:Shortcut.Action="projector">
                     <TextBlock Text="🖥 PROIETTORE"/>
                 </ToggleButton>
@@ -513,18 +514,24 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Text="SCARICA DA YOUTUBE / SPOTIFY  (brano, playlist o album)" Style="{StaticResource SectionTitle}"/>
+                    <DockPanel Grid.Row="0">
+                        <TextBlock Text="IMPORTA BRANI" Style="{StaticResource SectionTitle}" VerticalAlignment="Center"/>
+                        <ComboBox DockPanel.Dock="Right" ItemsSource="{Binding ImportSources}" SelectedItem="{Binding SelectedSource}" DisplayMemberPath="Name" MinWidth="200" FontSize="11" Padding="6,2"
+                                  ToolTip="{Binding SelectedSource.Description}"/>
+                        <TextBlock Text="da" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="8,0,6,0" HorizontalAlignment="Right"/>
+                    </DockPanel>
                     <DockPanel Grid.Row="1">
-                        <Button DockPanel.Dock="Right" Content="⬇ Scarica" Style="{StaticResource AccentButton}" Command="{Binding DownloadCommand}" Margin="6,0,0,0"
+                        <Button DockPanel.Dock="Right" Content="⬇ Importa" Style="{StaticResource AccentButton}" Command="{Binding DownloadCommand}" Margin="6,0,0,0"
                                 Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVisInv}}"/>
                         <Button DockPanel.Dock="Right" Content="Annulla" Style="{StaticResource DangerButton}" Command="{Binding CancelDownloadCommand}" Margin="6,0,0,0"
                                 Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVis}}"/>
-                        <TextBox Text="{Binding DownloadInput, UpdateSourceTrigger=PropertyChanged}" ToolTip="Link YouTube (video o playlist), link Spotify (brano, playlist o album) oppure 'artista titolo'"
+                        <TextBox Text="{Binding DownloadInput, UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding ImportHint}"
                                  KeyDown="DownloadBox_KeyDown"/>
                     </DockPanel>
                     <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,6,0,0">
                         <RadioButton Content="Audio MP3" IsChecked="{Binding DownloadVideo, Converter={StaticResource InverseBool}}" Foreground="{StaticResource TextBrush}" Margin="0,0,12,0"/>
-                        <RadioButton Content="Video (karaoke con testo)" IsChecked="{Binding DownloadVideo}" Foreground="{StaticResource TextBrush}"/>
+                        <RadioButton Content="Video (karaoke con testo)" IsChecked="{Binding DownloadVideo}" Foreground="{StaticResource TextBrush}" IsEnabled="{Binding SelectedSource.SupportsVideo}"/>
+                        <TextBlock Text="{Binding ImportHint}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="12,0,0,0" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
                     <StackPanel Grid.Row="3" VerticalAlignment="Bottom">
                         <ProgressBar Height="6" Minimum="0" Maximum="100" Value="{Binding DownloadPercent}" Margin="0,6,0,4"

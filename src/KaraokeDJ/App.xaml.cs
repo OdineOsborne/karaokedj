@@ -61,8 +61,10 @@ public partial class App : Application
             await System.Threading.Tasks.Task.Delay(800);
             Vm.DeckA.FxVisible = true;
             await System.Threading.Tasks.Task.Delay(500);
+            var plugins = string.Join("; ", Vm.Plugins.Plugins.Select(p => p.Name + (p.Ok ? "" : " ERR: " + p.Error)));
+            var sources = string.Join(", ", Vm.ImportSources.Select(s => s.Id));
             Console.Error.WriteLine("SELFTEST OK");
-            try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "voxa-selftest.log"), "OK"); } catch { }
+            try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "voxa-selftest.log"), "OK\nplugins: " + plugins + "\nsources: " + sources); } catch { }
             Shutdown(0);
         }
         catch (Exception ex)

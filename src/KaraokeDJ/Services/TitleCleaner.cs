@@ -57,7 +57,7 @@ public static class TitleCleaner
     private static bool Similar(string x, string y)
     {
         if (string.IsNullOrWhiteSpace(x) || string.IsNullOrWhiteSpace(y)) return false;
-        var nx = DownloadService.NormalizeForCompare(x); var ny = DownloadService.NormalizeForCompare(y);
+        var nx = SearchUtil.NormalizeForCompare(x); var ny = SearchUtil.NormalizeForCompare(y);
         if (nx.Length < 2 || ny.Length < 2) return false;
         return nx == ny || nx.Contains(ny) || ny.Contains(nx);
     }

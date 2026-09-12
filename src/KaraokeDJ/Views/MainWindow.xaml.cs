@@ -10,6 +10,7 @@ namespace KaraokeDJ.Views;
 public partial class MainWindow : Window
 {
     private ProjectorWindow? _projector;
+    private ProjectorWindow? _monitor;
     private Point _dragStart;
 
     public MainWindow()
@@ -50,6 +51,7 @@ public partial class MainWindow : Window
         Vm.Settings.WindowWidth = Width;
         Vm.Settings.WindowHeight = Height;
         _projector?.Close();
+        _monitor?.Close();
     }
 
     private void Vm_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -58,6 +60,19 @@ public partial class MainWindow : Window
         {
             if (Vm.IsProjectorOpen) ShowProjector();
             else HideProjector();
+        }
+        else if (e.PropertyName == nameof(MainViewModel.IsMonitorOpen))
+        {
+            if (Vm.IsMonitorOpen)
+            {
+                if (_monitor == null)
+                {
+                    _monitor = new ProjectorWindow { DataContext = Vm, Owner = this };
+                    _monitor.Closed += (_, _) => { _monitor = null; Vm.IsMonitorOpen = false; };
+                }
+                _monitor.ShowAsMonitor();
+            }
+            else { _monitor?.Close(); _monitor = null; }
         }
     }
 

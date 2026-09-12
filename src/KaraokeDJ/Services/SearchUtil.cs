@@ -19,6 +19,16 @@ public static class SearchUtil
         return sb.ToString();
     }
 
+    /// <summary>Normalizza artista/titolo per confronti di uguaglianza (minuscolo, senza parentesi, senza "official/remaster/…", solo lettere e cifre).</summary>
+    public static string NormalizeForCompare(string s)
+    {
+        s = s.ToLowerInvariant().Replace("&", " and ");
+        s = Regex.Replace(s, @"\(.*?\)|\[.*?\]", " ");            // (Remastered), [Official Video]
+        s = Regex.Replace(s, @"\b(official|audio|video|remaster(ed)?|lyrics?|hd|hq|feat\.?|ft\.?)\b", " ");
+        s = Regex.Replace(s, @"[^\p{L}\p{N}]+", "");
+        return s;
+    }
+
     public static string[] Words(string s) =>
         Regex.Split(Normalize(s), @"[^\p{L}\p{N}]+").Where(w => w.Length > 0).ToArray();
 

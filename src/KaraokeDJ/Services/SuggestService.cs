@@ -80,9 +80,9 @@ public static class SuggestService
                     Reason = el.TryGetProperty("reason", out var r) ? r.GetString() ?? "" : "",
                 };
                 if (s.Title.Length == 0) continue;
-                var na = DownloadService.NormalizeForCompare(s.Artist);
-                var nt = DownloadService.NormalizeForCompare(s.Title);
-                bool inLib = library.Any(x => DownloadService.NormalizeForCompare(x.Title) == nt && (na.Length == 0 || DownloadService.NormalizeForCompare(x.Artist).Contains(na) || na.Contains(DownloadService.NormalizeForCompare(x.Artist))));
+                var na = SearchUtil.NormalizeForCompare(s.Artist);
+                var nt = SearchUtil.NormalizeForCompare(s.Title);
+                bool inLib = library.Any(x => SearchUtil.NormalizeForCompare(x.Title) == nt && (na.Length == 0 || SearchUtil.NormalizeForCompare(x.Artist).Contains(na) || na.Contains(SearchUtil.NormalizeForCompare(x.Artist))));
                 if (!inLib) list.Add(s);
             }
         }

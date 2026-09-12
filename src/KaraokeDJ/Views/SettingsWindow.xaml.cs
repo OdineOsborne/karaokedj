@@ -61,6 +61,8 @@ public partial class SettingsWindow : Window
             _midiRows.Add(new MidiRow { Id = id, Label = label, Binding = vm.Midi.KeyFor(id)?.ToString() ?? "—", KeyBinding = KeyboardService.Pretty(vm.Keys.GestureFor(id)) });
         MidiList.ItemsSource = _midiRows;
         vm.Midi.MessageReceived += OnMidiMessage;
+        JamendoBox.Text = vm.Settings.JamendoClientId ?? "";
+        FillPlugins();
         Closed += (_, _) => { vm.Midi.MessageReceived -= OnMidiMessage; vm.Midi.CancelLearn(); vm.SaveSettings(); };
         PreviewKeyDown += KeyLearn_PreviewKeyDown;
     }
@@ -170,19 +172,66 @@ public partial class SettingsWindow : Window
         InfoLabel.Text = _vm.Stems.IsReady ? "Motore AI pronto" : "Motore AI non installato";
     }
 
-    private async void UpdateYtDlp_Click(object sender, RoutedEventArgs e)
+    // ------------------------------------------------------------ plugin e fonti
+
+    private sealed class PluginRow
     {
-        InfoLabel.Text = "Aggiornamento yt-dlp…";
+        public string Name { get; init; } = "";
+        public string Version { get; init; } = "";
+        public string Description { get; init; } = "";
+        public string? MaintenanceLabel { get; init; }
+        public LoadedPlugin? Plugin { get; init; }
+    }
+
+    private void FillPlugins()
+    {
+        var rows = _vm.Plugins.Plugins.Select(p => new PluginRow
+        {
+            Name = p.Name, Version = p.Version, Description = p.Ok ? p.Description : "⚠ non caricato: " + p.Description,
+            MaintenanceLabel = p.Plugin?.MaintenanceLabel, Plugin = p,
+        }).ToList();
+        if (rows.Count == 0) rows.Add(new PluginRow { Name = "Nessun plugin installato", Description = "I plugin aggiungono sorgenti di importazione o funzioni: copia la cartella del plugin in %AppData%\\KaraokeDJ\\plugins e riavvia." });
+        PluginList.ItemsSource = rows;
+    }
+
+    private void Link_Click(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true }); } catch { }
+        e.Handled = true;
+    }
+
+    private void OpenPlugins_Click(object sender, RoutedEventArgs e)
+    {
+        try { Directory.CreateDirectory(PluginManager.PluginsDir); System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(PluginManager.PluginsDir) { UseShellExecute = true }); } catch { }
+    }
+
+    private void InstallPlugin_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog { Title = "Plugin VOXA", Filter = "Plugin (zip o dll)|*.zip;*.dll" };
+        if (dlg.ShowDialog() != true) return;
         try
         {
-            await _vm.Downloader.UpdateYtDlpAsync(new Progress<DownloadStatus>(s => InfoLabel.Text = s.Message), CancellationToken.None);
-            InfoLabel.Text = "yt-dlp aggiornato";
+            var dest = PluginManager.Install(dlg.FileName);
+            InfoLabel.Text = "Plugin copiato in " + dest + " — riavvia VOXA per attivarlo";
+        }
+        catch (Exception ex) { InfoLabel.Text = "Errore: " + ex.Message; }
+    }
+
+    private async void PluginMaintenance_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is not PluginRow row || row.Plugin?.Plugin?.Maintenance is not { } m) return;
+        try
+        {
+            await m(new Progress<VOXA.Plugins.ImportProgress>(p => InfoLabel.Text = p.Message), CancellationToken.None);
+            InfoLabel.Text = row.Name + ": fatto";
         }
         catch (Exception ex) { InfoLabel.Text = "Errore: " + ex.Message; }
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
+        _vm.Settings.JamendoClientId = string.IsNullOrWhiteSpace(JamendoBox.Text) ? null : JamendoBox.Text.Trim();
+        JamendoSource.ClientId = _vm.Settings.JamendoClientId;
         bool foldersChanged = !_folders.SequenceEqual(_vm.Settings.LibraryFolders);
         _vm.Settings.LibraryFolders = _folders;
         _vm.Settings.ProjectorScreenIndex = Math.Max(0, ScreenCombo.SelectedIndex);

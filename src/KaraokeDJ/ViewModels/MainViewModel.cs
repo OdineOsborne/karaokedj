@@ -31,7 +31,7 @@ public sealed partial class MainViewModel : ObservableObject
         Engine = new AudioEngine();
         Rhythm = new RhythmViewModel(Engine.Rhythm, CurrentSetBpm);
         Library = new LibraryService();
-        Downloader = new DownloadService();
+        Plugins = new PluginManager();
         Midi = new MidiService();
         Midi.ActionTriggered += HandleMidiAction;
 
@@ -101,7 +101,12 @@ public sealed partial class MainViewModel : ObservableObject
         return r == null ? 0 : EffectiveBpm(r);
     }
     public LibraryService Library { get; }
-    public DownloadService Downloader { get; }
+    public PluginManager Plugins { get; }
+    /// <summary>Sorgenti di importazione disponibili (integrate + plugin) e quella scelta.</summary>
+    public ObservableCollection<VOXA.Plugins.IImportSource> ImportSources { get; } = new();
+    [ObservableProperty] private VOXA.Plugins.IImportSource? _selectedSource;
+    partial void OnSelectedSourceChanged(VOXA.Plugins.IImportSource? value) { if (value != null) Settings.ImportSourceId = value.Id; OnPropertyChanged(nameof(ImportHint)); }
+    public string ImportHint => SelectedSource?.InputHint ?? "Nessuna sorgente: Impostazioni → Plugin e fonti";
     public MidiService Midi { get; }
     public DeckViewModel DeckA { get; }
     public DeckViewModel DeckB { get; }
@@ -139,6 +144,8 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isScanning;
     [ObservableProperty] private double _scanPercent;
     [ObservableProperty] private bool _isProjectorOpen;
+    /// <summary>Monitor di regia: finestrella sullo schermo del DJ con la stessa scena del proiettore.</summary>
+    [ObservableProperty] private bool _isMonitorOpen;
     [ObservableProperty] private DeckViewModel? _activeKaraokeDeck;
     [ObservableProperty] private string _nowSinging = "";
     [ObservableProperty] private string _idleTitle = "";
@@ -167,20 +174,10 @@ public sealed partial class MainViewModel : ObservableObject
         RefreshTracks();
         LoadQueue();
         LoadPlaylists();
-        Downloader.TrackExists = (artist, title) =>
-        {
-            var a = DownloadService.NormalizeForCompare(artist);
-            var t = DownloadService.NormalizeForCompare(title);
-            if (t.Length < 3) return false;
-            return Library.Tracks.Any(x =>
-            {
-                var xt = DownloadService.NormalizeForCompare(x.Title);
-                var xa = DownloadService.NormalizeForCompare(x.Artist);
-                bool titleOk = xt.Contains(t) || (xt.Length >= 3 && t.Contains(xt));
-                bool artistOk = a.Length == 0 || xa.Contains(a) || a.Contains(xa) || xt.Contains(a);
-                return titleOk && artistOk;
-            });
-        };
+        JamendoSource.ClientId = Settings.JamendoClientId;
+        Plugins.Load(TrackExists, s => StatusText = s);
+        foreach (var src in Plugins.ImportSources) ImportSources.Add(src);
+        SelectedSource = ImportSources.FirstOrDefault(s => s.Id == Settings.ImportSourceId) ?? ImportSources.FirstOrDefault();
         WireStems();
         StartAnimation();
         LoadLicense();
@@ -193,6 +190,23 @@ public sealed partial class MainViewModel : ObservableObject
         if (Settings.LibraryFolders.Count > 0)
             _ = RescanAsync();
         _ = CheckForUpdatesAsync(silent: true);
+    }
+
+
+    /// <summary>(artista, titolo) → true se il brano è già in libreria (per saltare i doppioni durante le importazioni).</summary>
+    public bool TrackExists(string artist, string title)
+    {
+        var a = SearchUtil.NormalizeForCompare(artist);
+        var t = SearchUtil.NormalizeForCompare(title);
+        if (t.Length < 3) return false;
+        return Library.Tracks.Any(x =>
+        {
+            var xt = SearchUtil.NormalizeForCompare(x.Title);
+            var xa = SearchUtil.NormalizeForCompare(x.Artist);
+            bool titleOk = xt.Contains(t) || (xt.Length >= 3 && t.Contains(xt));
+            bool artistOk = a.Length == 0 || xa.Contains(a) || a.Contains(xa) || xt.Contains(a);
+            return titleOk && artistOk;
+        });
     }
 
     public void Shutdown()
@@ -840,6 +854,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand] private void ToggleProjector() => IsProjectorOpen = !IsProjectorOpen;
+    [RelayCommand] private void ToggleMonitor() => IsMonitorOpen = !IsMonitorOpen;
 
     // ---------------------------------------------------------------- pad
 
@@ -1926,6 +1941,7 @@ public sealed partial class MainViewModel : ObservableObject
             case "fadeB": StartCrossfade(1); break;
             case "automix": AutoMix = !AutoMix; break;
             case "projector": IsProjectorOpen = !IsProjectorOpen; break;
+            case "monitor": IsMonitorOpen = !IsMonitorOpen; break;
             case "search": SearchFocusRequested?.Invoke(); break;
             case "addqueue": AddToQueueCommand.Execute(null); break;
             case "queuetop": QueueToTopCommand.Execute(null); break;
@@ -2086,14 +2102,15 @@ public sealed partial class MainViewModel : ObservableObject
         _downloadCts = new CancellationTokenSource();
         IsDownloading = true;
         DownloadPercent = 0;
-        var progress = new Progress<DownloadStatus>(s =>
+        var progress = new Progress<VOXA.Plugins.ImportProgress>(s =>
         {
             DownloadStatus = s.Message;
             if (s.Percent >= 0) DownloadPercent = s.Percent;
         });
         try
         {
-            var paths = await Downloader.DownloadAsync(input, DownloadVideo, progress, _downloadCts.Token);
+            var source = SelectedSource ?? throw new InvalidOperationException("Nessuna sorgente di importazione: installa un plugin o scegli una fonte in Impostazioni → Plugin e fonti");
+            var paths = await source.ImportAsync(input, DownloadVideo && source.SupportsVideo, AppPaths.DownloadsDir, progress, _downloadCts.Token);
             Track? first = null;
             int added = 0;
             foreach (var path in paths)

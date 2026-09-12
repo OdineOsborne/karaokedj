@@ -77,6 +77,25 @@ public partial class ProjectorWindow : Window
         _libVlc = null;
     }
 
+    /// <summary>true: finestra "monitor" sullo schermo del DJ (piccola, sempre in primo piano) che mostra ciò che vede il pubblico.</summary>
+    public bool IsMonitor { get; private set; }
+
+    /// <summary>Apre come monitor di regia: stessa scena del proiettore, in una finestrella ridimensionabile e sempre in primo piano.</summary>
+    public void ShowAsMonitor()
+    {
+        IsMonitor = true;
+        Title = "VOXA – Monitor proiettore";
+        WindowStyle = WindowStyle.SingleBorderWindow;
+        ResizeMode = ResizeMode.CanResize;
+        ShowInTaskbar = false;
+        Cursor = Cursors.Arrow;
+        Topmost = true;
+        Width = 480; Height = 300;
+        var main = Application.Current.MainWindow;
+        if (main != null) { Left = main.Left + main.ActualWidth - Width - 24; Top = main.Top + 60; }
+        Show();
+    }
+
     /// <summary>Mostra la finestra a schermo intero sul monitor indicato (o in finestra se c'è un solo monitor).</summary>
     public void ShowOnScreen(int screenIndex)
     {
@@ -128,7 +147,7 @@ public partial class ProjectorWindow : Window
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape && Vm != null) Vm.IsProjectorOpen = false;
+        if (e.Key == Key.Escape && Vm != null) { if (IsMonitor) Vm.IsMonitorOpen = false; else Vm.IsProjectorOpen = false; }
     }
 
     // ------------------------------------------------------------ stato

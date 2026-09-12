@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>VOXA.Plugins</RootNamespace>
+    <AssemblyName>VOXA.Plugins</AssemblyName>
+    <Version>1.0.0</Version>
+    <Description>Contratto dei plugin VOXA (sorgenti di importazione, host).</Description>
+  </PropertyGroup>
+</Project>

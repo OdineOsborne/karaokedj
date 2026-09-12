@@ -1,8 +1,8 @@
 <Window x:Class="KaraokeDJ.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Impostazioni" Width="680" Height="620" WindowStartupLocation="CenterOwner"
-        Background="{StaticResource BgBrush}" ResizeMode="NoResize">
+        Title="Impostazioni" Width="860" Height="700" MinWidth="760" MinHeight="600" WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BgBrush}" ResizeMode="CanResize">
     <Window.Resources>
         <Style TargetType="TabItem">
             <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
@@ -89,7 +89,6 @@
                         <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,6,0,0">
                             <Button Content="Aggiungi…" Click="AddFolder_Click" Margin="0,0,6,0"/>
                             <Button Content="Rimuovi" Click="RemoveFolder_Click" Margin="0,0,6,0"/>
-                            <Button Content="Aggiorna yt-dlp" Click="UpdateYtDlp_Click" ToolTip="Se i download da YouTube smettono di funzionare, aggiorna yt-dlp" Margin="0,0,6,0"/>
                             <Button Content="🤖 Installa motore AI (Demucs)" Click="InstallAi_Click" ToolTip="Python + PyTorch CPU + Demucs (~300 MB). Serve per la rimozione voce AI." Margin="0,0,6,0"/>
                             <Button Content="🏷 Generi con AI" Command="{Binding ClassifyGenresCommand}" ToolTip="Assegna genere e anno ai brani senza tag (Claude, a lotti). Migliora suggeriti e continuità dell'automix. Clicca di nuovo per interrompere." Margin="0,0,6,0"/>
                             <Button Content="⬆ Cerca aggiornamenti" Command="{Binding CheckUpdatesCommand}" Margin="0,0,6,0"/>
@@ -137,6 +136,61 @@
                                     <Button Grid.Column="5" Content="{Binding KeyLearnLabel}" Style="{StaticResource SmallButton}" Click="KeyLearn_Click" Tag="{Binding}" Margin="4,0" MinWidth="90"/>
                                     <Button Grid.Column="6" Content="✕" Style="{StaticResource SmallButton}" Click="KeyClear_Click" Tag="{Binding}"/>
                                 </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </TabItem>
+            <!-- ═══ PLUGIN E FONTI ═══ -->
+            <TabItem Header="Plugin e fonti">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="FONTI DI IMPORTAZIONE INTEGRATE (lecite e gratuite)" Style="{StaticResource SectionTitle}"/>
+                    <StackPanel Grid.Row="1" Margin="0,4,0,10">
+                        <TextBlock TextWrapping="Wrap" Style="{StaticResource Muted}" Margin="0,0,0,6"
+                                   Text="Audius (brani resi scaricabili dagli artisti, senza chiave) · Internet Archive (audio con licenza libera / pubblico dominio, senza chiave) · Jamendo (Creative Commons, serve un client_id gratuito)."/>
+                        <DockPanel>
+                            <TextBlock Text="Jamendo client_id" Width="140" VerticalAlignment="Center"/>
+                            <TextBox x:Name="JamendoBox" ToolTip="Gratuito: registrati su developer.jamendo.com e crea un'app; incolla qui il client_id"/>
+                        </DockPanel>
+                        <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" Style="{StaticResource Muted}">
+                            <Run Text="Servizi a pagamento con licenza per DJ (si integrano come plugin, in arrivo): "/>
+                            <Hyperlink NavigateUri="https://www.beatport.com/link" RequestNavigate="Link_Click">Beatport LINK</Hyperlink><Run Text=" · "/>
+                            <Hyperlink NavigateUri="https://www.beatsource.com/link" RequestNavigate="Link_Click">Beatsource LINK</Hyperlink><Run Text=" · "/>
+                            <Hyperlink NavigateUri="https://tidal.com/dj" RequestNavigate="Link_Click">TIDAL per DJ</Hyperlink><Run Text=" · "/>
+                            <Hyperlink NavigateUri="https://soundcloud.com/go" RequestNavigate="Link_Click">SoundCloud Go+</Hyperlink>
+                            <Run Text=". Gratuiti: "/>
+                            <Hyperlink NavigateUri="https://audius.co" RequestNavigate="Link_Click">Audius</Hyperlink><Run Text=" · "/>
+                            <Hyperlink NavigateUri="https://www.jamendo.com" RequestNavigate="Link_Click">Jamendo</Hyperlink><Run Text=" · "/>
+                            <Hyperlink NavigateUri="https://freemusicarchive.org" RequestNavigate="Link_Click">Free Music Archive</Hyperlink><Run Text=" · "/>
+                            <Hyperlink NavigateUri="https://archive.org/details/audio" RequestNavigate="Link_Click">Internet Archive</Hyperlink>
+                            <Run Text=". Le basi karaoke commerciali (Karafun, Sunfly, Zoom) si acquistano e si importano come file."/>
+                        </TextBlock>
+                    </StackPanel>
+                    <DockPanel Grid.Row="2" Margin="0,0,0,6">
+                        <TextBlock Text="PLUGIN INSTALLATI" Style="{StaticResource SectionTitle}" VerticalAlignment="Center"/>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Content="📦 Installa plugin…" Style="{StaticResource SmallButton}" Click="InstallPlugin_Click" Margin="0,0,6,0" ToolTip="Scegli lo zip (o la DLL) del plugin: viene copiato nella cartella plugin. Poi riavvia VOXA."/>
+                            <Button Content="📁 Apri cartella" Style="{StaticResource SmallButton}" Click="OpenPlugins_Click" ToolTip="%AppData%\KaraokeDJ\plugins"/>
+                        </StackPanel>
+                        <TextBlock/>
+                    </DockPanel>
+                    <ListBox Grid.Row="3" x:Name="PluginList" HorizontalContentAlignment="Stretch">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,2">
+                                    <Button DockPanel.Dock="Right" Content="{Binding MaintenanceLabel}" Style="{StaticResource SmallButton}" Click="PluginMaintenance_Click" Tag="{Binding}"
+                                            Visibility="{Binding MaintenanceLabel, Converter={StaticResource NullToVis}}" Margin="6,0,0,0"/>
+                                    <StackPanel>
+                                        <TextBlock><Run Text="{Binding Name, Mode=OneWay}" FontWeight="Bold"/><Run Text="  "/><Run Text="{Binding Version, Mode=OneWay}" Foreground="{StaticResource MutedBrush}"/></TextBlock>
+                                        <TextBlock Text="{Binding Description}" Style="{StaticResource Muted}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </DockPanel>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>

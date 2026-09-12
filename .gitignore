@@ -6,3 +6,4 @@ build/
 *.user
 test-media/*.wav
 KaraokeDJ-private/
+build/plugins/

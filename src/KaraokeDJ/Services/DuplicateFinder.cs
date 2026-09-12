@@ -78,8 +78,8 @@ public static class DuplicateFinder
 
     private static string Key(Track t)
     {
-        var a = DownloadService.NormalizeForCompare(t.Artist);
-        var ti = DownloadService.NormalizeForCompare(t.Title);
+        var a = SearchUtil.NormalizeForCompare(t.Artist);
+        var ti = SearchUtil.NormalizeForCompare(t.Title);
         // stessa estensione obbligatoria: abc.mp3 e abc.mov non sono doppioni
         return t.Kind + "|" + Path.GetExtension(t.FilePath).ToLowerInvariant() + "|" + a + "|" + ti;
     }

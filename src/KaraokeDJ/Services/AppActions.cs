@@ -37,7 +37,7 @@ public static class AppActions
     {
         new("crossfader", "Crossfader", true), new("master", "Volume master", true),
         new("next", "Prossimo in coda / mix now", false), new("fadeA", "Sfuma verso A", false), new("fadeB", "Sfuma verso B", false),
-        new("automix", "Auto-mix on/off", false), new("projector", "Proiettore on/off", false),
+        new("automix", "Auto-mix on/off", false), new("projector", "Proiettore on/off", false), new("monitor", "Monitor proiettore on/off", false),
         new("search", "Vai alla ricerca", false), new("addqueue", "Brano selezionato in coda", false), new("queuetop", "Brano selezionato in cima alla coda", false),
         new("mixnow", "Mixa ora il brano selezionato", false),
         new("rhythm.play", "Ritmi: avvia/ferma", false), new("rhythm.tap", "Ritmi: tap tempo", false), new("rhythm.resync", "Ritmi: riparti dall'1", false), new("rhythm.volume", "Ritmi: volume", true),
