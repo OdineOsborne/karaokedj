@@ -65,6 +65,7 @@ public sealed partial class MainViewModel : ObservableObject
         AutoMix = Settings.AutoMix;
         AutoMixUseCues = Settings.AutoMixUseCues;
         AutoMixEndless = Settings.AutoMixEndless;
+        SetGenres = Settings.SetGenres ?? "";
         MixViewVisible = Settings.MixViewVisible;
         HideCryptic = Settings.HideCryptic;
         BottomStripVisible = Settings.BottomStripVisible;
@@ -130,6 +131,9 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _bottomStripVisible = true;
     partial void OnBottomStripVisibleChanged(bool value) => Settings.BottomStripVisible = value;
     partial void OnAutoMixEndlessChanged(bool value) => Settings.AutoMixEndless = value;
+    /// <summary>Generi della serata (separati da virgola): l'automix pesca solo lì.</summary>
+    [ObservableProperty] private string _setGenres = "";
+    partial void OnSetGenresChanged(string value) => Settings.SetGenres = value;
     [ObservableProperty] private double _crossfadeSeconds = 6;
     [ObservableProperty] private string _statusText = "Pronto";
     [ObservableProperty] private bool _isScanning;
@@ -706,8 +710,8 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Coda vuota con automix: mette in coda il miglior brano suggerito (compatibile, non suonato stasera);
-    /// se non c'è nulla di compatibile prende il brano audio non ancora suonato più "riposato"; in ultima istanza qualunque brano.
+    /// Coda vuota con automix: sceglie il prossimo brano con continuità. Ordine: generi della serata (se impostati) →
+    /// stesso genere del brano in corso → stessa decade → solo BPM/tonalità. Il motivo della scelta è scritto in coda e nella barra di stato.
     /// </summary>
     private bool TryFillQueueFromSuggestions(DeckViewModel playing)
     {
@@ -718,34 +722,67 @@ public sealed partial class MainViewModel : ObservableObject
         var pool = Tracks.Where(t => !t.IsKaraoke && !onDecks.Contains(t.Id) && File.Exists(t.FilePath)).ToList();
         if (pool.Count == 0) return false;
 
-        Track? pick = null;
+        var setGenres = SetGenreList();
+        var fresh = pool.Where(t => !t.PlayedThisSession && !Feedback.IsRejectedNow(t)).ToList();
+        // generi della serata: il pool si restringe a quelli (se ce n'è abbastanza)
+        if (setGenres.Count > 0)
+        {
+            var inSet = fresh.Where(t => MatchesSetGenres(t, setGenres)).ToList();
+            if (inSet.Count > 0) fresh = inSet;
+            else StatusText = "Automix: nessun brano non ancora suonato nei generi della serata — scelgo fuori";
+        }
+
+        Track? pick = null; string why = "";
         if (current != null)
         {
-            var fresh = pool.Where(t => !t.PlayedThisSession && !Feedback.IsRejectedNow(t)).ToList();
-            // Continuità prima di tutto: 1) stesso genere, 2) stessa decade, 3) solo BPM/tonalità.
-            // Dentro ogni livello vince il punteggio (BPM/tonalità/giudizi del DJ); tra i migliori si pesca a caso per non ripetere sempre lo stesso giro.
-            var tiers = new List<Func<Track, bool>>();
-            if (!string.IsNullOrWhiteSpace(current.Genre)) tiers.Add(t => GenreAffinity(current, t) >= 0.8);
-            if (current.Year > 0) tiers.Add(t => DecadeAffinity(current, t) >= 1.0);
-            tiers.Add(_ => true);
-            foreach (var tier in tiers)
+            bool curGenre = !string.IsNullOrWhiteSpace(current.Genre);
+            var tiers = new List<(Func<Track, bool> ok, string why)>();
+            if (setGenres.Count > 0) tiers.Add((t => MatchesSetGenres(t, setGenres), "generi serata"));
+            if (curGenre) tiers.Add((t => GenreAffinity(current, t) >= 0.8, $"stesso genere ({current.Genre})"));
+            if (current.Year > 0) tiers.Add((t => DecadeAffinity(current, t) >= 1.0, $"stessa decade ({current.Decade})"));
+            tiers.Add((_ => true, curGenre ? "solo BPM/tonalità" : "solo BPM/tonalità — il brano in corso non ha genere"));
+            foreach (var (ok, w) in tiers)
             {
-                var best = fresh.Where(tier)
+                var best = fresh.Where(ok)
                     .Select(t => (t, s: SuggestScore(current, t) * (t.Analyzed ? 1.0 : 0.6)))
                     .Where(x => x.s > 0.3)
                     .OrderByDescending(x => x.s).ThenBy(x => x.t.PlayCount)
                     .Take(5).ToList();
-                if (best.Count > 0) { pick = best[Random.Shared.Next(Math.Min(3, best.Count))].t; break; }
+                if (best.Count > 0) { var b = best[Random.Shared.Next(Math.Min(3, best.Count))]; pick = b.t; why = $"{w}, match {b.s * 100:0}%"; break; }
             }
-            // niente di compatibile per BPM/tonalità: resta almeno nel genere (o nella decade)
-            pick ??= fresh.Where(t => !string.IsNullOrWhiteSpace(current.Genre) && GenreAffinity(current, t) >= 0.8).OrderBy(t => t.PlayCount).ThenBy(_ => Random.Shared.Next()).FirstOrDefault();
-            pick ??= fresh.Where(t => current.Year > 0 && DecadeAffinity(current, t) >= 1.0).OrderBy(t => t.PlayCount).ThenBy(_ => Random.Shared.Next()).FirstOrDefault();
+            if (pick == null && curGenre)
+            {
+                pick = fresh.Where(t => GenreAffinity(current, t) >= 0.8).OrderBy(t => t.PlayCount).ThenBy(_ => Random.Shared.Next()).FirstOrDefault();
+                if (pick != null) why = $"stesso genere ({current.Genre}), BPM/tonalità non compatibili";
+            }
+            if (pick == null && current.Year > 0)
+            {
+                pick = fresh.Where(t => DecadeAffinity(current, t) >= 1.0).OrderBy(t => t.PlayCount).ThenBy(_ => Random.Shared.Next()).FirstOrDefault();
+                if (pick != null) why = $"stessa decade ({current.Decade}), BPM/tonalità non compatibili";
+            }
         }
-        pick ??= pool.Where(t => !t.PlayedThisSession).OrderBy(t => t.PlayCount).ThenBy(t => t.LastPlayedUtc ?? DateTime.MinValue).ThenBy(_ => Random.Shared.Next()).FirstOrDefault();
-        pick ??= pool.OrderBy(t => t.LastPlayedUtc ?? DateTime.MinValue).First(); // tutti già suonati: riparte dal più vecchio
-        Queue.Add(new QueueEntry { Track = pick });
-        StatusText = $"Automix: coda vuota, aggiunto {pick.Display}";
+        if (pick == null)
+        {
+            pick = fresh.OrderBy(t => t.PlayCount).ThenBy(t => t.LastPlayedUtc ?? DateTime.MinValue).ThenBy(_ => Random.Shared.Next()).FirstOrDefault();
+            if (pick != null) why = current == null ? "primo brano" : "nessun riferimento utile: brano meno suonato";
+        }
+        if (pick == null) { pick = pool.OrderBy(t => t.LastPlayedUtc ?? DateTime.MinValue).First(); why = "tutti già suonati: riparto dal più vecchio"; }
+        Queue.Add(new QueueEntry { Track = pick, Note = "automix · " + why });
+        StatusText = $"Automix: aggiunto {pick.Display} ({why})";
         return true;
+    }
+
+    /// <summary>Generi della serata (testo libero separato da virgole) → lista normalizzata.</summary>
+    private List<string[]> SetGenreList() =>
+        (SetGenres ?? "").Split(',', ';').Select(s => SearchUtil.Words(s)).Where(w => w.Length > 0).ToList();
+
+    private static bool MatchesSetGenres(Track t, List<string[]> genres)
+    {
+        var w = SearchUtil.Words(t.Genre);
+        if (w.Length == 0) return false;
+        foreach (var g in genres)
+            if (g.All(x => w.Contains(x)) || (g.Length == 1 && w.Any(x => x.StartsWith(g[0])))) return true;
+        return false;
     }
 
     private void OnDeckEnded(DeckViewModel d)
@@ -1274,7 +1311,8 @@ public sealed partial class MainViewModel : ObservableObject
             .Take(6)
             .ToList();
         foreach (var (t, s) in scored) { t.MatchLabel = (s * 100).ToString("0") + "%"; Suggestions.Add(t); }
-        SuggestionsLabel = scored.Count == 0 ? $"Nessun suggerimento per {r.Display}" : $"dopo: {r.Display}";
+        var genreInfo = string.IsNullOrWhiteSpace(r.Genre) ? " · ⚠ senza genere (Impostazioni → Generi con AI)" : $" · {r.Genre}";
+        SuggestionsLabel = (scored.Count == 0 ? $"Nessun suggerimento per {r.Display}" : $"dopo: {r.Display}") + genreInfo;
     }
 
     [RelayCommand] private void RefreshSuggestions() => UpdateSuggestions();

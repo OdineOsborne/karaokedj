@@ -19,6 +19,8 @@ public sealed class AppSettings
     public string TransitionStyle { get; set; } = "bass";
     /// <summary>Automix senza fine: coda vuota → pesca dai suggerimenti (mai silenzio).</summary>
     public bool AutoMixEndless { get; set; } = true;
+    /// <summary>Generi della serata per l'automix (testo, separati da virgola).</summary>
+    public string SetGenres { get; set; } = "";
     public bool MixViewVisible { get; set; } = true;
     /// <summary>Nasconde in libreria i titoli incomprensibili.</summary>
     public bool HideCryptic { get; set; } = true;
