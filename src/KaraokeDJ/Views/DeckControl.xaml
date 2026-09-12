@@ -29,6 +29,9 @@
                         Visibility="{Binding HasTrack, Converter={StaticResource BoolToVis}}">
                     <TextBlock Text="{Binding KindLabel}" Style="{StaticResource Muted}" FontWeight="Bold"/>
                 </Border>
+                <Button DockPanel.Dock="Right" Content="👎" Padding="6,2" FontSize="11" Margin="6,0,0,0" Visibility="{Binding HasTrack, Converter={StaticResource BoolToVis}}"
+                        Command="{Binding DataContext.DeckRejectCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
+                        ToolTip="Questo brano non c'entra dopo il precedente: il suggeritore e l'automix ne terranno conto"/>
                 <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding FxVisible}" Content="⚡ FX" Padding="10,2" FontSize="11" FontWeight="Black" Margin="6,0,0,0" ToolTip="Mostra/nascondi effetti (filtro, echo, riverbero, flanger, EQ…)"/>
                 <TextBlock DockPanel.Dock="Right" Text="{Binding Singer, StringFormat=🎤 {0}}" FontWeight="Bold" Foreground="{StaticResource WarnBrush}"
                            Visibility="{Binding Singer, Converter={StaticResource NullToVis}}" VerticalAlignment="Center"/>

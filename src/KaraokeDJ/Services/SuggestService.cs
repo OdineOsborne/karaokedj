@@ -22,7 +22,7 @@ public static class SuggestService
 {
     public const string Model = "claude-opus-5";
 
-    public static async Task<List<ExternalSuggestion>> SuggestAsync(Track current, string mode, IReadOnlyCollection<Track> library, string apiKey, CancellationToken ct)
+    public static async Task<List<ExternalSuggestion>> SuggestAsync(Track current, string mode, IReadOnlyCollection<Track> library, IReadOnlyList<string> rejected, string apiKey, CancellationToken ct)
     {
         var client = new AnthropicClient { ApiKey = apiKey };
         // campione della libreria per far capire il repertorio e per evitare doppioni
@@ -46,6 +46,8 @@ public static class SuggestService
             Devono essere brani molto conosciuti ed esistenti davvero (artista e titolo esatti, niente invenzioni).
             NON proporre brani presenti in questa lista (già in libreria):
             {{string.Join("\n", known.Select(k => "- " + k))}}
+            E NON proporre questi, già scartati dal DJ perché fuori target:
+            {{string.Join("\n", rejected.TakeLast(60).Select(k => "- " + k))}}
             Rispondi SOLO con un array JSON: [{"artist":"...","title":"...","reason":"max 8 parole sul perché"}]
             """;
 

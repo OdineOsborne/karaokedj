@@ -377,6 +377,8 @@
                                         <DataTemplate>
                                             <DockPanel Margin="0,1">
                                                 <TextBlock Text="🌐" Width="24" VerticalAlignment="Center"/>
+                                                <Button DockPanel.Dock="Right" Content="👎" Style="{StaticResource SmallButton}" Padding="5,1" FontSize="11" Margin="2,0" ToolTip="Fuori target: non verrà più proposto"
+                                                        Command="{Binding DataContext.ExternalSuggestionRejectCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                                 <Button DockPanel.Dock="Right" Content="⬇ prossimo" Style="{StaticResource SmallButton}" Padding="6,1" FontSize="11" Margin="2,0" ToolTip="Scarica e metti in cima alla coda"
                                                         Command="{Binding DataContext.DownloadSuggestionNextCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
                                                         IsEnabled="{Binding DataContext.IsDownloading, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource InverseBool}}"/>
@@ -411,6 +413,10 @@
                                             <TextBlock Text="{Binding MatchLabel}" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" Width="38" VerticalAlignment="Center"/>
                                             <Button DockPanel.Dock="Right" Content="→ deck" Style="{StaticResource SmallButton}" Padding="6,1" FontSize="11" Margin="2,0"
                                                     Command="{Binding DataContext.SuggestionToFreeDeckCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                            <Button DockPanel.Dock="Right" Content="👎" Style="{StaticResource SmallButton}" Padding="5,1" FontSize="11" Margin="2,0" ToolTip="Non c'entra: lo tolgo dai suggeriti di stasera e il suggeritore impara (soprattutto dopo questo brano)"
+                                                    Command="{Binding DataContext.SuggestionRejectCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                            <Button DockPanel.Dock="Right" Content="👍" Style="{StaticResource SmallButton}" Padding="5,1" FontSize="11" Margin="2,0" ToolTip="Abbinamento perfetto: lo rinforzo"
+                                                    Command="{Binding DataContext.SuggestionApproveCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                             <Button DockPanel.Dock="Right" Content="⚡ mix" Style="{StaticResource SmallButton}" Padding="6,1" FontSize="11" Margin="2,0" ToolTip="Mixa ora"
                                                     Command="{Binding DataContext.MixNowCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                             <Button DockPanel.Dock="Right" Content="＋ coda" Style="{StaticResource SmallButton}" Padding="6,1" FontSize="11" Margin="2,0"

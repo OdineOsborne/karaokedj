@@ -649,6 +649,7 @@ public sealed partial class MainViewModel : ObservableObject
         double secs = Math.Max(0.2, CrossfadeSeconds);
         var incoming = target > 0 ? DeckB : DeckA;
         var outgoing = target > 0 ? DeckA : DeckB;
+        if (outgoing.Track != null) _lastOutgoingTrack = outgoing.Track;
         if (incoming.HasTrack && outgoing.HasTrack && outgoing.IsPlaying && Math.Abs(Crossfader - target) > 0.1) BeginTransition(outgoing, incoming, target);
         else _transition = null;
         _crossfadeTarget = target;
@@ -1240,6 +1241,51 @@ public sealed partial class MainViewModel : ObservableObject
 
     [RelayCommand] private void RefreshSuggestions() => UpdateSuggestions();
 
+    /// <summary>👎 "non c'entra": il brano sparisce dai suggeriti di stasera e pesa meno in futuro (soprattutto dopo questo brano).</summary>
+    [RelayCommand]
+    private void SuggestionReject(Track? t)
+    {
+        if (t == null) return;
+        var r = CompatReference();
+        Feedback.Rate(r, t, -1);
+        Suggestions.Remove(t);
+        StatusText = $"Segnato: \"{t.Display}\" non c'entra" + (r != null ? $" dopo \"{r.Display}\"" : "") + " — il suggeritore ne terrà conto";
+        UpdateSuggestions();
+    }
+
+    /// <summary>👍 "perfetto": rinforza questo abbinamento.</summary>
+    [RelayCommand]
+    private void SuggestionApprove(Track? t)
+    {
+        if (t == null) return;
+        var r = CompatReference();
+        Feedback.Rate(r, t, +1);
+        StatusText = $"Segnato: \"{t.Display}\" va bene" + (r != null ? $" dopo \"{r.Display}\"" : "");
+        UpdateSuggestions();
+    }
+
+    /// <summary>Brano che stava suonando prima dell'ultimo passaggio (per giudicare l'abbinamento a posteriori).</summary>
+    private Track? _lastOutgoingTrack;
+
+    /// <summary>👎 sul deck: "questo brano non c'entrava dopo il precedente" (utile quando l'ha scelto l'automix).</summary>
+    [RelayCommand]
+    private void DeckReject(DeckViewModel? d)
+    {
+        if (d?.Track == null) return;
+        var prev = _lastOutgoingTrack != null && _lastOutgoingTrack != d.Track ? _lastOutgoingTrack : null;
+        Feedback.Rate(prev, d.Track, -1);
+        StatusText = $"Segnato: \"{d.Track.Display}\" non c'entrava" + (prev != null ? $" dopo \"{prev.Display}\"" : "") + " — il suggeritore ne terrà conto";
+        UpdateSuggestions();
+    }
+
+    [RelayCommand]
+    private void ExternalSuggestionReject(ExternalSuggestion? s)
+    {
+        if (s == null) return;
+        Feedback.RejectExternal(s.Display);
+        ExternalSuggestions.Remove(s);
+    }
+
     /// <summary>"" libero · "decade" stessa decade · "genre" stesso genere. Vale per suggeriti e filtro Compatibili.</summary>
     [ObservableProperty] private string _suggestBy = "";
     partial void OnSuggestByChanged(string value)
@@ -1249,11 +1295,16 @@ public sealed partial class MainViewModel : ObservableObject
         if (LibraryFilter == "compat") { ComputeCompatibility(); ApplyLibrarySort(); LibraryView.Refresh(); }
     }
 
-    /// <summary>Compatibilità BPM/tonalità pesata con la coerenza decade/genere richiesta.</summary>
+    /// <summary>Pollici su/giù del DJ sui suggerimenti (memoria del suggeritore).</summary>
+    public SuggestionFeedback Feedback { get; } = new();
+
+    /// <summary>Compatibilità BPM/tonalità pesata con la coerenza decade/genere richiesta e con i giudizi del DJ.</summary>
     private double SuggestScore(Track r, Track t)
     {
         double s = SearchUtil.Compatibility(r, t);
         if (s <= 0) return s;
+        if (Feedback.IsRejectedNow(t)) return 0;
+        s *= Feedback.Factor(r, t);
         double aff = SuggestBy switch
         {
             "decade" => DecadeAffinity(r, t),
@@ -1972,7 +2023,7 @@ public sealed partial class MainViewModel : ObservableObject
         ExternalSuggestionsLabel = $"Cerco brani nuovi dopo {r.Display}…";
         try
         {
-            var list = await SuggestService.SuggestAsync(r, SuggestBy, Library.Tracks, key, CancellationToken.None);
+            var list = await SuggestService.SuggestAsync(r, SuggestBy, Library.Tracks, Feedback.ExternalRejected, key, CancellationToken.None);
             ExternalSuggestions.Clear();
             foreach (var s in list) ExternalSuggestions.Add(s);
             ExternalSuggestionsLabel = list.Count == 0 ? "Nessuna proposta fuori libreria" : $"fuori libreria, dopo: {r.Display}";
