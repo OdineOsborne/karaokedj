@@ -135,10 +135,14 @@
                                             <TextBlock Text="Passaggio" Width="80" VerticalAlignment="Center" Style="{StaticResource Muted}" FontSize="11"/>
                                             <ComboBox SelectedValue="{Binding TransitionStyle}" SelectedValuePath="Tag" FontSize="11" Padding="6,2"
                                                       ToolTip="Come viene fatto il passaggio automatico tra i due brani">
-                                                <ComboBoxItem Tag="fade" Content="Dissolvenza semplice"/>
-                                                <ComboBoxItem Tag="glide" Content="Cross-BPM (il tempo scivola al brano nuovo)"/>
-                                                <ComboBoxItem Tag="bass" Content="Cross-BPM + scambio bassi (da DJ)"/>
-                                                <ComboBoxItem Tag="echo" Content="Cross-BPM + bassi + filtro ed echo-out"/>
+                                                <ComboBoxItem Tag="auto" Content="Automatico (varia: blend, bassi, filtro, echo, taglio)"/>
+                                                <ComboBoxItem Tag="blend" Content="Blend lungo (16 battute, EQ incrociato)"/>
+                                                <ComboBoxItem Tag="bass" Content="Scambio bassi (16 battute)"/>
+                                                <ComboBoxItem Tag="filter" Content="Filtro (8 battute: HP in uscita, LP in entrata)"/>
+                                                <ComboBoxItem Tag="echo" Content="Echo-out (4 battute, il nuovo entra sull'1)"/>
+                                                <ComboBoxItem Tag="cut" Content="Taglio sull'1 (2 battute)"/>
+                                                <ComboBoxItem Tag="brake" Content="Brake + partenza sull'1"/>
+                                                <ComboBoxItem Tag="fade" Content="Dissolvenza semplice (senza beat)"/>
                                             </ComboBox>
                                         </DockPanel>
                                         <DockPanel Margin="0,3">

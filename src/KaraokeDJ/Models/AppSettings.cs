@@ -16,11 +16,13 @@ public sealed class AppSettings
     /// <summary>Coerenza dei suggerimenti: "" libero, "decade" stessa decade, "genre" stesso genere.</summary>
     public string SuggestBy { get; set; } = "";
     /// <summary>Stile del passaggio automatico: fade · glide · bass · echo.</summary>
-    public string TransitionStyle { get; set; } = "bass";
+    public string TransitionStyle { get; set; } = "auto";
     /// <summary>Automix senza fine: coda vuota → pesca dai suggerimenti (mai silenzio).</summary>
     public bool AutoMixEndless { get; set; } = true;
     /// <summary>Generi della serata per l'automix (testo, separati da virgola).</summary>
     public string SetGenres { get; set; } = "";
+    /// <summary>Generi creati a mano dall'utente: compaiono sempre negli elenchi.</summary>
+    public List<string> CustomGenres { get; set; } = new();
     public bool MixViewVisible { get; set; } = true;
     /// <summary>Effetto vetro di Windows 11 (Mica) dietro la finestra principale.</summary>
     public bool GlassEffect { get; set; } = true;

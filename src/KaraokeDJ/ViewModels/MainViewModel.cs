@@ -76,13 +76,13 @@ public sealed partial class MainViewModel : ObservableObject
         BpmLock = Settings.BpmLock;
         BpmLockValue = Settings.BpmLockValue;
         BpmMatch = Settings.BpmMatch;
-        TransitionStyle = string.IsNullOrEmpty(Settings.TransitionStyle) ? "bass" : Settings.TransitionStyle;
+        TransitionStyle = string.IsNullOrEmpty(Settings.TransitionStyle) || Settings.TransitionStyle == "glide" ? "auto" : Settings.TransitionStyle;
         SuggestBy = Settings.SuggestBy ?? "";
         CrossfadeSeconds = Settings.CrossfadeSeconds;
         IdleTitle = Settings.IdleTitle;
         IdleSubtitle = Settings.IdleSubtitle;
 
-        Queue.CollectionChanged += (_, _) => { UpdateProjectorState(); SaveQueue(); UpdateSuggestions(); };
+        Queue.CollectionChanged += (_, _) => { UpdateProjectorState(); SaveQueue(); UpdateSuggestions(); PrefetchNextGrid(); };
 
         _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(40) };
         _timer.Tick += (_, _) => Tick();
@@ -297,6 +297,7 @@ public sealed partial class MainViewModel : ObservableObject
             }
         }
 
+        TickMix(dt);
         if (AutoMix) CheckAutoMix();
         UpdateActiveKaraokeDeck();
         UpdateDedication();
@@ -617,6 +618,7 @@ public sealed partial class MainViewModel : ObservableObject
                 "Deck in riproduzione", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
             if (r != MessageBoxResult.Yes) return false;
         }
+        if (_mix != null && (_mix.In == deck || _mix.Out == deck)) AbortMix("deck ricaricato");
         if (track.IsMidi && MidiRenderService.Rendered(track.Id) == null) { LoadMidiAsync(deck, track, singer, keyShift); return true; }
         try
         {
@@ -693,12 +695,17 @@ public sealed partial class MainViewModel : ObservableObject
         }
         if (playing != null) _autoMixTriggeredFor = playing; // l'automix non deve rifare il passaggio
 
+        if (playing != null && playing.Track != null && target.Track != null)
+        {
+            // passaggio "da DJ": parte sul prossimo battere, beat agganciati, tecnica scelta in base allo stile
+            _ = MixToAsync(playing, target, startNow: true);
+            return;
+        }
         MatchIncomingTempo(target, playing);
         if (AutoMixUseCues && target.Track?.IsKaraoke == false && target.Track.IntroEndSec > 2 && target.Deck.PositionSec < 1)
             target.Deck.Seek(Math.Max(0, target.Track.IntroEndSec - 1));
         target.Deck.Play();
-        if (playing != null) StartCrossfade(target == DeckB ? 1 : -1);
-        else Crossfader = target == DeckB ? 1 : -1;
+        Crossfader = target == DeckB ? 1 : -1;
     }
 
     [RelayCommand] private void CrossfadeToA() => StartCrossfade(-1);
@@ -723,21 +730,23 @@ public sealed partial class MainViewModel : ObservableObject
             if (!d.IsPlaying || !d.HasTrack) continue;
             if (_autoMixTriggeredFor == d) continue;
             if (other.IsPlaying) continue;
+            if (IsMixing) continue;
             if (Queue.Count == 0 && !(AutoMixEndless && TryFillQueueFromSuggestions(d))) continue;
+            PrefetchNextGrid();
             double dur = d.Deck.DurationSec;
-            double mixAt = dur - CrossfadeSeconds - 0.5;
+            // finestra di innesco: il passaggio più lungo (16 battute) più un margine per pianificare; il punto esatto lo decide PlanMixAsync
+            double bpm = d.Track?.Bpm > 0 ? d.Track.Bpm * Math.Max(0.5, d.Deck.Tempo) : 0;
+            double lead = bpm > 0 ? 16 * 4 * 60.0 / bpm + 6 : CrossfadeSeconds + 2;
+            double mixAt = dur - lead;
             if (AutoMixUseCues && d.Track?.OutroStartSec > 0 && d.Track.OutroStartSec < dur - 0.5)
-                mixAt = Math.Min(mixAt, d.Track.OutroStartSec);
+                mixAt = Math.Min(mixAt, d.Track.OutroStartSec - 4);
             if (d.Deck.PositionSec < mixAt) continue;
 
             var e = Queue[0];
             if (!LoadToDeck(other, e.Track, e.Singer, e.KeyShift, confirmIfPlaying: false)) { _autoMixTriggeredFor = d; continue; }
             Queue.Remove(e);
-            MatchIncomingTempo(other, d);
-            if (AutoMixUseCues && e.Track.IntroEndSec > 2 && !e.Track.IsKaraoke) other.Deck.Seek(Math.Max(0, e.Track.IntroEndSec - 1));
-            other.Deck.Play();
-            StartCrossfade(dir);
             _autoMixTriggeredFor = d;
+            _ = MixToAsync(d, other, startNow: false);
         }
     }
 
@@ -1544,7 +1553,7 @@ public sealed partial class MainViewModel : ObservableObject
             var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             foreach (var x in Tracks) foreach (var g in x.Genres) counts[g] = counts.GetValueOrDefault(g) + 1;
             var fromLibrary = counts.Where(kv => kv.Value >= 3 && IsSaneGenre(kv.Key)).Select(kv => kv.Key);
-            var list = GenreClassifier.Genres.Concat(fromLibrary);
+            var list = GenreClassifier.Genres.Concat(Settings.CustomGenres).Concat(fromLibrary);
             if (t != null) list = list.Concat(t.Genres); // i tag del brano selezionato compaiono sempre (per poterli togliere)
             return list
                 .Select(g => g.Trim()).Where(g => g.Length > 0)
@@ -1592,6 +1601,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void AfterGenreChange(Track t)
     {
+        // un genere scritto a mano resta disponibile per tutti gli altri brani
+        foreach (var g in t.Genres)
+            if (!GenreClassifier.Genres.Contains(g, StringComparer.OrdinalIgnoreCase) && !Settings.CustomGenres.Contains(g, StringComparer.OrdinalIgnoreCase))
+                Settings.CustomGenres.Add(g);
         t.InvalidateSearchCache();
         foreach (var d in new[] { DeckA, DeckB }) if (d.Track == t) d.RefreshGenreTags();
         WriteGenreYearTag(t);
@@ -2119,7 +2132,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (!pressed) return;
         switch (action)
         {
-            case "crossfader": if (continuous) { _crossfadeTarget = null; Crossfader = norm * 2 - 1; } break;
+            case "crossfader": if (continuous) { _crossfadeTarget = null; if (_mix != null) AbortMix("crossfader mosso a mano"); Crossfader = norm * 2 - 1; } break;
             case "master": if (continuous) MasterVolume = norm * 1.2; break;
             case "next": PlayNextCommand.Execute(null); break;
             case "fadeA": StartCrossfade(-1); break;
