@@ -179,6 +179,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="0,0,0,8">
                         <TextBlock DockPanel.Dock="Left" Text="LIBRERIA" Style="{StaticResource SectionTitle}" VerticalAlignment="Center" Margin="0,0,10,0"/>
@@ -307,7 +308,25 @@
                         </DataGrid.ContextMenu>
                     </DataGrid>
 
-                    <Grid Grid.Row="4" Margin="0,8,0,0">
+                    <!-- tag genere del brano selezionato: gestibili senza caricarlo su un deck (click sul tag = togli, + = aggiungi) -->
+                    <DockPanel Grid.Row="4" Margin="0,6,0,0" Visibility="{Binding SelectedTrack, Converter={StaticResource NullToVis}}">
+                        <TextBlock DockPanel.Dock="Left" Text="🏷" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,6,0" ToolTip="Generi del brano selezionato"/>
+                        <TextBlock DockPanel.Dock="Left" Text="{Binding SelectedTrack.Display}" Style="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" MaxWidth="260" TextTrimming="CharacterEllipsis"/>
+                        <Button DockPanel.Dock="Right" Content="＋ tag" Style="{StaticResource SmallButton}" Padding="7,1" FontSize="10" Click="SelectedAddTag_Click" ToolTip="Aggiungi un genere al brano selezionato (max 5)"/>
+                        <ItemsControl ItemsSource="{Binding SelectedTrackGenres}" VerticalAlignment="Center">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource SmallButton}" Padding="7,1" FontSize="10" Margin="0,0,4,0" Foreground="{StaticResource AccentBrush}"
+                                            Command="{Binding DataContext.ToggleGenreCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
+                                            ToolTip="Click: togli questo genere dal brano">
+                                        <TextBlock><Run Text="{Binding Mode=OneWay}"/><Run Text="  ✕" Foreground="{StaticResource MutedBrush}"/></TextBlock>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                    <Grid Grid.Row="5" Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>

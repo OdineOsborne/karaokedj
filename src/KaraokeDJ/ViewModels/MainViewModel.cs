@@ -121,7 +121,9 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _searchText = "";
     [ObservableProperty] private string _libraryFilter = "all"; // all | audio | cdg | video
     [ObservableProperty] private Track? _selectedTrack;
-    partial void OnSelectedTrackChanged(Track? value) => OnPropertyChanged(nameof(GenreOptions));
+    partial void OnSelectedTrackChanged(Track? value) { OnPropertyChanged(nameof(GenreOptions)); OnPropertyChanged(nameof(SelectedTrackGenres)); }
+    /// <summary>Tag genere del brano selezionato in libreria (riga sotto la griglia).</summary>
+    public IEnumerable<string> SelectedTrackGenres => SelectedTrack?.Genres.ToList() ?? new List<string>();
     [ObservableProperty] private QueueEntry? _selectedQueueEntry;
     [ObservableProperty] private string _singerName = "";
     [ObservableProperty] private int _queueKeyShift;
@@ -1580,6 +1582,7 @@ public sealed partial class MainViewModel : ObservableObject
         UpdateSuggestions();
         StatusText = t.Genre.Length == 0 ? $"Nessun genere: {t.Display}" : $"Generi \"{t.Genre}\": {t.Display}";
         OnPropertyChanged(nameof(GenreOptions));
+        OnPropertyChanged(nameof(SelectedTrackGenres));
         RebuildGenreChips();
     }
 

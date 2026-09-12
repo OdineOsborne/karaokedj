@@ -19,6 +19,27 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
+            <!-- ultimi 30 secondi: cornice rossa che pulsa -->
+            <Border Grid.Row="0" Grid.RowSpan="8" IsHitTestVisible="False" CornerRadius="12" BorderBrush="{StaticResource DangerBrush}" BorderThickness="3" Background="#14FF3B3B" Margin="-6" Opacity="0">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsEnding}" Value="True">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard x:Name="EndingPulse">
+                                        <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.15" To="1" Duration="0:0:0.45"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <StopStoryboard BeginStoryboardName="EndingPulse"/>
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+            </Border>
             <!-- intestazione -->
             <DockPanel Grid.Row="0" Margin="0,0,0,6">
                 <Border DockPanel.Dock="Left" Background="{Binding Accent, ElementName=Root}" CornerRadius="6" Padding="10,3">

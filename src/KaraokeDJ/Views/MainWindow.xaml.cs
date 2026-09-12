@@ -183,6 +183,34 @@ public partial class MainWindow : Window
         if (from >= 0 && to >= 0 && from != to) Vm.Queue.Move(from, to);
     }
 
+    // ------------------------------------------------------------ tag del brano selezionato (senza caricarlo su un deck)
+
+    private void SelectedAddTag_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button b || Vm.SelectedTrack is not { } t) return;
+        if (t.Genres.Count() >= DeckViewModel.MaxGenreTags)
+        {
+            MessageBox.Show($"Massimo {DeckViewModel.MaxGenreTags} generi per brano: togline uno cliccandolo.", "Generi", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+        var menu = new ContextMenu { PlacementTarget = b, Placement = System.Windows.Controls.Primitives.PlacementMode.Top, MaxHeight = 520 };
+        foreach (var g in Vm.GenreOptions.Where(o => !o.IsChecked).Select(o => o.Name))
+        {
+            var item = new MenuItem { Header = g };
+            item.Click += (_, _) => Vm.ToggleGenreCommand.Execute(g);
+            menu.Items.Add(item);
+        }
+        menu.Items.Add(new Separator());
+        var custom = new MenuItem { Header = "Nuovo genere…" };
+        custom.Click += (_, _) =>
+        {
+            var s = InputDialog.Show("Nuovo genere", "Nome del genere:", "");
+            if (!string.IsNullOrWhiteSpace(s)) Vm.ToggleGenreCommand.Execute(s.Trim());
+        };
+        menu.Items.Add(custom);
+        menu.IsOpen = true;
+    }
+
     // ------------------------------------------------------------ pad
 
     private void Pad_DragOver(object sender, DragEventArgs e)
