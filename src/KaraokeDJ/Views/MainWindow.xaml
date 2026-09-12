@@ -183,6 +183,7 @@
                             <RadioButton Style="{StaticResource Chip}" Content="♪ Audio" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="audio" ToolTip="Solo brani musicali (senza testo)"/>
                             <RadioButton Style="{StaticResource Chip}" Content="CDG" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="cdg" ToolTip="Basi karaoke MP3+G"/>
                             <RadioButton Style="{StaticResource Chip}" Content="🎬 Video" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="video" ToolTip="Basi karaoke video"/>
+                            <RadioButton Style="{StaticResource Chip}" Content="🎹 MIDI/KAR" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="midi" ToolTip="Basi MIDI/KAR (sintetizzate con FluidSynth, testo sul proiettore). Mai nel mix automatico."/>
                             <RadioButton Style="{StaticResource Chip}" Content="🎯 Compatibili" GroupName="LibFilter" Command="{Binding RefreshCompatibilityCommand}"
                                          ToolTip="Ordina la libreria per affinità (BPM ±8 %, tonalità Camelot vicina) con il brano in riproduzione o selezionato. Clicca di nuovo per aggiornare."/>
                         </StackPanel>

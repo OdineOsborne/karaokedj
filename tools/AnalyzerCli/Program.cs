@@ -6,6 +6,7 @@ if (args.Length > 0 && args[0] == "--clean") { CleanTest.Run(); return; }
 if (args.Length > 0 && args[0] == "--fx") { FxTest.Run(); return; }
 if (args.Length > 0 && args[0] == "--drums") { DrumTest.Run(); return; }
 if (args.Length > 1 && args[0] == "--jog") { JogTest.Run(args[1]); return; }
+if (args.Length > 1 && args[0] == "--midi") { MidiTest.Run(args[1]); return; }
 if (args.Length > 0 && args[0] == "--synth")
 {
     // Segnali sintetici: accordo noto + click a tempo noto

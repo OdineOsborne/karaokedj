@@ -123,13 +123,13 @@ public sealed class LibraryService
         try { if ((File.GetAttributes(path) & (FileAttributes.Hidden | FileAttributes.System)) != 0) return false; } catch { }
         var ext = Path.GetExtension(path).ToLowerInvariant();
         if (ext == ".cdg") return false;
-        if (ext == ".zip") return true;
+        if (ext == ".zip" || MidiRenderService.IsMidi(path)) return true;
         return SourceFactory.AudioExtensions.Contains(ext) || SourceFactory.VideoExtensions.Contains(ext);
     }
 
     private static void RefreshCdgLink(Track t)
     {
-        if (t.Kind is TrackKind.Video or TrackKind.CdgZip) return;
+        if (t.Kind is TrackKind.Video or TrackKind.CdgZip or TrackKind.Midi) return;
         var cdg = Path.ChangeExtension(t.FilePath, ".cdg");
         if (File.Exists(cdg)) { t.CdgPath = cdg; t.Kind = TrackKind.Cdg; }
         else { t.CdgPath = null; t.Kind = TrackKind.Audio; }
@@ -169,6 +169,16 @@ public sealed class LibraryService
                 return t;
             }
 
+            if (MidiRenderService.IsMidi(path))
+            {
+                // MIDI/KAR: niente tag audio; durata e BPM dalla mappa dei tempi, analisi non necessaria
+                t.Kind = TrackKind.Midi;
+                ParseFileName(Path.GetFileNameWithoutExtension(path), t);
+                var (dur, bpm) = MidiRenderService.Info(path);
+                if (dur <= 0) return null;
+                t.DurationSec = dur; t.Bpm = bpm; t.Analyzed = true;
+                return t;
+            }
             t.Kind = SourceFactory.VideoExtensions.Contains(ext) ? TrackKind.Video : TrackKind.Audio;
             ParseFileName(Path.GetFileNameWithoutExtension(path), t);
             RefreshCdgLink(t);
@@ -262,6 +272,8 @@ public sealed class LibraryService
     /// <summary>Restituisce i percorsi audio e cdg pronti per il deck (estrae gli zip nella cache).</summary>
     public static (string audioPath, string? cdgPath) PrepareForPlayback(Track t)
     {
+        if (t.Kind == TrackKind.Midi)
+            return (MidiRenderService.Rendered(t.Id) ?? throw new InvalidOperationException("MIDI non ancora reso in audio"), null);
         if (t.Kind != TrackKind.CdgZip) return (t.FilePath, t.CdgPath);
 
         var dir = Path.Combine(AppPaths.CacheDir, t.Id);

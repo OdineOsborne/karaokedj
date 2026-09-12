@@ -168,7 +168,7 @@ public partial class ProjectorWindow : Window
 
     private void Deck_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(DeckViewModel.IsCdg) or nameof(DeckViewModel.IsVideo) or nameof(DeckViewModel.VideoPath) or nameof(DeckViewModel.HasTrack))
+        if (e.PropertyName is nameof(DeckViewModel.IsCdg) or nameof(DeckViewModel.IsVideo) or nameof(DeckViewModel.VideoPath) or nameof(DeckViewModel.HasTrack) or nameof(DeckViewModel.IsMidiLyrics))
         {
             UpdateLayers();
             SyncVideo(force: true);
@@ -180,11 +180,13 @@ public partial class ProjectorWindow : Window
         var d = _boundDeck;
         bool cdg = d?.IsCdg == true;
         bool video = d?.IsVideo == true && _mp != null;
-        bool dedication = !cdg && !video && !string.IsNullOrEmpty(Vm?.DedicationText);
+        bool lyrics = d?.IsMidiLyrics == true && !cdg && !video;
+        bool dedication = !cdg && !video && !lyrics && !string.IsNullOrEmpty(Vm?.DedicationText);
         CdgLayer.Visibility = cdg ? Visibility.Visible : Visibility.Collapsed;
         VideoView.Visibility = video ? Visibility.Visible : Visibility.Collapsed;
+        LyricsLayer.Visibility = lyrics ? Visibility.Visible : Visibility.Collapsed;
         DedicationLayer.Visibility = dedication ? Visibility.Visible : Visibility.Collapsed;
-        IdleLayer.Visibility = (cdg || video || dedication) ? Visibility.Collapsed : Visibility.Visible;
+        IdleLayer.Visibility = (cdg || video || lyrics || dedication) ? Visibility.Collapsed : Visibility.Visible;
         if (cdg) d!.ForceCdgRefresh();
     }
 

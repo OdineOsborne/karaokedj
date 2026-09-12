@@ -90,3 +90,51 @@ public static class SuggestService
         return list;
     }
 }
+
+/// <summary>Assegna genere (e decade se manca) ai brani senza tag, a lotti, con Claude.</summary>
+public static class GenreClassifier
+{
+    public static readonly string[] Genres =
+    {
+        "Pop", "Pop italiano", "Rock", "Dance", "House", "Techno", "Hip-hop", "Reggaeton", "Latino", "Liscio", "Disco", "Funk", "R&B", "Soul",
+        "Jazz", "Blues", "Metal", "Punk", "Indie", "Cantautori", "Napoletana", "Folk", "Country", "Reggae", "Ska", "Classica", "Colonna sonora",
+        "Natalizio", "Bambini", "Revival anni 60", "Revival anni 70", "Revival anni 80", "Revival anni 90", "Anni 2000", "Trap", "EDM", "Ambient",
+    };
+
+    /// <summary>Ritorna per ogni id: (genere, anno stimato o 0).</summary>
+    public static async Task<Dictionary<string, (string genre, int year)>> ClassifyAsync(IReadOnlyList<Track> batch, string apiKey, CancellationToken ct)
+    {
+        var client = new AnthropicClient { ApiKey = apiKey };
+        var lines = batch.Select((t, i) => $"{i}|{t.Artist}|{t.Title}");
+        var prompt = $$"""
+            Per ogni brano (formato "n|artista|titolo") indica il genere più adatto per un DJ di feste, scelto SOLO da questa lista:
+            {{string.Join(", ", Genres)}}
+            e l'anno di uscita se lo conosci (altrimenti 0). Brani:
+            {{string.Join("\n", lines)}}
+            Rispondi SOLO con un array JSON: [{"n":0,"genre":"Pop italiano","year":1985}, ...] con una voce per ogni n.
+            """;
+        var response = await client.Messages.Create(new MessageCreateParams
+        {
+            Model = SuggestService.Model,
+            MaxTokens = 4000,
+            Messages = [new() { Role = Role.User, Content = prompt }],
+        }, cancellationToken: ct);
+        var text = string.Concat(response.Content.Select(b => b.Value).OfType<TextBlock>().Select(t => t.Text)).Trim();
+        var result = new Dictionary<string, (string, int)>();
+        var m = Regex.Match(text, @"\[[\s\S]*\]");
+        if (!m.Success) return result;
+        try
+        {
+            using var doc = JsonDocument.Parse(m.Value);
+            foreach (var el in doc.RootElement.EnumerateArray())
+            {
+                if (!el.TryGetProperty("n", out var nEl) || !nEl.TryGetInt32(out var n) || n < 0 || n >= batch.Count) continue;
+                var g = el.TryGetProperty("genre", out var gEl) ? gEl.GetString() ?? "" : "";
+                int y = el.TryGetProperty("year", out var yEl) && yEl.TryGetInt32(out var yy) ? yy : 0;
+                if (g.Length > 0) result[batch[n].Id] = (g, y is > 1900 and < 2100 ? y : 0);
+            }
+        }
+        catch { }
+        return result;
+    }
+}

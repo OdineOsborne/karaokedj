@@ -8,6 +8,7 @@ public enum TrackKind
     Cdg,      // .mp3 + .cdg accanto
     CdgZip,   // .zip contenente mp3 + cdg
     Video,    // mp4 / mkv / avi con testo integrato
+    Midi,     // .mid / .kar: reso in audio con FluidSynth, testo dagli eventi lyric
 }
 
 public sealed class Track
@@ -71,6 +72,7 @@ public sealed class Track
     [JsonIgnore] public string Display => string.IsNullOrWhiteSpace(Artist) ? Title : $"{Artist} - {Title}";
     [JsonIgnore] public bool IsKaraoke => Kind != TrackKind.Audio;
     [JsonIgnore] public bool IsVideo => Kind == TrackKind.Video;
+    [JsonIgnore] public bool IsMidi => Kind == TrackKind.Midi;
     [JsonIgnore] public bool IsCdg => Kind is TrackKind.Cdg or TrackKind.CdgZip;
 
     [JsonIgnore]
@@ -78,6 +80,7 @@ public sealed class Track
     {
         TrackKind.Audio => "Audio",
         TrackKind.Video => "Video",
+        TrackKind.Midi => "MIDI",
         _ => "CDG",
     };
 

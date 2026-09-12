@@ -73,6 +73,24 @@
             <TextBlock Grid.Row="2" Text="{Binding DedicationText}" FontSize="36" Foreground="#FFFFD60A" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1500" Margin="40,24,40,0" LineHeight="52"/>
         </Grid>
 
+        <!-- ═══ TESTO MIDI/KAR ═══ -->
+        <Grid x:Name="LyricsLayer" Background="#FF05060C" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="1" Text="{Binding ActiveKaraokeDeck.LyricPrev}" FontSize="54" Foreground="#80FFFFFF" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1700" Margin="40,0,40,18"/>
+            <TextBlock Grid.Row="2" FontSize="84" FontWeight="Black" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1700" Margin="40,0">
+                <Run Text="{Binding ActiveKaraokeDeck.LyricSung, Mode=OneWay}" Foreground="#FF00E5FF"/><Run Text="{Binding ActiveKaraokeDeck.LyricRest, Mode=OneWay}" Foreground="White"/>
+                <TextBlock.Effect><DropShadowEffect BlurRadius="28" ShadowDepth="0" Color="#FF8A2BFF" Opacity="0.8"/></TextBlock.Effect>
+            </TextBlock>
+            <TextBlock Grid.Row="3" Text="{Binding ActiveKaraokeDeck.LyricNext}" FontSize="54" Foreground="#A0FFFFFF" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="1700" Margin="40,18,40,0"/>
+            <ContentPresenter Grid.Row="4" ContentTemplate="{StaticResource NextBanner}" Content="{Binding}" VerticalAlignment="Bottom"/>
+        </Grid>
+
         <!-- ═══ CDG ═══ -->
         <Grid x:Name="CdgLayer" Background="Black" Visibility="Collapsed">
             <Image x:Name="CdgImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="Linear"/>

@@ -313,6 +313,7 @@ public sealed partial class MainViewModel : ObservableObject
             "audio" => t.Kind == TrackKind.Audio,
             "cdg" => t.IsCdg,
             "video" => t.IsVideo,
+            "midi" => t.IsMidi,
             "compat" => _compatScores.TryGetValue(t.Id, out var sc) && sc >= 0.35,
             _ => true,
         };
@@ -550,6 +551,28 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ---------------------------------------------------------------- deck
 
+    public MidiRenderService MidiRender { get; } = new();
+
+    /// <summary>MIDI/KAR: rende l'audio (la prima volta scarica FluidSynth + soundfont) e poi carica sul deck.</summary>
+    private async void LoadMidiAsync(DeckViewModel deck, Track track, string singer, int keyShift)
+    {
+        try
+        {
+            StatusText = $"Preparo il MIDI: {track.Display}…";
+            var handler = new Action<string, double>((m, p) => StatusText = m);
+            MidiRender.Progress += handler;
+            try { await MidiRender.RenderAsync(track.Id, track.FilePath, CancellationToken.None); }
+            finally { MidiRender.Progress -= handler; }
+            deck.TempoPercent = 0;
+            deck.Load(track, singer, keyShift);
+            StatusText = $"Deck {deck.Name}: {track.Display}";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"MIDI non riproducibile \"{track.Display}\":\n{ex.Message}", "MIDI / KAR", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
     public bool LoadToDeck(DeckViewModel deck, Track track, string singer = "", int keyShift = 0, bool confirmIfPlaying = true)
     {
         if (confirmIfPlaying && deck.IsPlaying)
@@ -558,6 +581,7 @@ public sealed partial class MainViewModel : ObservableObject
                 "Deck in riproduzione", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
             if (r != MessageBoxResult.Yes) return false;
         }
+        if (track.IsMidi && MidiRenderService.Rendered(track.Id) == null) { LoadMidiAsync(deck, track, singer, keyShift); return true; }
         try
         {
             deck.TempoPercent = 0;
@@ -697,11 +721,25 @@ public sealed partial class MainViewModel : ObservableObject
         Track? pick = null;
         if (current != null)
         {
-            pick = pool.Where(t => !t.PlayedThisSession)
-                .Select(t => (t, s: SuggestScore(current, t) * (t.Analyzed ? 1.0 : 0.6)))
-                .Where(x => x.s > 0.3)
-                .OrderByDescending(x => x.s).ThenBy(x => x.t.PlayCount)
-                .Select(x => x.t).FirstOrDefault();
+            var fresh = pool.Where(t => !t.PlayedThisSession && !Feedback.IsRejectedNow(t)).ToList();
+            // Continuità prima di tutto: 1) stesso genere, 2) stessa decade, 3) solo BPM/tonalità.
+            // Dentro ogni livello vince il punteggio (BPM/tonalità/giudizi del DJ); tra i migliori si pesca a caso per non ripetere sempre lo stesso giro.
+            var tiers = new List<Func<Track, bool>>();
+            if (!string.IsNullOrWhiteSpace(current.Genre)) tiers.Add(t => GenreAffinity(current, t) >= 0.8);
+            if (current.Year > 0) tiers.Add(t => DecadeAffinity(current, t) >= 1.0);
+            tiers.Add(_ => true);
+            foreach (var tier in tiers)
+            {
+                var best = fresh.Where(tier)
+                    .Select(t => (t, s: SuggestScore(current, t) * (t.Analyzed ? 1.0 : 0.6)))
+                    .Where(x => x.s > 0.3)
+                    .OrderByDescending(x => x.s).ThenBy(x => x.t.PlayCount)
+                    .Take(5).ToList();
+                if (best.Count > 0) { pick = best[Random.Shared.Next(Math.Min(3, best.Count))].t; break; }
+            }
+            // niente di compatibile per BPM/tonalità: resta almeno nel genere (o nella decade)
+            pick ??= fresh.Where(t => !string.IsNullOrWhiteSpace(current.Genre) && GenreAffinity(current, t) >= 0.8).OrderBy(t => t.PlayCount).ThenBy(_ => Random.Shared.Next()).FirstOrDefault();
+            pick ??= fresh.Where(t => current.Year > 0 && DecadeAffinity(current, t) >= 1.0).OrderBy(t => t.PlayCount).ThenBy(_ => Random.Shared.Next()).FirstOrDefault();
         }
         pick ??= pool.Where(t => !t.PlayedThisSession).OrderBy(t => t.PlayCount).ThenBy(t => t.LastPlayedUtc ?? DateTime.MinValue).ThenBy(_ => Random.Shared.Next()).FirstOrDefault();
         pick ??= pool.OrderBy(t => t.LastPlayedUtc ?? DateTime.MinValue).First(); // tutti già suonati: riparte dal più vecchio
@@ -1878,6 +1916,49 @@ public sealed partial class MainViewModel : ObservableObject
         Settings.MidiDeviceName = name;
         if (string.IsNullOrEmpty(name)) { Midi.Close(); StatusText = "MIDI disattivato"; return; }
         StatusText = Midi.Open(name) ? "MIDI: " + name : "Impossibile aprire " + name;
+    }
+
+    // ---------------------------------------------------------------- generi con AI
+
+    [ObservableProperty] private bool _isClassifying;
+    private CancellationTokenSource? _classifyCts;
+
+    /// <summary>Assegna genere (e anno) ai brani audio che non ce l'hanno, a lotti di 80 con Claude. Serve per la continuità dell'automix.</summary>
+    [RelayCommand]
+    private async Task ClassifyGenresAsync()
+    {
+        if (IsClassifying) { _classifyCts?.Cancel(); return; }
+        var key = Secret.Unprotect(Settings.AnthropicApiKeyProtected);
+        if (string.IsNullOrEmpty(key)) { StatusText = "Serve la chiave API Anthropic (Impostazioni → AI)"; return; }
+        var todo = Tracks.Where(t => !t.IsKaraoke && string.IsNullOrWhiteSpace(t.Genre) && !MainViewModel.IsCryptic(t)).ToList();
+        if (todo.Count == 0) { StatusText = "Tutti i brani hanno già un genere"; return; }
+        if (MessageBox.Show($"Assegnare genere e anno con l'AI a {todo.Count} brani senza tag?\n(circa {Math.Ceiling(todo.Count / 80.0)} richieste a Claude, qualche minuto)", "Generi con AI",
+                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        _classifyCts = new CancellationTokenSource();
+        IsClassifying = true;
+        int done = 0, set = 0;
+        try
+        {
+            foreach (var batch in todo.Chunk(80))
+            {
+                _classifyCts.Token.ThrowIfCancellationRequested();
+                StatusText = $"Generi AI: {done}/{todo.Count}…";
+                var res = await GenreClassifier.ClassifyAsync(batch, key, _classifyCts.Token);
+                foreach (var t in batch)
+                {
+                    if (!res.TryGetValue(t.Id, out var r)) continue;
+                    t.Genre = r.genre; if (t.Year <= 0 && r.year > 0) t.Year = r.year;
+                    t.InvalidateSearchCache(); set++;
+                }
+                done += batch.Length;
+                Library.Save();
+                LibraryView.Refresh();
+            }
+            StatusText = $"Generi AI: assegnati {set} su {todo.Count}";
+        }
+        catch (OperationCanceledException) { StatusText = $"Generi AI interrotto ({done}/{todo.Count})"; }
+        catch (Exception ex) { StatusText = "Generi AI: " + ex.Message; }
+        finally { IsClassifying = false; }
     }
 
     // ---------------------------------------------------------------- QR sul proiettore

@@ -91,6 +91,7 @@
                             <Button Content="Rimuovi" Click="RemoveFolder_Click" Margin="0,0,6,0"/>
                             <Button Content="Aggiorna yt-dlp" Click="UpdateYtDlp_Click" ToolTip="Se i download da YouTube smettono di funzionare, aggiorna yt-dlp" Margin="0,0,6,0"/>
                             <Button Content="🤖 Installa motore AI (Demucs)" Click="InstallAi_Click" ToolTip="Python + PyTorch CPU + Demucs (~300 MB). Serve per la rimozione voce AI." Margin="0,0,6,0"/>
+                            <Button Content="🏷 Generi con AI" Command="{Binding ClassifyGenresCommand}" ToolTip="Assegna genere e anno ai brani senza tag (Claude, a lotti). Migliora suggeriti e continuità dell'automix. Clicca di nuovo per interrompere." Margin="0,0,6,0"/>
                             <Button Content="⬆ Cerca aggiornamenti" Command="{Binding CheckUpdatesCommand}" Margin="0,0,6,0"/>
                             <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
                         </StackPanel>

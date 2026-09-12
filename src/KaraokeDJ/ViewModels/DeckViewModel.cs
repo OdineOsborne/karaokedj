@@ -14,6 +14,9 @@ public sealed partial class DeckViewModel : ObservableObject
 {
     private CdgDecoder? _cdg;
     private DateTime _lastCdgRender = DateTime.MinValue;
+    private List<LyricEvent>? _lyrics;
+    private List<int>? _lineStarts;
+    private int _lyricLine = -1;
 
     public DeckViewModel(Deck deck)
     {
@@ -44,6 +47,12 @@ public sealed partial class DeckViewModel : ObservableObject
     [ObservableProperty] private bool _isKaraoke;
     [ObservableProperty] private bool _isCdg;
     [ObservableProperty] private bool _isVideo;
+    /// <summary>Brano MIDI/KAR con testo a scorrimento (proiettore).</summary>
+    [ObservableProperty] private bool _isMidiLyrics;
+    [ObservableProperty] private string _lyricPrev = "";
+    [ObservableProperty] private string _lyricSung = "";
+    [ObservableProperty] private string _lyricRest = "";
+    [ObservableProperty] private string _lyricNext = "";
     [ObservableProperty] private double _positionSec;
     /// <summary>Forma d'onda fine (50 col/s) per la vista di mixaggio; calcolata in background al caricamento.</summary>
     [ObservableProperty] private byte[]? _fineWaveform;
@@ -603,6 +612,9 @@ public sealed partial class DeckViewModel : ObservableObject
             IsKaraoke = track.IsKaraoke;
             IsCdg = _cdg != null;
             IsVideo = track.IsVideo;
+            _lyrics = track.IsMidi ? MidiRenderService.ExtractLyrics(track.FilePath) : null;
+            _lineStarts = null; _lyricLine = -1; LyricPrev = LyricSung = LyricRest = LyricNext = "";
+            IsMidiLyrics = _lyrics is { Count: > 0 };
             VideoPath = track.IsVideo ? track.FilePath : null;
             DurationSec = Deck.DurationSec;
             KeyShift = keyShift;
@@ -644,7 +656,8 @@ public sealed partial class DeckViewModel : ObservableObject
         Singer = "";
         KindLabel = "";
         HasTrack = false;
-        IsKaraoke = IsCdg = IsVideo = false;
+        IsKaraoke = IsCdg = IsVideo = IsMidiLyrics = false;
+        _lyrics = null; _lineStarts = null;
         VideoPath = null;
         DurationSec = 0;
         IsEnding = false;
@@ -827,6 +840,7 @@ public sealed partial class DeckViewModel : ObservableObject
         InOutro = HasTrack && dur > 0 && PositionSec >= outroStart;
         IsEnding = HasTrack && dur > 0 && IsPlaying && (dur - PositionSec < 20 || InOutro);
 
+        if (_lyrics != null) UpdateLyrics();
         if (_cdg != null && (IsPlaying || _cdg.FrameVersion == 0))
         {
             var now = DateTime.UtcNow;
@@ -837,6 +851,53 @@ public sealed partial class DeckViewModel : ObservableObject
                     PushCdgFrame();
             }
         }
+    }
+
+    /// <summary>Righe del testo KAR: precedente, corrente (parte cantata / da cantare), prossima.</summary>
+    private void UpdateLyrics()
+    {
+        var ly = _lyrics!;
+        if (ly.Count == 0) return;
+        double pos = PositionSec + 0.05;
+        var starts = _lineStarts ??= BuildLineStarts(ly);
+        int line = 0;
+        for (int i = 0; i < starts.Count; i++) { if (ly[starts[i]].Sec <= pos) line = i; else break; }
+        int s = starts[line], e = line + 1 < starts.Count ? starts[line + 1] : ly.Count;
+        var sung = new System.Text.StringBuilder(); var rest = new System.Text.StringBuilder();
+        for (int i = s; i < e; i++) (ly[i].Sec <= pos ? sung : rest).Append(ly[i].Text);
+        if (line != _lyricLine)
+        {
+            _lyricLine = line;
+            LyricPrev = line > 0 ? Join(ly, starts[line - 1], s) : "";
+            LyricNext = line + 1 < starts.Count ? Join(ly, e, line + 2 < starts.Count ? starts[line + 2] : ly.Count) : "";
+        }
+        var su = sung.ToString(); var re = rest.ToString();
+        if (su != LyricSung) LyricSung = su;
+        if (re != LyricRest) LyricRest = re;
+    }
+
+    private static List<int> BuildLineStarts(List<LyricEvent> ly)
+    {
+        var starts = new List<int> { 0 };
+        for (int i = 1; i < ly.Count; i++) if (ly[i].NewLine) starts.Add(i);
+        // testi senza marcatori di riga: spezza ogni ~40 caratteri a fine parola
+        if (starts.Count == 1 && ly.Count > 8)
+        {
+            int len = 0;
+            for (int i = 1; i < ly.Count; i++)
+            {
+                len += ly[i - 1].Text.Length;
+                if (len >= 40 && ly[i - 1].Text.EndsWith(' ')) { starts.Add(i); len = 0; }
+            }
+        }
+        return starts;
+    }
+
+    private static string Join(List<LyricEvent> ly, int s, int e)
+    {
+        var sb = new System.Text.StringBuilder();
+        for (int i = s; i < e; i++) sb.Append(ly[i].Text);
+        return sb.ToString().Trim();
     }
 
     public void ForceCdgRefresh()
