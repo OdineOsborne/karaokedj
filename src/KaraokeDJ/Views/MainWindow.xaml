@@ -26,28 +26,26 @@
                         Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVis}}"/>
                 <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisInv}}"/>
                 <Button Content="{Binding AppVersion, StringFormat=⬆ {0}}" Style="{StaticResource SmallButton}" Command="{Binding CheckUpdatesCommand}" Margin="0,0,10,0" ToolTip="Controlla se ci sono aggiornamenti su GitHub"/>
-                <ToggleButton IsChecked="{Binding BottomStripVisible}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="🎛 PAD" ToolTip="Mostra/nascondi la striscia in basso (jingle e download) per dare spazio a libreria e coda"/>
-                <ToggleButton IsChecked="{Binding MixViewVisible}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="〰 MIX" ToolTip="Mostra/nascondi le onde sovrapposte dei due deck (per allineare i beat)"/>
-                <ToggleButton IsChecked="{Binding IsMonitorOpen}" Padding="10,6" FontWeight="Bold" Margin="0,0,10,0" Content="👁 MONITOR" v:Shortcut.Action="monitor" ToolTip="Finestrella sempre in primo piano con quello che vede il pubblico sul proiettore (CDG, testo, video, dediche, QR)"/>
-                <ToggleButton IsChecked="{Binding IsProjectorOpen}" Padding="14,6" FontWeight="Bold" ToolTip="Ctrl+P" v:Shortcut.Action="projector">
-                    <TextBlock Text="🖥 PROIETTORE"/>
-                </ToggleButton>
+                <ToggleButton IsChecked="{Binding BottomStripVisible}" Style="{StaticResource ToolToggle}" Content="🎛" ToolTip="Pad e importazione&#10;Mostra/nascondi la striscia in basso (jingle e importazione) per dare spazio a libreria e coda."/>
+                <ToggleButton IsChecked="{Binding MixViewVisible}" Style="{StaticResource ToolToggle}" Content="〰" ToolTip="Vista mix&#10;Onde dei due deck sovrapposte con la griglia dei battiti, per allineare a occhio."/>
+                <ToggleButton IsChecked="{Binding IsMonitorOpen}" Style="{StaticResource ToolToggle}" Content="👁" v:Shortcut.Action="monitor" ToolTip="Monitor proiettore&#10;Finestrella sempre in primo piano con quello che vede il pubblico (CDG, testo, video, dediche, QR)."/>
+                <ToggleButton IsChecked="{Binding IsProjectorOpen}" Style="{StaticResource ToolToggle}" Content="🖥" Margin="0" v:Shortcut.Action="projector" ToolTip="Proiettore (Ctrl+P)&#10;Apre/chiude lo schermo per il pubblico sul secondo monitor."/>
             </StackPanel>
             <WrapPanel Orientation="Horizontal">
                 <Image Source="pack://application:,,,/Assets/wordmark.png" Height="34" Margin="0,0,18,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" ToolTip="VOXA – Mix · Sing · Together">
                     <Image.Effect><DropShadowEffect Color="{StaticResource VioletColor}" BlurRadius="18" ShadowDepth="0" Opacity="0.6"/></Image.Effect>
                 </Image>
-                <Button Content="📁 Aggiungi cartella" Command="{Binding AddFolderCommand}" Margin="0,0,6,4"/>
-                <Button Content="🔄 Riscansiona" Command="{Binding RescanCommand}" Margin="0,0,6,0" IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBool}}" ToolTip="Rilegge le cartelle: nuovi brani, tag (anno, genere), titoli/artisti sistemati, doppioni (chiede conferma), poi analisi BPM/tonalità di tutto ciò che manca"/>
-                <Button Content="🧹 Doppioni" Click="Duplicates_Click" Margin="0,0,6,0" ToolTip="Trova e rimuove i brani doppi (nel Cestino)"/>
-                <Button Content="🥁 Ritmi" Click="Rhythm_Click" Margin="0,0,6,0" ToolTip="Sequencer ritmico di supporto: batteria, percussioni o campioni tuoi agganciati ai BPM della serata"/>
-                <Button Content="📱 Scaletta remota" Click="Remote_Click" Margin="0,0,6,0" ToolTip="QR per gestire la scaletta dal telefono (coda, ricerca, mix now)"/>
-                <Button Content="📋 Borderò SIAE" Click="Bordero_Click" Margin="0,0,6,0" ToolTip="Programma musicale della serata: elenco dei brani riprodotti con titolo e autori, da stampare o copiare nel modulo SIAE"/>
-                <Button Content="⚙ Impostazioni" Click="Settings_Click" Margin="0,0,6,0"/>
-                <Button Content="🎉 Animazione" Click="Animation_Click" Margin="0,0,6,0" ToolTip="Festeggiato, messaggi degli invitati, canzone con Suno, dedica sul proiettore"/>
-                <Button Content="{Binding SupportLabel}" Click="Support_Click" Margin="0,0,6,0" ToolTip="VOXA è donationware: sostienilo o attiva la tua chiave">
+                <Button Content="📁" Style="{StaticResource ToolIcon}" Command="{Binding AddFolderCommand}" ToolTip="Aggiungi cartella&#10;Scegli una cartella con musica o basi karaoke da mettere in libreria."/>
+                <Button Content="🔄" Style="{StaticResource ToolIcon}" Command="{Binding RescanCommand}" IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBool}}" ToolTip="Riscansiona&#10;Rilegge le cartelle: nuovi brani, tag (anno, genere), titoli/artisti sistemati, poi analisi BPM/tonalità di ciò che manca. Di norma non serve: i file nuovi entrano da soli."/>
+                <Button Content="🧹" Style="{StaticResource ToolIcon}" Click="Duplicates_Click" ToolTip="Doppioni&#10;Trova le copie doppie e le manda nel Cestino per liberare spazio (in libreria ne vedi già una sola)."/>
+                <Button Content="🥁" Style="{StaticResource ToolIcon}" Click="Rhythm_Click" ToolTip="Ritmi&#10;Sequencer di supporto: batteria, percussioni o campioni tuoi agganciati ai BPM della serata."/>
+                <Button Content="📱" Style="{StaticResource ToolIcon}" Click="Remote_Click" ToolTip="Scaletta remota&#10;QR per gestire la scaletta dal telefono: coda, ricerca, mix now."/>
+                <Button Content="📋" Style="{StaticResource ToolIcon}" Click="Bordero_Click" ToolTip="Borderò SIAE&#10;Programma musicale della serata: brani riprodotti con titolo e autori, da stampare o copiare nel modulo SIAE."/>
+                <Button Content="⚙" Style="{StaticResource ToolIcon}" Click="Settings_Click" ToolTip="Impostazioni&#10;Audio, proiettore, cartelle, AI, MIDI e tastiera, plugin e fonti."/>
+                <Button Content="🎉" Style="{StaticResource ToolIcon}" Click="Animation_Click" ToolTip="Animazione&#10;Festeggiato, messaggi degli invitati, canzone con Suno, dedica sul proiettore."/>
+                <Button Content="❤" Click="Support_Click" ToolTip="{Binding SupportLabel, StringFormat=Sostieni VOXA&#10;{0} — VOXA è donationware: sostienilo o attiva la tua chiave.}">
                     <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                        <Style TargetType="Button" BasedOn="{StaticResource ToolIcon}">
                             <Setter Property="Foreground" Value="{StaticResource MagentaBrush}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsLicensed}" Value="True">
