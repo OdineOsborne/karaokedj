@@ -19,6 +19,38 @@ public partial class DeckControl : UserControl
         set => SetValue(AccentProperty, value);
     }
 
+    // ------------------------------------------------------------ trascina un brano dalla libreria sul deck
+
+    private DeckViewModel? Deck => DataContext as DeckViewModel;
+
+    /// <summary>Brano dalla libreria o file audio/video trascinato da Esplora risorse.</summary>
+    private static bool CanAccept(DragEventArgs e) =>
+        e.Data.GetDataPresent(typeof(Models.Track)) || e.Data.GetDataPresent(DataFormats.FileDrop);
+
+    private void Deck_DragOver(object sender, DragEventArgs e)
+    {
+        bool ok = CanAccept(e);
+        e.Effects = ok ? DragDropEffects.Copy : DragDropEffects.None;
+        if (Deck != null) Deck.IsDropTarget = ok;
+        e.Handled = true;
+    }
+
+    private void Deck_DragLeave(object sender, DragEventArgs e)
+    {
+        if (Deck != null) Deck.IsDropTarget = false;
+    }
+
+    private void Deck_Drop(object sender, DragEventArgs e)
+    {
+        if (Deck is not { } deck) return;
+        deck.IsDropTarget = false;
+        e.Handled = true;
+        var vm = App.Vm;
+        if (vm == null) return;
+        if (e.Data.GetData(typeof(Models.Track)) is Models.Track t) { vm.LoadToDeck(deck, t); return; }
+        if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0) vm.LoadFileToDeck(deck, files[0]);
+    }
+
     private void SeekBar_MouseDown(object sender, MouseButtonEventArgs e)
     {
         Seek(e.GetPosition(SeekBar).X);

@@ -278,6 +278,38 @@ public partial class MainWindow : Window
         }
     }
 
+    // ------------------------------------------------------------ trascina dalla libreria ai deck / alla coda
+
+    private Point _libDragStart;
+
+    private void LibraryGrid_PreviewMouseDown(object sender, MouseButtonEventArgs e) => _libDragStart = e.GetPosition(null);
+
+    private void LibraryGrid_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed) return;
+        var pos = e.GetPosition(null);
+        if (Math.Abs(pos.X - _libDragStart.X) < 8 && Math.Abs(pos.Y - _libDragStart.Y) < 8) return;
+        if (e.OriginalSource is DependencyObject src && (FindAncestor<Button>(src) != null || FindAncestor<System.Windows.Controls.Primitives.DataGridColumnHeader>(src) != null)) return;
+        // il brano sotto il puntatore (non solo quello selezionato: così si trascina anche senza selezionare prima)
+        var row = e.OriginalSource is DependencyObject d ? FindAncestor<DataGridRow>(d) : null;
+        if ((row?.DataContext ?? Vm.SelectedTrack) is not Track t) return;
+        DragDrop.DoDragDrop(LibraryGrid, new DataObject(typeof(Track), t), DragDropEffects.Copy);
+    }
+
+    /// <summary>File o cartelle trascinati da Esplora risorse dentro la libreria: vengono aggiunti.</summary>
+    private void LibraryGrid_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void LibraryGrid_Drop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths || paths.Length == 0) return;
+        e.Handled = true;
+        Vm.AddPathsToLibrary(paths);
+    }
+
     // riordino coda con drag & drop
     private void QueueList_PreviewMouseMove(object sender, MouseEventArgs e)
     {
@@ -293,12 +325,20 @@ public partial class MainWindow : Window
 
     private void QueueList_DragOver(object sender, DragEventArgs e)
     {
-        e.Effects = e.Data.GetDataPresent(typeof(QueueEntry)) ? DragDropEffects.Move : DragDropEffects.None;
+        e.Effects = e.Data.GetDataPresent(typeof(QueueEntry)) ? DragDropEffects.Move
+                  : e.Data.GetDataPresent(typeof(Track)) ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
     }
 
     private void QueueList_Drop(object sender, DragEventArgs e)
     {
+        // brano trascinato dalla libreria: va in coda nel punto dove lo lasci
+        if (e.Data.GetData(typeof(Track)) is Track track)
+        {
+            var before = (e.OriginalSource as DependencyObject) is { } od ? FindAncestor<ListBoxItem>(od)?.DataContext as QueueEntry : null;
+            Vm.AddTrackToQueue(track, before);
+            return;
+        }
         if (e.Data.GetData(typeof(QueueEntry)) is not QueueEntry dragged) return;
         var target = (e.OriginalSource as DependencyObject) is { } d ? FindAncestor<ListBoxItem>(d)?.DataContext as QueueEntry : null;
         int from = Vm.Queue.IndexOf(dragged);

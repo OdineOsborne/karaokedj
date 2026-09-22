@@ -84,6 +84,8 @@ public sealed partial class DeckViewModel : ObservableObject
     public DateTime LastJogMessage;
     /// <summary>Sta suonando musica di riempimento fra un cantante e l'altro.</summary>
     [ObservableProperty] private bool _isFill;
+    /// <summary>Un brano trascinato dalla libreria è sopra questo deck: il pannello si illumina.</summary>
+    [ObservableProperty] private bool _isDropTarget;
     partial void OnCueOnChanged(bool value) => Deck.CueOn = value;
     [ObservableProperty] private string _bpmLabel = "";
     [ObservableProperty] private string _keyDisplay = "";

@@ -118,7 +118,7 @@ public partial class App : Application
             var sources = string.Join(", ", Vm.ImportSources.Select(s => s.Id));
             Console.Error.WriteLine("SELFTEST OK");
             try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-selftest.log"), "OK\nplugins: " + plugins + "\nsources: " + sources + "\ncontrollers: " + KaraokeDJ.Services.ControllerPresets.All.Count + " preset, midi: " + (Vm.Midi.DeviceName ?? "nessuno")
-                + "\nmappings: " + KaraokeDJ.Services.ControllerPresets.All.Sum(p => p.Mappings.Count) + ", sample: " + string.Join(",", KaraokeDJ.Services.ControllerPresets.All.Take(2).Select(p => p.Id + "=" + p.Mappings[0].Action)) + ImportTest() + MidiRangeTest()); } catch { }
+                + "\nmappings: " + KaraokeDJ.Services.ControllerPresets.All.Sum(p => p.Mappings.Count) + ", sample: " + string.Join(",", KaraokeDJ.Services.ControllerPresets.All.Take(2).Select(p => p.Id + "=" + p.Mappings[0].Action)) + ImportTest() + MidiRangeTest() + DropTest()); } catch { }
             Shutdown(0);
         }
         catch (Exception ex)
@@ -138,6 +138,42 @@ public partial class App : Application
         Console.Error.WriteLine(res);
         try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-layouttest.log"), res); } catch { }
         Shutdown(res.StartsWith("layout: OK") ? 0 : 2);
+    }
+
+    /// <summary>
+    /// Selftest del trascinamento: carica un brano sul deck (come il rilascio dalla libreria), carica un file per percorso
+    /// (come il rilascio da Esplora risorse) e accoda nel punto giusto. La coda dell'utente viene rimessa com'era.
+    /// </summary>
+    private static string DropTest()
+    {
+        var vm = Vm!;
+        if (vm.Tracks.Count == 0) return "\ndrop: saltato (libreria vuota)";
+        var errors = new List<string>();
+        var queueBackup = vm.Queue.ToList();
+        try
+        {
+            var t = vm.Tracks[0];
+            if (!vm.LoadToDeck(vm.DeckB, t, confirmIfPlaying: false) || !vm.DeckB.HasTrack) errors.Add("brano non caricato sul deck");
+            vm.DeckB.Eject();
+            if (!string.IsNullOrEmpty(t.FilePath) && File.Exists(t.FilePath))
+            {
+                if (!vm.LoadFileToDeck(vm.DeckB, t.FilePath) || !vm.DeckB.HasTrack) errors.Add("file per percorso non caricato");
+                vm.DeckB.Eject();
+            }
+            if (vm.LoadFileToDeck(vm.DeckB, Path.Combine(Path.GetTempPath(), "non-esiste.xyz"))) errors.Add("un file inesistente non dovrebbe caricarsi");
+            vm.Queue.Clear();
+            vm.AddTrackToQueue(t, null);
+            var first = vm.Queue[0];
+            vm.AddTrackToQueue(vm.Tracks.Count > 1 ? vm.Tracks[1] : t, first);      // rilasciato sopra il primo → va prima
+            if (vm.Queue.Count != 2 || vm.Queue[1] != first) errors.Add("ordine in coda sbagliato");
+        }
+        catch (Exception ex) { errors.Add(ex.Message); }
+        finally
+        {
+            vm.Queue.Clear();
+            foreach (var q in queueBackup) vm.Queue.Add(q);
+        }
+        return "\ndrop: " + (errors.Count == 0 ? "OK (deck da libreria, deck da file, coda nel punto giusto)" : "ERRORI → " + string.Join("; ", errors));
     }
 
     /// <summary>--audiotest: prova che i comandi cambino davvero il suono (vedi Services/AudioTest).</summary>

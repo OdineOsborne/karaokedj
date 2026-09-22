@@ -370,7 +370,10 @@
                     </DockPanel>
 
                     <DataGrid Grid.Row="3" x:Name="LibraryGrid" ItemsSource="{Binding LibraryView}" SelectedItem="{Binding SelectedTrack}"
-                              MouseDoubleClick="LibraryGrid_MouseDoubleClick" EnableRowVirtualization="True">
+                              MouseDoubleClick="LibraryGrid_MouseDoubleClick" EnableRowVirtualization="True"
+                              PreviewMouseLeftButtonDown="LibraryGrid_PreviewMouseDown" PreviewMouseMove="LibraryGrid_PreviewMouseMove"
+                              AllowDrop="True" DragOver="LibraryGrid_DragOver" Drop="LibraryGrid_Drop"
+                              ToolTip="Doppio click: in coda · trascina un brano sul deck A o B per caricarlo · sulla coda per accodarlo">
                         <DataGrid.RowStyle>
                             <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
                                 <Style.Triggers>

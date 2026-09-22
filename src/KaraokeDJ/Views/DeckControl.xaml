@@ -60,7 +60,9 @@
         </Style>
     </UserControl.Resources>
 
-    <Border Style="{StaticResource Panel}" BorderBrush="{Binding Accent, ElementName=Root}" BorderThickness="1" Padding="8">
+    <!-- si può trascinare qui un brano dalla libreria: il bordo si illumina e al rilascio il brano viene caricato -->
+    <Border Style="{StaticResource Panel}" BorderBrush="{Binding Accent, ElementName=Root}" BorderThickness="1" Padding="8"
+            AllowDrop="True" DragOver="Deck_DragOver" DragLeave="Deck_DragLeave" Drop="Deck_Drop">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>   <!-- 0 intestazione -->
@@ -75,6 +77,13 @@
                 <RowDefinition Height="Auto"/>   <!-- 9 tonalità -->
                 <RowDefinition Height="Auto"/>   <!-- 10 tag -->
             </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Grid.RowSpan="11" Panel.ZIndex="99" IsHitTestVisible="False" CornerRadius="3" BorderThickness="2" Margin="-6"
+                    BorderBrush="{Binding Accent, ElementName=Root}" Background="#1AFFFFFF"
+                    Visibility="{Binding IsDropTarget, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="CARICA QUI" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="22" FontWeight="SemiBold"
+                           Foreground="{Binding Accent, ElementName=Root}" Opacity="0.85"/>
+            </Border>
 
             <!-- ultimi 30 secondi: cornice rossa che pulsa -->
             <Border Grid.Row="0" Grid.RowSpan="11" IsHitTestVisible="False" CornerRadius="3" BorderBrush="{StaticResource DangerBrush}" BorderThickness="2" Background="#14FF3B3B" Margin="-8" Opacity="0">

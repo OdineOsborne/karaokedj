@@ -459,6 +459,27 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _showDuplicates;
     partial void OnShowDuplicatesChanged(bool value) => LibraryView.Refresh();
 
+    /// <summary>
+    /// File e cartelle trascinati nella libreria da Esplora risorse: i file vengono aggiunti subito,
+    /// le cartelle entrano fra quelle della libreria e vengono scandite.
+    /// </summary>
+    public async void AddPathsToLibrary(IEnumerable<string> paths)
+    {
+        int added = 0; bool folders = false;
+        foreach (var p in paths)
+        {
+            if (Directory.Exists(p))
+            {
+                folders = true;
+                if (!Settings.LibraryFolders.Contains(p, StringComparer.OrdinalIgnoreCase)) Settings.LibraryFolders.Add(p);
+            }
+            else if (File.Exists(p) && Library.AddFile(p) != null) added++;
+        }
+        if (added > 0) { RefreshTracks(); Library.Save(); StatusText = added == 1 ? "Aggiunto 1 brano alla libreria" : $"Aggiunti {added} brani alla libreria"; }
+        if (folders) { SaveSettings(); await RescanAsync(); }
+        else if (added == 0) StatusText = "Niente da aggiungere: trascina file audio, video o karaoke";
+    }
+
     [RelayCommand]
     private async Task AddFolderAsync()
     {
@@ -547,6 +568,16 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand] private void QueueEntryMixNow(QueueEntry? e) { if (e != null) PlayNextWith(e); }
     [RelayCommand] private void QueueEntryToTop(QueueEntry? e) { if (e == null) return; int i = Queue.IndexOf(e); if (i > 0) Queue.Move(i, 0); }
 
+    /// <summary>Brano trascinato dalla libreria sulla coda: va nel punto dove è stato lasciato (o in fondo).</summary>
+    public void AddTrackToQueue(Track track, QueueEntry? before)
+    {
+        AddToQueue(track, SingerName, QueueKeyShift);
+        SingerName = ""; QueueKeyShift = 0;
+        if (before == null || Queue.Count < 2) return;
+        int to = Queue.IndexOf(before);
+        if (to >= 0 && to < Queue.Count - 1) Queue.Move(Queue.Count - 1, to);
+    }
+
     public void AddToQueue(Track track, string singer, int keyShift)
     {
         if (keyShift == 0) keyShift = RememberedKey(singer, track);
@@ -634,6 +665,21 @@ public sealed partial class MainViewModel : ObservableObject
         {
             MessageBox.Show($"MIDI non riproducibile \"{track.Display}\":\n{ex.Message}", "MIDI / KAR", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
+    }
+
+    /// <summary>
+    /// File trascinato da Esplora risorse su un deck: se è già in libreria lo carica, altrimenti lo aggiunge e poi lo carica.
+    /// </summary>
+    public bool LoadFileToDeck(DeckViewModel deck, string path)
+    {
+        if (!File.Exists(path)) { StatusText = "File non trovato: " + path; return false; }
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        if (!SourceFactory.AudioExtensions.Contains(ext) && !SourceFactory.VideoExtensions.Contains(ext) && ext is not (".cdg" or ".kar" or ".mid" or ".midi"))
+        { StatusText = "Formato non supportato: " + ext; return false; }
+        var track = Library.Tracks.FirstOrDefault(t => string.Equals(t.FilePath, path, StringComparison.OrdinalIgnoreCase)) ?? Library.AddFile(path);
+        if (track == null) { StatusText = "Non riesco ad aggiungere " + Path.GetFileName(path); return false; }
+        if (!Tracks.Contains(track)) { RefreshTracks(); }
+        return LoadToDeck(deck, track);
     }
 
     public bool LoadToDeck(DeckViewModel deck, Track track, string singer = "", int keyShift = 0, bool confirmIfPlaying = true)
