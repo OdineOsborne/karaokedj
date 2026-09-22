@@ -65,7 +65,10 @@ public partial class App : Application
         // --layouttest: prova il layout alle misure dei portatili (vedi Services/LayoutTest)
         if (e.Args.Contains("--layouttest")) RunLayoutTest(win);
         // --analyze: analizza in blocco la libreria (BPM, tonalità, intro/outro, energia, brillantezza) e esce
-        if (e.Args.Contains("--analyze")) RunAnalyze();
+        if (e.Args.Contains("--analyze")) RunAnalyze(e.Args.Contains("force"));
+        // --gridtest [quanti]: quanto la griglia dei battiti sta davvero sui colpi del brano
+        int gridIdx = Array.IndexOf(e.Args, "--gridtest");
+        if (gridIdx >= 0) RunGridTest(gridIdx + 1 < e.Args.Length && int.TryParse(e.Args[gridIdx + 1], out var gn) ? gn : 20);
         // --suggesttest "<pezzo del titolo>": cosa verrebbe proposto dopo quel brano, e perché
         int sugIdx = Array.IndexOf(e.Args, "--suggesttest");
         if (sugIdx >= 0 && sugIdx + 1 < e.Args.Length) RunSuggestTest(e.Args[sugIdx + 1]);
@@ -192,11 +195,24 @@ public partial class App : Application
         Shutdown(0);
     }
 
+    private async void RunGridTest(int n)
+    {
+        await System.Threading.Tasks.Task.Delay(2000);
+        string res;
+        try { res = await KaraokeDJ.Services.GridTest.RunAsync(Vm!, n); }
+        catch (Exception ex) { res = "grid: FAIL " + ex.Message; }
+        Console.Error.WriteLine(res);
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-grid.log"), res); } catch { }
+        Shutdown(0);
+    }
+
     /// <summary>--analyze: analisi in blocco della libreria dalla riga di comando, con avanzamento a schermo.</summary>
-    private async void RunAnalyze()
+    private async void RunAnalyze(bool force = false)
     {
         var vm = Vm!;
         await System.Threading.Tasks.Task.Delay(1500);
+        // "force": rifà tutto (serve quando cambia il modo di calcolare qualcosa, es. l'aggancio della griglia)
+        if (force) foreach (var t in vm.Tracks) t.Analyzed = false;
         int todo = vm.Tracks.Count(t => !t.Analyzed || t.Energy <= 0);
         Console.Error.WriteLine($"ANALISI: {todo} brani da fare su {vm.Tracks.Count}");
         var t0 = DateTime.UtcNow;

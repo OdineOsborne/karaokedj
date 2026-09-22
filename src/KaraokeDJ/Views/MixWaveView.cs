@@ -48,14 +48,17 @@ public sealed class MixWaveView : FrameworkElement
     private static readonly Brush Bg = new SolidColorBrush(Color.FromArgb(255, 10, 10, 15));
     private static readonly Pen Center = new(new SolidColorBrush(Color.FromArgb(230, 244, 244, 248)), 1.5);
     private static readonly Pen Mid = new(new SolidColorBrush(Color.FromArgb(60, 255, 255, 255)), 1);
-    private static readonly Pen BeatA = new(new SolidColorBrush(Color.FromArgb(70, 200, 180, 255)), 1);
-    private static readonly Pen BarA = new(new SolidColorBrush(Color.FromArgb(150, 220, 200, 255)), 1);
-    private static readonly Pen BeatB = new(new SolidColorBrush(Color.FromArgb(70, 255, 160, 200)), 1);
-    private static readonly Pen BarB = new(new SolidColorBrush(Color.FromArgb(150, 255, 190, 220)), 1);
+    // La griglia si disegna SOPRA l'onda: con poca opacità spariva dentro le parti piene (il deck B non si vedeva più).
+    private static readonly Pen BeatA = new(new SolidColorBrush(Color.FromArgb(120, 255, 255, 255)), 1);
+    private static readonly Pen BarA = new(new SolidColorBrush(Color.FromArgb(235, 255, 255, 255)), 1.6);
+    private static readonly Pen BeatB = new(new SolidColorBrush(Color.FromArgb(120, 255, 255, 255)), 1);
+    private static readonly Pen BarB = new(new SolidColorBrush(Color.FromArgb(235, 255, 255, 255)), 1.6);
+    /// <summary>Ombra sotto le linee, così restano leggibili anche sulle creste chiare dell'onda.</summary>
+    private static readonly Pen BeatShadow = new(new SolidColorBrush(Color.FromArgb(120, 0, 0, 0)), 2.6);
 
     static MixWaveView()
     {
-        Bg.Freeze(); Center.Freeze(); Mid.Freeze(); BeatA.Freeze(); BarA.Freeze(); BeatB.Freeze(); BarB.Freeze();
+        Bg.Freeze(); Center.Freeze(); Mid.Freeze(); BeatA.Freeze(); BarA.Freeze(); BeatB.Freeze(); BarB.Freeze(); BeatShadow.Freeze();
     }
 
     public MixWaveView()
@@ -127,7 +130,9 @@ public sealed class MixWaveView : FrameworkElement
                 bool bar = ((idx % 4) + 4) % 4 == 0;
                 double x = (t - (pos - halfFile)) * pxPerFileSec;
                 double len = bar ? hh : hh * 0.45;
-                dc.DrawLine(bar ? barPen : beatPen, new Point(x, baseY), new Point(x, baseY + dir * len));
+                var p1 = new Point(x, baseY); var p2 = new Point(x, baseY + dir * len);
+                dc.DrawLine(BeatShadow, p1, p2);
+                dc.DrawLine(bar ? barPen : beatPen, p1, p2);
             }
         }
     }

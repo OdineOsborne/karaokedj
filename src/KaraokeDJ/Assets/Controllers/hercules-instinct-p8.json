@@ -565,7 +565,7 @@
    "type": "cc",
    "channel": 1,
    "number": 105,
-   "action": "a.jog",
+   "action": "a.jogscratch",
    "relative": true
   },
   {
@@ -593,7 +593,7 @@
    "type": "cc",
    "channel": 1,
    "number": 107,
-   "action": "b.jog",
+   "action": "b.jogscratch",
    "relative": true
   },
   {

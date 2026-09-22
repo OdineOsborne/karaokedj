@@ -25,7 +25,7 @@ public static class AppActions
         ("hotcue5", "Hot cue 5", false, false), ("hotcue6", "Hot cue 6", false, false), ("hotcue7", "Hot cue 7", false, false), ("hotcue8", "Hot cue 8", false, false),
         ("jumpback4", "Salta −4 battiti", false, false), ("jumpfwd4", "Salta +4 battiti", false, false), ("jumpback8", "Salta −8 battiti", false, false), ("jumpfwd8", "Salta +8 battiti", false, false),
         ("quantize", "Quantizza on/off", false, false), ("keymatch", "Tonalità compatibile con l'altro deck", false, false), ("cuepfl", "Cuffia (pre-ascolto) on/off", false, false),
-        ("fader", "Fader di canale", true, false), ("jogtouch", "Jog: mano sul piatto (scratch)", false, true), ("nudgeup", "Pitch bend + (tieni premuto)", false, true), ("nudgedown", "Pitch bend − (tieni premuto)", false, true),
+        ("fader", "Fader di canale", true, false), ("jogtouch", "Jog: mano sul piatto (scratch)", false, true), ("jogscratch", "Jog: movimento con la mano sul piatto (scratch)", true, false), ("nudgeup", "Pitch bend + (tieni premuto)", false, true), ("nudgedown", "Pitch bend − (tieni premuto)", false, true),
         ("filter", "FILTER on/off", false, false), ("filtervalue", "Filtro (manopola)", true, false), ("filterreset", "Filtro al centro", false, false),
         ("echo", "ECHO on/off", false, false), ("pingpong", "ECHO ping-pong on/off", false, false), ("echoout", "ECHO OUT", false, false), ("reverb", "REVERB on/off", false, false), ("flanger", "FLANGER on/off", false, false),
         ("phaser", "PHASER on/off", false, false), ("crush", "CRUSH on/off", false, false), ("gate", "GATE on/off", false, false), ("fxreset", "Spegni tutti gli effetti", false, false),

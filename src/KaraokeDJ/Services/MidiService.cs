@@ -82,7 +82,7 @@ public sealed class MidiService : IDisposable
     }
 
     /// <summary>Azioni che leggono già un delta (1..63 avanti, 65..127 indietro): per loro il flag Relative non cambia niente.</summary>
-    private static bool TakesDelta(string action) => action == "browse" || action.EndsWith(".jog");
+    private static bool TakesDelta(string action) => action == "browse" || action.Contains(".jog");
     public int Count => _map.Count;
 
     public MidiKey? KeyFor(string action) => _map.FirstOrDefault(kv => kv.Value == action).Key;

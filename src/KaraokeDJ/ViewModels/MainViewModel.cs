@@ -1209,6 +1209,7 @@ public sealed partial class MainViewModel : ObservableObject
             track.Key = r.Key;
             if (!track.CuesManual) { track.IntroEndSec = r.IntroEndSec; track.OutroStartSec = r.OutroStartSec; }
             track.Energy = r.Energy; track.Brightness = r.Brightness;   // carattere del suono, per i suggerimenti
+            if (!track.BeatManual && r.BeatOffsetSec >= 0) track.BeatOffsetSec = r.BeatOffsetSec;   // griglia agganciata ai colpi veri
             track.Analyzed = true;
             if (r.Waveform.Length > 0) WaveformStore.Save(track.Id, r.Waveform);
         }
@@ -2411,13 +2412,28 @@ public sealed partial class MainViewModel : ObservableObject
                 case "fwd": deck.ForwardHoldCommand.Execute(null); break;
                 case "back": deck.BackwardHoldCommand.Execute(null); break;
                 case "jog":
-                    // encoder relativo (jog wheel MIDI): 1..63 avanti, 65..127 indietro (delta in tacche)
+                    // encoder relativo (jog wheel MIDI): 1..63 avanti, 65..127 indietro (delta in tacche).
+                    // Senza la mano sul piatto è un pitch bend (la traccia non torna indietro: è il comportamento dei mixer veri).
                     if (continuous)
                     {
                         int v = (int)Math.Round(norm * 127);
                         int delta = v == 0 ? 0 : v < 64 ? v : v - 128;
                         if (deck.IsJogging) { deck.LastJogMessage = DateTime.UtcNow; deck.JogRate(Math.Clamp(delta * JogTicksToRate, -8, 8)); }
                         else if (delta != 0) deck.Nudge(Math.Sign(delta));
+                    }
+                    break;
+                case "jogscratch":
+                    // Alcune console (Hercules Instinct P8, Inpulse…) mandano il movimento del piatto su un CC diverso
+                    // quando ci appoggi la mano, ma non mandano nessun tasto "tocco": qui il tocco lo deduciamo dal messaggio,
+                    // e si esce dallo scratch da soli quando il piatto smette di mandare (vedi TickControllerJog).
+                    if (continuous)
+                    {
+                        int v = (int)Math.Round(norm * 127);
+                        int delta = v == 0 ? 0 : v < 64 ? v : v - 128;
+                        if (!deck.IsJogging) deck.JogStart();
+                        deck.AutoJog = true;
+                        deck.LastJogMessage = DateTime.UtcNow;
+                        deck.JogRate(Math.Clamp(delta * JogTicksToRate, -8, 8));
                     }
                     break;
             }
@@ -2484,7 +2500,14 @@ public sealed partial class MainViewModel : ObservableObject
     private void TickControllerJog()
     {
         foreach (var d in new[] { DeckA, DeckB })
-            if (d.IsJogging && d.LastJogMessage != default && (DateTime.UtcNow - d.LastJogMessage).TotalMilliseconds > 70) { d.JogRate(0); d.LastJogMessage = DateTime.UtcNow; }
+        {
+            if (d.LastJogMessage == default) continue;
+            double ms = (DateTime.UtcNow - d.LastJogMessage).TotalMilliseconds;
+            // piatto fermo sotto la mano: il vinile si ferma
+            if (d.IsJogging && ms > 70) { d.JogRate(0); if (!d.AutoJog) d.LastJogMessage = DateTime.UtcNow; }
+            // tocco dedotto (console senza tasto "mano sul piatto"): dopo un attimo di silenzio la traccia riparte da sola
+            if (d.AutoJog && ms > 260) { d.AutoJog = false; d.JogEnd(); d.LastJogMessage = default; }
+        }
     }
 
     /// <summary>Tasto premuto/rilasciato nella finestra principale. Ritorna true se gestito.</summary>

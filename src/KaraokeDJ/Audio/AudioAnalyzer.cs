@@ -4,7 +4,7 @@ namespace KaraokeDJ.Audio;
 
 /// <param name="Waveform">Per colonna: [picco 0..255, RMS 0..255], <see cref="AudioAnalyzer.WaveColumns"/> colonne.</param>
 public sealed record AnalysisResult(double Bpm, string Key, string Camelot, double KeyConfidence, double IntroEndSec, double OutroStartSec, byte[] Waveform,
-    double Energy = 0, double Brightness = 0);
+    double Energy = 0, double Brightness = 0, double BeatOffsetSec = -1);
 
 /// <summary>
 /// Stima BPM (flusso spettrale + autocorrelazione) e tonalità (chroma + profili di Krumhansl)
@@ -30,6 +30,72 @@ public static class AudioAnalyzer
     private static readonly double[] HarmonicWeight = { 1.0, 0.5, 0.33, 0.25 };
 
     private static readonly int[] CamelotMajor = { 8, 3, 10, 5, 12, 7, 2, 9, 4, 11, 6, 1 };
+
+    /// <summary>
+    /// Istanti dei colpi (onset) in secondi, dal flusso spettrale a piena risoluzione (~12 ms).
+    /// Serve a verificare la griglia dei battiti: l'onda "fine" (50 colonne al secondo) è troppo grossa per quello.
+    /// </summary>
+    public static List<double> OnsetTimes(string path, double maxSeconds = 90, CancellationToken ct = default)
+    {
+        var (reader, provider) = SourceFactory.Open(path);
+        using (reader)
+        {
+            int fs = SourceFactory.SampleRate;
+            int want = (int)(maxSeconds * fs);
+            var x = new float[want];
+            int got = 0;
+            var buf = new float[8192 * 2];
+            while (got < want)
+            {
+                int n = provider.Read(buf, 0, buf.Length);
+                if (n == 0) break;
+                for (int i = 0; i + 1 < n && got < want; i += 2) x[got++] = 0.5f * (buf[i] + buf[i + 1]);
+            }
+            int frames = (got - Fft) / Hop;
+            if (frames < 50) return new List<double>();
+
+            var flux = new double[frames];
+            var prevMag = new double[Fft / 2];
+            var window = new double[Fft];
+            for (int i = 0; i < Fft; i++) window[i] = FastFourierTransform.HannWindow(i, Fft);
+            var cplx = new Complex[Fft];
+            int m = (int)Math.Log2(Fft);
+            for (int fr = 0; fr < frames; fr++)
+            {
+                ct.ThrowIfCancellationRequested();
+                int off = fr * Hop;
+                for (int i = 0; i < Fft; i++) { cplx[i].X = (float)(x[off + i] * window[i]); cplx[i].Y = 0; }
+                FastFourierTransform.FFT(true, m, cplx);
+                double fl = 0;
+                for (int k = 1; k < Fft / 2; k++)
+                {
+                    double mag = Math.Sqrt(cplx[k].X * cplx[k].X + cplx[k].Y * cplx[k].Y);
+                    double d = mag - prevMag[k];
+                    if (d > 0) fl += d;
+                    prevMag[k] = mag;
+                }
+                flux[fr] = fl;
+            }
+
+            // picchi: massimi locali sopra la media mobile di ±0,5 s
+            double frameSec = (double)Hop / fs;
+            int w = Math.Max(3, (int)(0.5 / frameSec));
+            var onsets = new List<double>();
+            double lastT = -1;
+            for (int i = 1; i < frames - 1; i++)
+            {
+                if (flux[i] <= flux[i - 1] || flux[i] < flux[i + 1]) continue;
+                double sum = 0; int n2 = 0;
+                for (int j = Math.Max(0, i - w); j < Math.Min(frames, i + w); j++) { sum += flux[j]; n2++; }
+                double local = sum / Math.Max(1, n2);
+                if (flux[i] < local * 1.6) continue;
+                double t = i * frameSec;
+                if (lastT >= 0 && t - lastT < 0.09) continue;
+                onsets.Add(t); lastT = t;
+            }
+            return onsets;
+        }
+    }
 
     public static AnalysisResult Analyze(string path, CancellationToken ct = default)
     {
@@ -87,7 +153,7 @@ public static class AudioAnalyzer
             }
 
             var (introEnd, outroStart) = DetectIntroOutro(env, 0.1, pos / (double)fs);
-            var core = AnalyzeSamples(excerpt, exGot, fs, ct);
+            var core = AnalyzeSamples(excerpt, exGot, fs, ct, exStart);
             return core with { IntroEndSec = introEnd, OutroStartSec = outroStart, Waveform = wave };
         }
     }
@@ -140,7 +206,7 @@ public static class AudioAnalyzer
         return (Math.Round(introEnd, 1), Math.Round(outroStart, 1));
     }
 
-    private static AnalysisResult AnalyzeSamples(float[] x, int len, int fs, CancellationToken ct)
+    private static AnalysisResult AnalyzeSamples(float[] x, int len, int fs, CancellationToken ct, double startSec = 0)
     {
         int frames = (len - Fft) / Hop;
         if (frames < 50) throw new InvalidOperationException("Brano troppo corto per l'analisi.");
@@ -193,7 +259,49 @@ public static class AudioAnalyzer
         double energy = Math.Clamp((rmsDb + 26) / 16, 0.02, 1);
         double centroid = centroidN > 0 ? centroidSum / centroidN : 0;
         double brightness = Math.Clamp((centroid - 700) / 2800, 0.02, 1);
-        return new AnalysisResult(bpm, key, camelot, conf, 0, 0, Array.Empty<byte>(), energy, brightness);
+        // aggancio della griglia: qui abbiamo il flusso spettrale a ~12 ms, molto più preciso dell'onda a 20 ms
+        double anchor = bpm > 0 ? EstimateAnchor(flux, (double)Hop / fs, startSec, bpm) : -1;
+        return new AnalysisResult(bpm, key, camelot, conf, 0, 0, Array.Empty<byte>(), energy, brightness, anchor);
+    }
+
+    /// <summary>
+    /// Fase della griglia: l'istante (dall'inizio del brano, meno di una battuta) su cui cadono i colpi.
+    /// Si prova ogni fase possibile e si tiene quella su cui si accumula più "attacco"; poi si sceglie,
+    /// fra i quattro battiti, quello che fa da "1" della battuta.
+    /// </summary>
+    private static double EstimateAnchor(double[] flux, double hopSec, double startSec, double bpm)
+    {
+        double beat = 60.0 / bpm;
+        const int Steps = 96;
+        const double Tol = 0.045;
+        double Score(double off, double period)
+        {
+            double sum = 0;
+            for (int i = 0; i < flux.Length; i++)
+            {
+                double t = startSec + i * hopSec;
+                double ph = ((t - off) / period) % 1.0; if (ph < 0) ph += 1;
+                double d = Math.Min(ph, 1 - ph) * period;
+                if (d <= Tol) sum += flux[i];
+            }
+            return sum;
+        }
+        double best = 0, bestScore = -1;
+        for (int s = 0; s < Steps; s++)
+        {
+            double off = beat * s / Steps;
+            double sc = Score(off, beat);
+            if (sc > bestScore) { bestScore = sc; best = off; }
+        }
+        // il "1": fra i quattro battiti della battuta, quello con più attacco
+        double bestBar = best, barScore = -1;
+        for (int k = 0; k < 4; k++)
+        {
+            double off = best + beat * k;
+            double sc = Score(off, beat * 4);
+            if (sc > barScore) { barScore = sc; bestBar = off; }
+        }
+        return Math.Round(bestBar % (beat * 4), 3);
     }
 
     /// <summary>Chroma a 12 classi con FFT lunga (risoluzione 5 Hz) così anche le note basse cadono nel bin giusto.</summary>

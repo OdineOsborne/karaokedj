@@ -34,8 +34,9 @@ note(0x61, "a.jogtouch"); note(0x62, "b.jogtouch"); note(0x2E, "automix");
 // (0x2D SCRATCH, 0x2F/0x63 SHIFT, 0x30 MODE, 0x5D/0x5E volume cuffia: gestiti dalla console o senza funzione)
 
 // jog: pitch bend / scratch; SHIFT+jog = tempo (encoder relativo accumulato); i CC "JOG_TOUCH" arrivano quando il piatto è toccato
-cc(0x30, "a.jog", { relative: true }); cc(0x69, "a.jog", { relative: true }); cc(0x31, "a.tempo", { relative: true }); cc(0x6A, "a.tempo", { relative: true });
-cc(0x32, "b.jog", { relative: true }); cc(0x6B, "b.jog", { relative: true }); cc(0x33, "b.tempo", { relative: true }); cc(0x6C, "b.tempo", { relative: true });
+// CC 0x30/0x32 = piatto senza mano (pitch bend); 0x69/0x6B = piatto CON la mano sopra → scratch anche all'indietro
+cc(0x30, "a.jog", { relative: true }); cc(0x69, "a.jogscratch", { relative: true }); cc(0x31, "a.tempo", { relative: true }); cc(0x6A, "a.tempo", { relative: true });
+cc(0x32, "b.jog", { relative: true }); cc(0x6B, "b.jogscratch", { relative: true }); cc(0x33, "b.tempo", { relative: true }); cc(0x6C, "b.tempo", { relative: true });
 // encoder LOOP (nei 4 modi pad) = filtro del deck, relativo
 for (const n of [0x34, 0x57, 0x59, 0x61]) cc(n, "a.filtervalue", { relative: true });
 for (const n of [0x36, 0x63, 0x65, 0x67]) cc(n, "b.filtervalue", { relative: true });

@@ -52,6 +52,24 @@ public static class AudioTest
         Check("trim -12 dB", () => vm.GainDb = -12, () => vm.GainDb = 0, (_, _, rms) => rms < brms * 0.5, "il volume deve scendere");
         Check("pan tutto a sinistra", () => vm.Pan = -1, () => vm.Pan = 0, (_, _, _) => Channels(deck).R < Channels(deck).L * 0.3, "deve uscire solo a sinistra");
 
+        // jog: la traccia deve poter andare anche INDIETRO (scratch), non solo avanti
+        vm.Fader = 1; vm.GainDb = 0; deck.Seek(3);
+        Measure(deck);
+        var jogLines = new List<string>();
+        deck.JogStart();
+        double start = deck.PositionSec;
+        var back = new float[Fs / 2];
+        for (int i = 0; i < 8; i++) { deck.JogRate(-1.5, 0.01); deck.Read(back, 0, back.Length); }
+        double afterBack = deck.PositionSec;
+        deck.JogRate(1.5, 0.01);
+        for (int i = 0; i < 8; i++) deck.Read(back, 0, back.Length);
+        double afterFwd = deck.PositionSec;
+        deck.JogEnd(0.01);
+        jogLines.Add($"jog: partenza {start:0.00}s → indietro {afterBack:0.00}s → avanti {afterFwd:0.00}s");
+        if (afterBack >= start - 0.05) errors.Add("il jog non va indietro (scratch)");
+        if (afterFwd <= afterBack + 0.05) errors.Add("il jog non torna avanti");
+        lines.AddRange(jogLines);
+
         deck.Eject();
         try { File.Delete(wav); } catch { }
         return "audio: " + (errors.Count == 0 ? "OK (EQ, kill, filtro, fader, trim, pan agiscono sul suono)" : "ERRORI → " + string.Join("; ", errors))

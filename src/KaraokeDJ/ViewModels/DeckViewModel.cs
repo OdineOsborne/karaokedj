@@ -82,6 +82,8 @@ public sealed partial class DeckViewModel : ObservableObject
     partial void OnFaderChanged(double value) => Deck.Fader = (float)value;
     /// <summary>Ultimo messaggio jog dalla console (per fermare lo scratch quando la mano si ferma).</summary>
     public DateTime LastJogMessage;
+    /// <summary>Scratch dedotto dal movimento del piatto (console che non mandano il tasto "mano sul piatto").</summary>
+    public bool AutoJog;
     /// <summary>Sta suonando musica di riempimento fra un cantante e l'altro.</summary>
     [ObservableProperty] private bool _isFill;
     /// <summary>Un brano trascinato dalla libreria è sopra questo deck: il pannello si illumina.</summary>
