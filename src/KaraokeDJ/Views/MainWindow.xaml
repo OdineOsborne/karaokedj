@@ -1,4 +1,4 @@
-<Window x:Class="KaraokeDJ.Views.MainWindow" FontFamily="{StaticResource UiFont}"
+﻿<Window x:Class="KaraokeDJ.Views.MainWindow" FontFamily="{StaticResource UiFont}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:v="clr-namespace:KaraokeDJ.Views"
@@ -34,6 +34,8 @@
                         Visibility="{Binding UpdateBlocked, Converter={StaticResource BoolToVis}}"/>
                 <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisInv}}"/>
                 <Button Content="{Binding AppVersion, StringFormat=⬆ {0}}" Style="{StaticResource SmallButton}" Command="{Binding CheckUpdatesCommand}" Margin="0,0,10,0" ToolTip="Controlla se ci sono aggiornamenti su GitHub"/>
+                <Button Content="✅" Style="{StaticResource SmallButton}" Click="Preflight_Click" Height="26" Padding="7,0" Margin="0,0,3,0"
+                        ToolTip="Controllo pre-serata&#10;Audio, cuffia, microfono, proiettore, licenza, disco, libreria, console: cosa manca prima di cominciare."/>
                 <ToggleButton IsChecked="{Binding BottomStripVisible}" Style="{StaticResource ToolToggle}" Content="🎛" ToolTip="Pad e importazione&#10;Mostra/nascondi la striscia in basso (jingle e importazione) per dare spazio a libreria e coda."/>
                 <ToggleButton IsChecked="{Binding MixViewVisible}" Style="{StaticResource ToolToggle}" Content="〰" ToolTip="Vista mix&#10;Onde dei due deck sovrapposte con la griglia dei battiti, per allineare a occhio."/>
                 <ToggleButton IsChecked="{Binding IsMonitorOpen}" Style="{StaticResource ToolToggle}" Content="👁" v:Shortcut.Action="monitor" ToolTip="Monitor proiettore&#10;Finestrella sempre in primo piano con quello che vede il pubblico (CDG, testo, video, dediche, QR)."/>

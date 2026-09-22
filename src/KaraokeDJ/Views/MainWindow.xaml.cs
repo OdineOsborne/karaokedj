@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -38,9 +38,12 @@ public partial class MainWindow : Window
         {
             await Task.Delay(4000);
             if (!IsLoaded) return;
-            if (Vm.ShouldShowSupportReminder()) new SupportWindow(Vm) { Owner = this }.ShowDialog();
+            // niente finestre modali durante le prove automatiche (--selftest, --preflight, --soak...):
+            // bloccherebbero la chiusura e consumerebbero il promemoria di oggi
+            bool automated = Environment.GetCommandLineArgs().Any(x => x.StartsWith("--"));
+            if (!automated && Vm.ShouldShowSupportReminder()) new SupportWindow(Vm) { Owner = this }.ShowDialog();
             // consenso alle statistiche: una volta sola, e mai durante le prove automatiche
-            if (!Vm.Settings.UsageStatsAsked && Environment.GetCommandLineArgs().All(x => !x.StartsWith("--")))
+            if (!Vm.Settings.UsageStatsAsked && !automated)
                 new UsageConsentWindow(Vm) { Owner = this }.ShowDialog();
         };
     }
@@ -179,6 +182,9 @@ public partial class MainWindow : Window
         _projector.ShowOnScreen(Vm.Settings.ProjectorScreenIndex);
         Activate();
     }
+
+    private void Preflight_Click(object sender, RoutedEventArgs e) =>
+        new Views.PreflightWindow(Vm) { Owner = this }.ShowDialog();
 
     private void HideProjector()
     {

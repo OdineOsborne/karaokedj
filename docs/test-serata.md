@@ -40,6 +40,17 @@ Un'ora da "DJ impazzito" sulla libreria vera: carica brani a caso, hot cue, loop
 automix, pad, PFL, mic (se configurato), proiettore aperto. Ogni 30 s annota memoria ed errori. Deve finire con `SOAK OK`
 (memoria stabile, zero errori audio, zero riavvii). Log `%TEMP%\mixfonia-soak.log`. Prima della serata: **una corsa da 4 ore** (`--soak 240`).
 
+## Controllo pre-serata (tasto ✅ nella barra in alto)
+
+Mezz'ora prima di cominciare, con tutto già collegato: un tasto e l'elenco verde/giallo/rosso di uscita audio,
+cuffia, microfono, proiettore, licenza, spazio su disco, libreria, console, errori registrati, partenze automatiche
+e coda. Ogni riga gialla o rossa dice cosa fare. Il tasto «Copia» mette l'elenco negli appunti.
+
+```bash
+KaraokeDJ.exe --preflight
+```
+Lo stesso elenco da riga di comando (non fa suonare niente).
+
 ## Test manuali con l'hardware (da fare tu, nell'ordine)
 
 Serve la stessa configurazione della serata: PC, scheda audio/mixer, cuffia sulla seconda uscita, microfono, proiettore/TV, console MIDI se la usi.

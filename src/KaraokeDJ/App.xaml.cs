@@ -78,6 +78,8 @@ public partial class App : Application
         // --midiwatch <secondi>: ascolta la console senza eseguire niente e scrive che cosa manda (per capire i comandi impazziti)
         int watchIdx = Array.IndexOf(e.Args, "--midiwatch");
         if (watchIdx >= 0) RunMidiWatch(watchIdx + 1 < e.Args.Length && int.TryParse(e.Args[watchIdx + 1], out var ws) ? ws : 10);
+        // --preflight: stampa il controllo pre-serata ed esce
+        if (e.Args.Contains("--preflight")) RunPreflight();
         // --sections [force]: calcola la struttura ai brani che non ce l'hanno (silenzioso)
         if (e.Args.Contains("--sections")) RunSections(e.Args.Contains("force"));
         // --structtest [quanti]: la struttura trovata nei brani e quanto e affidabile
@@ -136,6 +138,7 @@ public partial class App : Application
                 new Views.BorderoWindow(Vm) { Owner = win },
                 new Views.RemoteWindow(Vm) { Owner = win },
                 new Views.ShortcutPopup(Vm, "a.play") { Owner = win },
+                new Views.PreflightWindow(Vm) { Owner = win },
             };
             foreach (var w in wins) { w.Show(); await System.Threading.Tasks.Task.Delay(300); }
             Vm.IsProjectorOpen = true;
@@ -389,6 +392,18 @@ public partial class App : Application
         var msg = $"STRUTTURA FINITA in {(DateTime.UtcNow - t0).TotalMinutes:0.0} min · trovata su {found}/{todo.Count}, affidabile su {good}";
         Console.Error.WriteLine(msg);
         try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-sezioni.log"), msg); } catch { }
+        Shutdown(0);
+    }
+
+    /// <summary>--preflight: il controllo pre-serata a riga di comando (vedi Services/Preflight).</summary>
+    private async void RunPreflight()
+    {
+        await System.Threading.Tasks.Task.Delay(2500);
+        string res;
+        try { res = KaraokeDJ.Services.Preflight.AsText(KaraokeDJ.Services.Preflight.Run(Vm!)); }
+        catch (Exception ex) { res = "pre-serata: FAIL " + ex.Message; }
+        Console.Error.WriteLine(res);
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-preserata.log"), res); } catch { }
         Shutdown(0);
     }
 
