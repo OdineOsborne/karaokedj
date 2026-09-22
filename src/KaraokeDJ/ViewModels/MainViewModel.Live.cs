@@ -62,7 +62,9 @@ public partial class MainViewModel
         DeckA.Quantize = DeckB.Quantize = Settings.Quantize;
         foreach (var d in new[] { DeckA, DeckB })
             d.PropertyChanged += (s, e) => { if (e.PropertyName == nameof(DeckViewModel.Quantize) && s is DeckViewModel dv) { Settings.Quantize = dv.Quantize; var o = dv == DeckA ? DeckB : DeckA; if (o.Quantize != dv.Quantize) o.Quantize = dv.Quantize; } };
-        FillMusicOn = Settings.FillMusicOn; FillVolume = Settings.FillVolume;
+        // come l'auto-mix: il riempimento parte spento a ogni avvio (è l'altra cosa che può far suonare
+        // un brano senza che nessuno abbia premuto play), il volume invece si ricorda
+        FillMusicOn = false; FillVolume = Settings.FillVolume;
         RotationOn = Settings.RotationOn; PublicRequestsOn = Settings.PublicRequestsOn;
         Engine.Mic.DuckThreshold = (float)Math.Pow(10, Settings.MicDuckThresholdDb / 20);
         _singers = JsonStore.Load<Dictionary<string, SingerInfo>>(Path.Combine(AppPaths.Root, "singers.json")) ?? new();

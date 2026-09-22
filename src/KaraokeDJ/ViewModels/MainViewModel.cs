@@ -64,7 +64,9 @@ public sealed partial class MainViewModel : ObservableObject
         });
 
         MasterVolume = Settings.MasterVolume;
-        AutoMix = Settings.AutoMix;
+        // L'auto-mix parte SEMPRE spento, anche se la volta prima era acceso: aprendo il programma
+        // la musica non deve mai partire da sola. Lo accende il DJ quando vuole lui.
+        AutoMix = false;
         AutoMixUseCues = Settings.AutoMixUseCues;
         AutoMixEndless = Settings.AutoMixEndless;
         SetGenres = Settings.SetGenres ?? "";

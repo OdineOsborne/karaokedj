@@ -202,6 +202,9 @@ public partial class App : Application
         bool autoMixWas = vm.AutoMix, endlessWas = vm.AutoMixEndless, fillWas = vm.FillMusicOn;
         try
         {
+            // all'avvio non deve esserci niente in grado di far partire la musica da solo
+            if (vm.AutoMix || vm.FillMusicOn) errors.Add("all'avvio auto-mix o riempimento sono già accesi");
+            if (vm.DeckA.Deck.IsPlaying || vm.DeckB.Deck.IsPlaying) errors.Add("all'avvio un deck sta già suonando");
             vm.LoadToDeck(vm.DeckA, t, confirmIfPlaying: false);
             // 1) deck fermo + piatto che manda: non deve partire niente
             for (int i = 0; i < 20; i++) vm.SimulateMidi("a.jogscratch", i % 2 == 0 ? 3 : 124);
