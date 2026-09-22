@@ -27,7 +27,7 @@ public static class SetFlow
         if (mix <= 0) return (0, "");
 
         var (style, styleWhy) = MusicTaste.Affinity(r, c);
-        if (style < 0.25) return (0, styleWhy);      // due mondi diversi: nessun BPM lo giustifica
+        if (style < 0.32) return (0, styleWhy);      // due mondi diversi: nessun BPM lo giustifica
 
         var reasons = new List<string>();
         if (styleWhy.Length > 0) reasons.Add(styleWhy);
@@ -37,7 +37,10 @@ public static class SetFlow
         double lang = Language(r, c, ctx.KaraokeNight, reasons);
         double repeat = NotTooMuchOfTheSame(c, ctx, reasons);
 
-        double score = 0.30 * mix + 0.30 * style + 0.20 * flow + 0.10 * mood + 0.10 * lang;
+        // Lo stile non è una voce fra le altre: è il filtro. Un pezzo di un altro mondo non diventa buono
+        // perché ha lo stesso BPM — era esattamente l'errore "Battisti dopo gli AC/DC".
+        double mechanics = 0.45 * mix + 0.25 * flow + 0.15 * mood + 0.15 * lang;
+        double score = mechanics * style;
         score *= repeat;
         // quello che si è imparato dalle serate vere (se l'utente ha acconsentito a condividerle: vedi UsageStats)
         double learned = UsageStats.Bonus(r, c);

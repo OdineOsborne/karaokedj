@@ -64,6 +64,8 @@ public partial class App : Application
         if (e.Args.Contains("--audiotest")) RunAudioTest();
         // --layouttest: prova il layout alle misure dei portatili (vedi Services/LayoutTest)
         if (e.Args.Contains("--layouttest")) RunLayoutTest(win);
+        // --analyze: analizza in blocco la libreria (BPM, tonalità, intro/outro, energia, brillantezza) e esce
+        if (e.Args.Contains("--analyze")) RunAnalyze();
         // --suggesttest "<pezzo del titolo>": cosa verrebbe proposto dopo quel brano, e perché
         int sugIdx = Array.IndexOf(e.Args, "--suggesttest");
         if (sugIdx >= 0 && sugIdx + 1 < e.Args.Length) RunSuggestTest(e.Args[sugIdx + 1]);
@@ -187,6 +189,28 @@ public partial class App : Application
         catch (Exception ex) { res = "suggest: FAIL " + ex.Message; }
         Console.Error.WriteLine(res);
         try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-suggest.log"), res); } catch { }
+        Shutdown(0);
+    }
+
+    /// <summary>--analyze: analisi in blocco della libreria dalla riga di comando, con avanzamento a schermo.</summary>
+    private async void RunAnalyze()
+    {
+        var vm = Vm!;
+        await System.Threading.Tasks.Task.Delay(1500);
+        int todo = vm.Tracks.Count(t => !t.Analyzed || t.Energy <= 0);
+        Console.Error.WriteLine($"ANALISI: {todo} brani da fare su {vm.Tracks.Count}");
+        var t0 = DateTime.UtcNow;
+        string last = "";
+        var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        timer.Tick += (_, _) => { if (vm.AnalyzeStatus != last) { last = vm.AnalyzeStatus; Console.Error.WriteLine("  " + last); } };
+        timer.Start();
+        try { await vm.AnalyzeMissingCommand.ExecuteAsync(null); }
+        catch (Exception ex) { Console.Error.WriteLine("ANALISI FALLITA: " + ex.Message); }
+        timer.Stop();
+        int withEnergy = vm.Tracks.Count(t => t.Energy > 0);
+        var msg = $"ANALISI FINITA in {(DateTime.UtcNow - t0).TotalMinutes:0.0} min · con energia: {withEnergy}/{vm.Tracks.Count}";
+        Console.Error.WriteLine(msg);
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-analisi.log"), msg); } catch { }
         Shutdown(0);
     }
 

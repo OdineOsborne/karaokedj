@@ -1454,7 +1454,7 @@ public sealed partial class MainViewModel : ObservableObject
         var scored = Tracks
             .Where(t => t.Id != r.Id && !queued.Contains(t.Id) && !t.PlayedThisSession && !t.IsKaraoke)
             .Select(t => { var (s, why) = SuggestScoreWhy(r, t); return (t, s: s * (t.Analyzed ? 1.0 : 0.6), why); })
-            .Where(x => x.s > 0.5)               // sotto questa soglia sono accostamenti che nessun DJ farebbe
+            .Where(x => x.s > 0.45)              // sotto questa soglia sono accostamenti che nessun DJ farebbe
             .OrderByDescending(x => x.s)
             .ThenBy(x => x.t.PlayCount)
             .Take(6)
