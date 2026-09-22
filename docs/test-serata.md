@@ -13,6 +13,8 @@ serve che musica e testi non si interrompano mai e che, se qualcosa cade, ripart
 | Errore in una finestra (UI) | registrato in `crash.log` e mostrato in barra di stato, **nessuna finestra modale** che blocca la regia |
 | Crash vero del processo | salva coda + impostazioni e **riparte da solo** (`--recovered`), coda intatta; non riparte in ciclo se cade entro 1 minuto dall'avvio |
 | Salvataggio | coda salvata a ogni modifica, impostazioni ogni 60 s |
+| Console che manda da sola / piatto toccato per sbaglio | il piatto **non può far partire** un deck fermo, e nemmeno riavviarlo dopo la pausa; `🎛 IGNORA CONSOLE` la isola senza staccare il cavo |
+| Musica che non si ferma, qualunque sia il motivo | **`⛔ FERMA TUTTO` (tasto Esc)**: deck, pad, batteria, riempimento e passaggio in corso fermi, auto-mix spento; da lì non riparte niente da solo |
 
 Diario errori: `%AppData%\KaraokeDJ\crash.log` — da guardare il giorno dopo ogni prova.
 
@@ -22,6 +24,14 @@ Diario errori: `%AppData%\KaraokeDJ\crash.log` — da guardare il giorno dopo og
 KaraokeDJ.exe --selftest
 ```
 Apre tutte le finestre e il proiettore, esce 0. Log `%TEMP%\mixfonia-selftest.log`.
+Dentro c'è anche `stop:`, che verifica la regola più importante: **la musica parte solo se lo decide il DJ** (il piatto non avvia un deck fermo)
+e **`FERMA TUTTO` riporta davvero il silenzio**.
+
+```bash
+KaraokeDJ.exe --midiwatch 15
+```
+Ascolta la console per 15 secondi **senza eseguire niente** e scrive quanti messaggi manda da sola, su quali controlli e con che valori.
+Da usare quando una console sembra avere vita propria.
 
 ```bash
 KaraokeDJ.exe --soak 60

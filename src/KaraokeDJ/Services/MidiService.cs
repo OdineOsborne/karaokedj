@@ -1,4 +1,4 @@
-using NAudio.Midi;
+﻿using NAudio.Midi;
 
 namespace KaraokeDJ.Services;
 
@@ -47,6 +47,9 @@ public sealed class MidiService : IDisposable
 
     public string? DeviceName { get; private set; }
     public bool IsOpen => _in != null;
+    /// <summary>Console isolata: i messaggi si vedono ancora (spia, registratore) ma non comandano piu niente.
+    /// E la via di fuga quando una console impazzita manda da sola e non si riesce piu a fermare la musica.</summary>
+    public bool Muted { get; set; }
 
     public static List<string> ListDevices()
     {
@@ -178,6 +181,7 @@ public sealed class MidiService : IDisposable
                 cb(key);
                 return;
             }
+            if (Muted) return;
             if (_map.TryGetValue(key, out var action))
             {
                 int v = value;

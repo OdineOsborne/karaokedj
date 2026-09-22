@@ -202,7 +202,8 @@ public partial class MainWindow : Window
         if (e.IsRepeat) { if (IsMappedNow(e)) e.Handled = true; return; }
         var g = Services.KeyboardService.GestureText(e.Key == Key.System ? e.SystemKey : e.Key, Keyboard.Modifiers);
         if (g == null) return;
-        if (TypingInTextBox() && !g.Contains("Ctrl") && !g.Contains("Alt") && !g.StartsWith("F")) return;
+        // Esc (FERMA TUTTO) deve funzionare sempre, anche mentre si sta scrivendo nella ricerca
+        if (TypingInTextBox() && !g.Contains("Ctrl") && !g.Contains("Alt") && !g.StartsWith("F") && g != "Escape") return;
         if (Vm.HandleKey(g, pressed: true)) e.Handled = true;
     }
 

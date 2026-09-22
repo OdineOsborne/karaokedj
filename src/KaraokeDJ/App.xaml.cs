@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using KaraokeDJ.ViewModels;
 using KaraokeDJ.Views;
 
@@ -75,6 +75,9 @@ public partial class App : Application
         // --soak <minuti>: prova di resistenza sulla libreria vera (vedi Services/SoakTest)
         if (soakIdx >= 0) _ = KaraokeDJ.Services.SoakTest.RunAsync(Vm, soakIdx + 1 < e.Args.Length && int.TryParse(e.Args[soakIdx + 1], out var m) ? m : 30);
         if (recovered) Vm.StatusText = "Ripristinato dopo un errore imprevisto: coda e impostazioni conservate (dettagli in crash.log)";
+        // --midiwatch <secondi>: ascolta la console senza eseguire niente e scrive che cosa manda (per capire i comandi impazziti)
+        int watchIdx = Array.IndexOf(e.Args, "--midiwatch");
+        if (watchIdx >= 0) RunMidiWatch(watchIdx + 1 < e.Args.Length && int.TryParse(e.Args[watchIdx + 1], out var ws) ? ws : 10);
         // --shot <file.png>: rende la finestra principale su file (software rendering) ed esce: per verifiche automatiche
         int shotIdx = Array.IndexOf(e.Args, "--shot");
         if (shotIdx >= 0 && shotIdx + 1 < e.Args.Length) RunShot(win, e.Args[shotIdx + 1]);
@@ -126,7 +129,7 @@ public partial class App : Application
             var sources = string.Join(", ", Vm.ImportSources.Select(s => s.Id));
             Console.Error.WriteLine("SELFTEST OK");
             try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-selftest.log"), "OK\nplugins: " + plugins + "\nsources: " + sources + "\ncontrollers: " + KaraokeDJ.Services.ControllerPresets.All.Count + " preset, midi: " + (Vm.Midi.DeviceName ?? "nessuno")
-                + "\nmappings: " + KaraokeDJ.Services.ControllerPresets.All.Sum(p => p.Mappings.Count) + ", sample: " + string.Join(",", KaraokeDJ.Services.ControllerPresets.All.Take(2).Select(p => p.Id + "=" + p.Mappings[0].Action)) + ImportTest() + MidiRangeTest() + DropTest()); } catch { }
+                + "\nmappings: " + KaraokeDJ.Services.ControllerPresets.All.Sum(p => p.Mappings.Count) + ", sample: " + string.Join(",", KaraokeDJ.Services.ControllerPresets.All.Take(2).Select(p => p.Id + "=" + p.Mappings[0].Action)) + ImportTest() + MidiRangeTest() + DropTest() + StopTest()); } catch { }
             Shutdown(0);
         }
         catch (Exception ex)
@@ -184,6 +187,57 @@ public partial class App : Application
         return "\ndrop: " + (errors.Count == 0 ? "OK (deck da libreria, deck da file, coda nel punto giusto)" : "ERRORI → " + string.Join("; ", errors));
     }
 
+    /// <summary>
+    /// Selftest della regola più importante della serata: la musica parte SOLO se lo decide il DJ, e un tasto la ferma sempre.
+    /// Prova che il piatto (anche impazzito) non avvia un deck fermo, che i "tieni premuto" non lo avviano,
+    /// e che FERMA TUTTO riporta il silenzio spegnendo quello che potrebbe rifar partire la musica.
+    /// </summary>
+    private static string StopTest()
+    {
+        var vm = Vm!;
+        var t = vm.Tracks.FirstOrDefault(x => !string.IsNullOrEmpty(x.FilePath) && File.Exists(x.FilePath));
+        if (t == null) return "\nstop: saltato (libreria vuota)";
+        var errors = new List<string>();
+        var queueBackup = vm.Queue.ToList();
+        bool autoMixWas = vm.AutoMix, endlessWas = vm.AutoMixEndless, fillWas = vm.FillMusicOn;
+        try
+        {
+            vm.LoadToDeck(vm.DeckA, t, confirmIfPlaying: false);
+            // 1) deck fermo + piatto che manda: non deve partire niente
+            for (int i = 0; i < 20; i++) vm.SimulateMidi("a.jogscratch", i % 2 == 0 ? 3 : 124);
+            if (vm.DeckA.Deck.IsPlaying) errors.Add("il piatto ha fatto partire un deck fermo");
+            // 2) "tieni premuto" su un deck fermo: idem
+            vm.SimulateMidi("a.fwd", 127, continuous: false);
+            vm.SimulateMidi("a.rev", 127, continuous: false);
+            if (vm.DeckA.Deck.IsPlaying) errors.Add("un comando \"tieni premuto\" ha fatto partire un deck fermo");
+            // 3) con il deck in marcia il piatto deve invece lavorare
+            vm.DeckA.Deck.Play();
+            vm.SimulateMidi("a.jogscratch", 3);
+            if (!vm.DeckA.IsJogging) errors.Add("con il deck in marcia il piatto non aggancia lo scratch");
+            // 4) FERMA TUTTO: silenzio e niente che possa rifar partire la musica
+            vm.AutoMix = true; vm.AutoMixEndless = true; vm.FillMusicOn = true;
+            vm.Panic();
+            if (vm.DeckA.Deck.IsPlaying || vm.DeckB.Deck.IsPlaying) errors.Add("dopo FERMA TUTTO un deck suona ancora");
+            if (vm.AutoMix || vm.AutoMixEndless || vm.FillMusicOn) errors.Add("dopo FERMA TUTTO qualcosa può ancora far partire la musica da solo");
+            // 5) e dopo il panico il piatto continua a non poter riavviare
+            for (int i = 0; i < 20; i++) vm.SimulateMidi("a.jogscratch", i % 2 == 0 ? 3 : 124);
+            if (vm.DeckA.Deck.IsPlaying) errors.Add("dopo FERMA TUTTO il piatto riavvia il deck");
+        }
+        catch (Exception ex) { errors.Add(ex.Message); }
+        finally
+        {
+            try
+            {
+                vm.DeckA.Eject();
+                vm.AutoMix = autoMixWas; vm.AutoMixEndless = endlessWas; vm.FillMusicOn = fillWas;
+                vm.Queue.Clear();
+                foreach (var q in queueBackup) vm.Queue.Add(q);
+            }
+            catch { }
+        }
+        return "\nstop: " + (errors.Count == 0 ? "OK (niente parte da solo, FERMA TUTTO zittisce tutto)" : "ERRORI → " + string.Join("; ", errors));
+    }
+
     private async void RunSuggestTest(string query)
     {
         await System.Threading.Tasks.Task.Delay(2500);
@@ -227,6 +281,32 @@ public partial class App : Application
         var msg = $"ANALISI FINITA in {(DateTime.UtcNow - t0).TotalMinutes:0.0} min · con energia: {withEnergy}/{vm.Tracks.Count}";
         Console.Error.WriteLine(msg);
         try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-analisi.log"), msg); } catch { }
+        Shutdown(0);
+    }
+
+    /// <summary>--midiwatch: registra quello che manda la console SENZA eseguire le azioni. Serve a scoprire i messaggi spontanei.</summary>
+    private async void RunMidiWatch(int seconds)
+    {
+        var vm = Vm!;
+        vm.Midi.Muted = true;   // in ascolto non si tocca niente
+        var counts = new Dictionary<string, (int N, int Min, int Max, int Last)>();
+        void OnMsg(KaraokeDJ.Services.MidiKey k, int v)
+        {
+            string key = k.ToString() + "  → " + (vm.Midi.ActionFor(k) ?? "(non mappato)");
+            if (counts.TryGetValue(key, out var c)) counts[key] = (c.N + 1, Math.Min(c.Min, v), Math.Max(c.Max, v), v);
+            else counts[key] = (1, v, v, v);
+        }
+        vm.Midi.MessageReceived += OnMsg;
+        Console.Error.WriteLine($"midiwatch: ascolto \"{vm.Midi.DeviceName ?? "nessuna console"}\" per {seconds}s senza eseguire niente…");
+        await System.Threading.Tasks.Task.Delay(seconds * 1000);
+        vm.Midi.MessageReceived -= OnMsg;
+        var lines = counts.OrderByDescending(kv => kv.Value.N)
+                          .Select(kv => $"  {kv.Value.N,6} msg  {kv.Key,-44} valori {kv.Value.Min}…{kv.Value.Max} (ultimo {kv.Value.Last})");
+        string res = counts.Count == 0
+            ? "midiwatch: la console non ha mandato NIENTE (nessun messaggio spontaneo)"
+            : $"midiwatch: {counts.Values.Sum(c => c.N)} messaggi spontanei in {seconds}s" + Environment.NewLine + string.Join(Environment.NewLine, lines);
+        Console.Error.WriteLine(res);
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-midiwatch.log"), res); } catch { }
         Shutdown(0);
     }
 

@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Data;
@@ -815,6 +815,42 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>Stato leggibile per la sezione automix (anche a due metri dal portatile).</summary>
     public string AutoMixStateLabel => !AutoMix ? "SPENTO" : AutoMixHold ? "IN PAUSA" : "ATTIVO";
+
+    /// <summary>
+    /// FERMA TUTTO (Esc). In serata deve esistere un comando che, qualunque cosa stia succedendo, riporta il silenzio:
+    /// ferma i due deck, i pad, la batteria, il riempimento, il passaggio in corso e spegne l'automix.
+    /// Da qui in poi niente può ripartire da solo: tutto quello che fa partire la musica da sé viene disattivato.
+    /// </summary>
+    [RelayCommand]
+    public void Panic()
+    {
+        try { if (IsMixing) AbortMix("FERMA TUTTO"); } catch { }
+        _crossfadeTarget = null;
+        AutoMix = false; AutoMixHold = false;
+        AutoMixEndless = false;                       // "mai fermarsi" è la cosa che più facilmente rifà partire la musica
+        if (FillMusicOn) FillMusicOn = false; else StopFill(fade: false);
+        foreach (var d in new[] { DeckA, DeckB })
+        {
+            d.CancelEchoOutCommand.Execute(null);
+            d.AutoJog = false; d.IsJogging = false;
+            d.Deck.Pause();
+            d.IsFill = false; d.GainDb = 0;
+        }
+        _fillDeck = null;
+        _autoMixTriggeredFor = null;
+        try { StopAllPads(); } catch { }
+        try { if (Rhythm.Engine.IsRunning) Rhythm.Engine.Stop(); } catch { }
+        TalkOver = false;
+        StatusText = "FERMA TUTTO: silenzio. Auto-mix e riempimento spenti, niente riparte da solo.";
+    }
+
+    /// <summary>La console non comanda più niente (resta collegata e visibile nella spia): via di fuga se manda da sola.</summary>
+    [ObservableProperty] private bool _midiMuted;
+    partial void OnMidiMutedChanged(bool value)
+    {
+        Midi.Muted = value;
+        StatusText = value ? "Console ignorata: i comandi arrivano ma non fanno niente (ripremi per riattivarla)" : "Console riattivata";
+    }
 
     /// <summary>Ferma subito l'automix: annulla il passaggio in corso e lo spegne.</summary>
     [RelayCommand]
@@ -2329,7 +2365,7 @@ public sealed partial class MainViewModel : ObservableObject
         ExecuteAction(action, pressed, norm, continuous);
     }
 
-    private DateTime _lastAudibleHint;
+    private DateTime _lastAudibleHint, _lastJogHint;
 
     /// <summary>
     /// Se muovi EQ, filtro, trim o fader di un deck che in quel momento non si sente (fermo, fader a zero,
@@ -2407,8 +2443,8 @@ public sealed partial class MainViewModel : ObservableObject
                 case "cuepfl": deck.CueOn = !deck.CueOn; break;
                 case "fader": if (continuous) deck.Fader = norm; break;
                 case "jogtouch": deck.JogStart(); deck.LastJogMessage = DateTime.UtcNow; break;
-                case "nudgeup": deck.Deck.JogStart(); deck.Deck.JogRate(1.06, 0.05); break;
-                case "nudgedown": deck.Deck.JogStart(); deck.Deck.JogRate(0.94, 0.05); break;
+                case "nudgeup": if (deck.Deck.IsPlaying) { deck.Deck.JogStart(); deck.Deck.JogRate(1.06, 0.05); } break;
+                case "nudgedown": if (deck.Deck.IsPlaying) { deck.Deck.JogStart(); deck.Deck.JogRate(0.94, 0.05); } break;
                 default:
                     if (sub.StartsWith("hotcue") && int.TryParse(sub[6..], out var hc)) deck.HotCue((hc - 1).ToString());
                     break;
@@ -2441,10 +2477,11 @@ public sealed partial class MainViewModel : ObservableObject
                 case "backspin": deck.BackspinCommand.Execute(null); break;
                 case "spinfwd": deck.SpinForwardCommand.Execute(null); break;
                 case "spinback": deck.SpinBackCommand.Execute(null); break;
-                case "rev": deck.ReverseHoldCommand.Execute(null); break;
-                case "slow": deck.SlowHoldCommand.Execute(null); break;
-                case "fwd": deck.ForwardHoldCommand.Execute(null); break;
-                case "back": deck.BackwardHoldCommand.Execute(null); break;
+                // i "tieni premuto" lavorano sul disco che gira: su un deck fermo non devono avviarlo
+                case "rev": if (deck.Deck.IsPlaying) deck.ReverseHoldCommand.Execute(null); break;
+                case "slow": if (deck.Deck.IsPlaying) deck.SlowHoldCommand.Execute(null); break;
+                case "fwd": if (deck.Deck.IsPlaying) deck.ForwardHoldCommand.Execute(null); break;
+                case "back": if (deck.Deck.IsPlaying) deck.BackwardHoldCommand.Execute(null); break;
                 case "jog":
                     // encoder relativo (jog wheel MIDI): 1..63 avanti, 65..127 indietro (delta in tacche).
                     // Senza la mano sul piatto è un pitch bend (la traccia non torna indietro: è il comportamento dei mixer veri).
@@ -2453,7 +2490,9 @@ public sealed partial class MainViewModel : ObservableObject
                         int v = (int)Math.Round(norm * 127);
                         int delta = v == 0 ? 0 : v < 64 ? v : v - 128;
                         if (deck.IsJogging) { deck.LastJogMessage = DateTime.UtcNow; deck.JogRate(Math.Clamp(delta * JogTicksToRate, -8, 8)); }
-                        else if (delta != 0) deck.Nudge(Math.Sign(delta));
+                        // Regola di ferro: il piatto NON fa partire un deck fermo. Se il DJ ha messo in pausa,
+                        // sfiorare o urtare la console non deve far ripartire la musica (vedi anche Panic).
+                        else if (delta != 0 && deck.Deck.IsPlaying) deck.Nudge(Math.Sign(delta));
                     }
                     break;
                 case "jogscratch":
@@ -2464,6 +2503,17 @@ public sealed partial class MainViewModel : ObservableObject
                     {
                         int v = (int)Math.Round(norm * 127);
                         int delta = v == 0 ? 0 : v < 64 ? v : v - 128;
+                        // Il tocco dedotto dal messaggio vale solo su un deck che sta già suonando: su un deck in pausa
+                        // un piatto che manda da solo (o una manata di passaggio) farebbe ripartire la musica, e la serata è persa.
+                        if (!deck.IsJogging && (!deck.Deck.IsPlaying || delta == 0))
+                        {
+                            if (delta != 0 && deck.HasTrack && (DateTime.UtcNow - _lastJogHint).TotalSeconds > 4)
+                            {
+                                _lastJogHint = DateTime.UtcNow;
+                                StatusText = $"Deck {deck.Name} è fermo: il piatto non lo fa partire (premi PLAY e poi gira il piatto)";
+                            }
+                            break;
+                        }
                         if (!deck.IsJogging) deck.JogStart();
                         deck.AutoJog = true;
                         deck.LastJogMessage = DateTime.UtcNow;
@@ -2501,6 +2551,8 @@ public sealed partial class MainViewModel : ObservableObject
             case "rhythm.resync": Rhythm.ResyncCommand.Execute(null); break;
             case "rhythm.volume": if (continuous) Rhythm.Volume = (float)(norm * 1.2); break;
             case "padstop": StopAllPadsCommand.Execute(null); break;
+            case "panic": Panic(); break;
+            case "midimute": MidiMuted = !MidiMuted; break;
             case "mic": MicOn = !MicOn; break;
             case "talk": TalkOver = pressed; break;
             case "micvolume": if (continuous) MicGainDb = (norm - 0.5) * 48; break;

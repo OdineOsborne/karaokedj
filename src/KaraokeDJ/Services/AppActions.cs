@@ -49,6 +49,7 @@ public static class AppActions
         new("browse", "Libreria: scorri (encoder)", true), new("browseup", "Libreria: su", false), new("browsedown", "Libreria: giù", false), new("browseload", "Libreria: carica sul deck libero", false),
         new("rhythm.play", "Ritmi: avvia/ferma", false), new("rhythm.tap", "Ritmi: tap tempo", false), new("rhythm.resync", "Ritmi: riparti dall'1", false), new("rhythm.volume", "Ritmi: volume", true),
         new("padstop", "Stop tutti i pad", false),
+        new("panic", "FERMA TUTTO (silenzio immediato)", false), new("midimute", "Ignora la console (MIDI off)", false),
         new("mic", "Microfono on/off", false), new("talk", "Talk-over (tieni premuto)", false, true), new("micvolume", "Microfono: gain", true), new("cuemix", "Cuffia: cue/master", true), new("cuevolume", "Cuffia: volume", true),
         new("fill", "Musica di riempimento on/off", false), new("rotation", "Rotazione cantanti on/off", false),
         new("pad1", "Pad 1", false), new("pad2", "Pad 2", false), new("pad3", "Pad 3", false), new("pad4", "Pad 4", false),
@@ -74,7 +75,7 @@ public static class AppActions
     public static readonly (string Gesture, string Action)[] DefaultKeys =
     {
         ("Ctrl+D1", "a.play"), ("Ctrl+D2", "b.play"), ("Ctrl+P", "projector"), ("Ctrl+N", "next"), ("Ctrl+F", "search"),
-        ("Ctrl+Return", "addqueue"), ("Ctrl+Space", "padstop"),
+        ("Ctrl+Return", "addqueue"), ("Ctrl+Space", "padstop"), ("Escape", "panic"),
         ("F1", "pad1"), ("F2", "pad2"), ("F3", "pad3"), ("F4", "pad4"), ("F5", "pad5"), ("F6", "pad6"),
         ("F7", "pad7"), ("F8", "pad8"), ("F9", "pad9"), ("F10", "pad10"), ("F11", "pad11"), ("F12", "pad12"),
         ("Q", "a.cue"), ("W", "a.play"), ("O", "b.cue"), ("P", "b.play"),
@@ -99,6 +100,10 @@ public sealed class KeyboardService
         _map.Clear();
         foreach (var m in mappings) if (!string.IsNullOrEmpty(m.Gesture) && !string.IsNullOrEmpty(m.Action)) _map[m.Gesture] = m.Action;
         if (_map.Count == 0 && useDefaultsIfEmpty) foreach (var (g, a) in AppActions.DefaultKeys) _map[g] = a;
+        // Chi aggiorna l'app ha già le sue scorciatoie salvate: le azioni nuove (es. FERMA TUTTO su Esc)
+        // prendono comunque il loro tasto predefinito, purché quel tasto non sia già usato per altro.
+        else foreach (var (g, a) in AppActions.DefaultKeys)
+            if (!_map.ContainsKey(g) && !_map.ContainsValue(a)) _map[g] = a;
     }
 
     public List<KeyMapping> Export() => _map.Select(kv => new KeyMapping { Gesture = kv.Key, Action = kv.Value }).ToList();

@@ -298,8 +298,16 @@
                                   ToolTip="Musica di riempimento: quando una base finisce e nessuno canta parte un brano dalla playlist scelta; sfuma da solo appena avvii la prossima base"/>
                     <ComboBox ItemsSource="{Binding Playlists}" SelectedItem="{Binding FillPlaylist}" DisplayMemberPath="Name" FontSize="10.5" MinWidth="90" Height="26" Margin="0,0,3,0"
                               Visibility="{Binding FillMusicOn, Converter={StaticResource BoolToVis}}" ToolTip="Playlist di riempimento (vuota = tutta la musica non karaoke)"/>
-                    <ToggleButton Content="🔁 ROTAZIONE" IsChecked="{Binding RotationOn}" v:Shortcut.Action="rotation" Style="{StaticResource ToolToggle}" Padding="8,0" Height="26" FontSize="10.5" Margin="0"
+                    <ToggleButton Content="🔁 ROTAZIONE" IsChecked="{Binding RotationOn}" v:Shortcut.Action="rotation" Style="{StaticResource ToolToggle}" Padding="8,0" Height="26" FontSize="10.5" Margin="0,0,3,0"
                                   ToolTip="Rotazione equa dei cantanti: la coda si riordina a giri; chi ha già cantato aspetta chi non lo ha ancora fatto"/>
+                    <!-- via di fuga: se la console manda da sola, la si isola con un tasto senza staccare il cavo -->
+                    <ToggleButton Content="🎛 IGNORA CONSOLE" IsChecked="{Binding MidiMuted}" v:Shortcut.Action="midimute" Style="{StaticResource ToolToggle}" Padding="8,0" Height="26" FontSize="10.5" Margin="0,0,3,0"
+                                  Visibility="{Binding ControllerConnected, Converter={StaticResource BoolToVis}}"
+                                  ToolTip="La console resta collegata ma non comanda più niente: da usare se manda comandi da sola. Ripremi per riattivarla."/>
+                    <!-- FERMA TUTTO: in serata deve esserci un tasto che riporta il silenzio, qualunque cosa stia succedendo -->
+                    <Button Content="⛔ FERMA TUTTO" Command="{Binding PanicCommand}" v:Shortcut.Action="panic" Height="26" Padding="10,0" FontSize="10.5" FontWeight="SemiBold" Margin="0"
+                            Foreground="White" Background="#C0392B" BorderBrush="#E74C3C"
+                            ToolTip="Silenzio immediato (Esc): ferma i due deck, i pad, la batteria e il riempimento, annulla il passaggio in corso e spegne l'auto-mix. Da lì non riparte niente da solo."/>
                 </StackPanel>
             </Grid>
         </Border>
