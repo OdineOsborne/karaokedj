@@ -82,7 +82,26 @@ public partial class MainViewModel
     {
         var all = Midi.ExportMappings();
         if (ActivePreset == null) return all;
-        return all.Where(m => !ActivePreset.Mappings.Any(p => p.Key == m.Key && p.Action == m.Action)).ToList();
+        return all.Where(m => !ActivePreset.Mappings.Any(p => p.Key == m.Key && p.Action == m.Action && p.Invert == m.Invert && p.Relative == m.Relative)).ToList();
+    }
+
+    /// <summary>Importa una mappatura (JSON Mixfonia, XML Mixxx, djay) senza ancora salvarla: la finestra chiede nome e porta.</summary>
+    public (ControllerPreset Preset, string Report) ImportControllerFile(string path) => ControllerPresets.Import(path);
+
+    /// <summary>Salva il preset nella cartella dell'utente; se la porta collegata combacia, lo applica subito.</summary>
+    public string SaveUserPreset(ControllerPreset preset)
+    {
+        var file = ControllerPresets.SaveUser(preset);
+        if (Midi.DeviceName is { } n && ControllerPresets.Find(n)?.Id == preset.Id) { Settings.MidiMappings.Clear(); OpenController(n, announce: true); }
+        else StatusText = $"Mappatura \"{preset.Name}\" salvata: si attiva quando colleghi una porta che contiene \"{string.Join("\" o \"", preset.Match)}\"";
+        return file;
+    }
+
+    /// <summary>La mappatura in uso (preset + personalizzazioni) come file da condividere.</summary>
+    public ControllerPreset ExportCurrentMapping()
+    {
+        if (Midi.DeviceName == null) throw new InvalidOperationException("Nessuna console collegata");
+        return ControllerPresets.Export(Midi.DeviceName, ActivePreset, Midi.ExportMappings());
     }
 
     /// <summary>Torna alla mappatura di fabbrica della console collegata.</summary>
@@ -95,5 +114,5 @@ public partial class MainViewModel
     }
 
     /// <summary>Elenco delle console con preset (per le impostazioni).</summary>
-    public static string SupportedControllers => string.Join(", ", ControllerPresets.All.Select(p => p.Name));
+    public static string SupportedControllers => string.Join(", ", ControllerPresets.All.Select(p => p.Name + (p.IsUser ? " (tua)" : "")));
 }

@@ -132,11 +132,19 @@
                                 <TextBlock Text="{Binding ControllerStatus}" FontWeight="Medium" VerticalAlignment="Center" TextWrapping="Wrap"/>
                             </DockPanel>
                             <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,6,0,0" x:Name="SupportedList"/>
+                            <WrapPanel Margin="0,8,0,0">
+                                <Button Content="Importa mappatura…" Style="{StaticResource SmallButton}" Click="MidiImport_Click" Margin="0,0,6,0"
+                                        ToolTip="File JSON Mixfonia, XML di Mixxx (*.midi.xml: oltre 200 console su github.com/mixxxdj/mixxx/tree/main/res/controllers) o djay (*.djayMidiMapping)"/>
+                                <Button Content="Esporta la mia mappatura…" Style="{StaticResource SmallButton}" Click="MidiExport_Click" Margin="0,0,6,0"
+                                        ToolTip="Salva preset + correzioni della console collegata in un file JSON da tenere o da condividere"/>
+                                <Button Content="Cartella mappature" Style="{StaticResource SmallButton}" Click="MidiFolder_Click" Margin="0,0,6,0"
+                                        ToolTip="Le mappature tue stanno qui: un file JSON per console, vincono su quelle dell'app"/>
+                            </WrapPanel>
                         </StackPanel>
                     </Border>
                     <DockPanel Grid.Row="2" Margin="0,0,0,8">
                         <TextBlock x:Name="MidiActivity" Style="{StaticResource Muted}" Text="Nessun messaggio ricevuto" VerticalAlignment="Center"/>
-                        <TextBlock Style="{StaticResource Muted}" HorizontalAlignment="Right" TextWrapping="Wrap" MaxWidth="520" TextAlignment="Right" Text="«Impara MIDI» poi muovi il controllo sul controller · «Impara tasto» poi premi la combinazione sulla tastiera. Nell'app: tasto destro su un comando fa lo stesso."/>
+                        <TextBlock Style="{StaticResource Muted}" HorizontalAlignment="Right" TextWrapping="Wrap" MaxWidth="520" TextAlignment="Right" Text="«Impara MIDI» poi muovi il controllo sulla console · «inverti» se lavora al contrario · «encoder» per le manopole senza fine corsa · «Impara tasto» per la tastiera. Nell'app: tasto destro su un comando fa lo stesso."/>
                     </DockPanel>
                     <ListBox Grid.Row="3" x:Name="MidiList" HorizontalContentAlignment="Stretch">
                         <ListBox.ItemTemplate>
@@ -147,6 +155,7 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="110"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -154,10 +163,14 @@
                                     <TextBlock Grid.Column="0" Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                     <TextBlock Grid.Column="1" Text="{Binding Binding}" Style="{StaticResource Muted}" VerticalAlignment="Center" FontFamily="Consolas"/>
                                     <Button Grid.Column="2" Content="{Binding LearnLabel}" Style="{StaticResource SmallButton}" Click="MidiLearn_Click" Tag="{Binding}" Margin="4,0" MinWidth="90"/>
-                                    <Button Grid.Column="3" Content="✕" Style="{StaticResource SmallButton}" Click="MidiClear_Click" Tag="{Binding}" Margin="0,0,12,0"/>
-                                    <TextBlock Grid.Column="4" Text="{Binding KeyBinding}" Style="{StaticResource Muted}" VerticalAlignment="Center" FontFamily="Consolas"/>
-                                    <Button Grid.Column="5" Content="{Binding KeyLearnLabel}" Style="{StaticResource SmallButton}" Click="KeyLearn_Click" Tag="{Binding}" Margin="4,0" MinWidth="90"/>
-                                    <Button Grid.Column="6" Content="✕" Style="{StaticResource SmallButton}" Click="KeyClear_Click" Tag="{Binding}"/>
+                                    <Button Grid.Column="3" Content="✕" Style="{StaticResource SmallButton}" Click="MidiClear_Click" Tag="{Binding}" Margin="0,0,6,0"/>
+                                    <StackPanel Grid.Column="4" Orientation="Horizontal" Margin="0,0,12,0" Visibility="{Binding FlagsVisible}">
+                                        <CheckBox Content="inverti" IsChecked="{Binding Invert}" Click="MidiFlags_Click" Tag="{Binding}" VerticalAlignment="Center" FontSize="11" Margin="0,0,6,0" ToolTip="Il fader/manopola lavora al contrario"/>
+                                        <CheckBox Content="encoder" IsChecked="{Binding Relative}" Click="MidiFlags_Click" Tag="{Binding}" VerticalAlignment="Center" FontSize="11" ToolTip="Manopola senza fine corsa (manda + e −), non una posizione"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="5" Text="{Binding KeyBinding}" Style="{StaticResource Muted}" VerticalAlignment="Center" FontFamily="Consolas"/>
+                                    <Button Grid.Column="6" Content="{Binding KeyLearnLabel}" Style="{StaticResource SmallButton}" Click="KeyLearn_Click" Tag="{Binding}" Margin="4,0" MinWidth="90"/>
+                                    <Button Grid.Column="7" Content="✕" Style="{StaticResource SmallButton}" Click="KeyClear_Click" Tag="{Binding}"/>
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>

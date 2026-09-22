@@ -24,6 +24,12 @@ public partial class SettingsWindow : Window
         [ObservableProperty] private string _learnLabel = "Impara MIDI";
         [ObservableProperty] private string _keyBinding = "—";
         [ObservableProperty] private string _keyLearnLabel = "Impara tasto";
+        public bool IsContinuous { get; init; }
+        [ObservableProperty] private bool _invert;
+        [ObservableProperty] private bool _relative;
+        /// <summary>inverti/encoder hanno senso solo per fader e manopole già mappati.</summary>
+        public Visibility FlagsVisible => IsContinuous && Binding != "—" ? Visibility.Visible : Visibility.Collapsed;
+        partial void OnBindingChanged(string value) => OnPropertyChanged(nameof(FlagsVisible));
     }
 
     public SettingsWindow(MainViewModel vm)
@@ -66,8 +72,8 @@ public partial class SettingsWindow : Window
         midiDevices.AddRange(MidiService.ListDevices());
         MidiCombo.ItemsSource = midiDevices;
         MidiCombo.SelectedItem = midiDevices.Contains(vm.Settings.MidiDeviceName ?? "") ? vm.Settings.MidiDeviceName : "(nessuno)";
-        foreach (var (id, label, _) in MidiActions.All)
-            _midiRows.Add(new MidiRow { Id = id, Label = label, Binding = vm.Midi.KeyFor(id)?.ToString() ?? "—", KeyBinding = KeyboardService.Pretty(vm.Keys.GestureFor(id)) });
+        foreach (var (id, label, cont) in MidiActions.All)
+            _midiRows.Add(new MidiRow { Id = id, Label = label, IsContinuous = cont, Binding = vm.Midi.KeyFor(id)?.ToString() ?? "—", Invert = vm.Midi.IsInverted(id), Relative = vm.Midi.IsRelative(id), KeyBinding = KeyboardService.Pretty(vm.Keys.GestureFor(id)) });
         MidiList.ItemsSource = _midiRows;
         SupportedList.Text = "Console riconosciute da sole (plug & play): " + MainViewModel.SupportedControllers + ". Altre console: scegli la porta qui sopra e usa Impara.";
         vm.Midi.MessageReceived += OnMidiMessage;
@@ -77,7 +83,75 @@ public partial class SettingsWindow : Window
         PreviewKeyDown += KeyLearn_PreviewKeyDown;
     }
 
-    private void OnMidiMessage(MidiKey key, int value) => MidiActivity.Text = $"Ricevuto: {key} = {value}";
+    private void OnMidiMessage(MidiKey key, int value)
+    {
+        // dice anche cosa fa quel controllo: così si capisce al volo cosa è mappato male
+        var a = _vm.Midi.ActionFor(key);
+        MidiActivity.Text = $"Ricevuto: {key} = {value}" + (a != null ? " → " + AppActions.LabelOf(a) : " → (niente)");
+    }
+
+    private void MidiFlags_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as CheckBox)?.Tag is not MidiRow row) return;
+        _vm.Midi.SetFlags(row.Id, row.Invert, row.Relative);
+    }
+
+    private void MidiImport_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog { Title = "Importa mappatura console", Filter = "Mappature (*.json;*.xml;*.djayMidiMapping)|*.json;*.xml;*.djayMidiMapping|Tutti i file|*.*" };
+        if (dlg.ShowDialog(this) != true) return;
+        ControllerPreset preset; string report;
+        try { (preset, report) = _vm.ImportControllerFile(dlg.FileName); }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "Importazione non riuscita", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        // conferma: nome, e la stringa che riconosce la porta (proposta: la porta collegata adesso)
+        var connected = _vm.Midi.DeviceName;
+        var win = new Window { Title = "Importa mappatura", Owner = this, Width = 520, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner, Background = Background, ResizeMode = ResizeMode.NoResize };
+        var name = new TextBox { Text = preset.Name, Margin = new Thickness(0, 2, 0, 10) };
+        var match = new TextBox { Text = connected ?? string.Join("; ", preset.Match), Margin = new Thickness(0, 2, 0, 4) };
+        var ok = new Button { Content = "Salva e usa", IsDefault = true, MinWidth = 110, Margin = new Thickness(0, 12, 6, 0), HorizontalAlignment = HorizontalAlignment.Right };
+        var panel = new StackPanel { Margin = new Thickness(16) };
+        panel.Children.Add(new TextBlock { Text = report + " · " + preset.Source, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 10), Opacity = 0.8 });
+        panel.Children.Add(new TextBlock { Text = "Nome della console" });
+        panel.Children.Add(name);
+        panel.Children.Add(new TextBlock { Text = "Si attiva quando il nome della porta MIDI contiene (più valori separati da ;)" });
+        panel.Children.Add(match);
+        panel.Children.Add(new TextBlock { Text = connected != null ? "Porta collegata adesso: " + connected : "Nessuna console collegata: collegala e leggi il nome in «Dispositivo MIDI».", TextWrapping = TextWrapping.Wrap, Opacity = 0.7, FontSize = 11 });
+        panel.Children.Add(ok);
+        win.Content = panel;
+        ok.Click += (_, _) => { win.DialogResult = true; win.Close(); };
+        if (win.ShowDialog() != true) return;
+        preset.Name = name.Text.Trim();
+        preset.Id = preset.Name;
+        preset.Match = match.Text.Split(';').Select(x => x.Trim()).Where(x => x.Length > 0).ToList();
+        if (preset.Match.Count == 0) preset.Match.Add(preset.Name);
+        var file = _vm.SaveUserPreset(preset);
+        SupportedList.Text = "Console riconosciute da sole (plug & play): " + MainViewModel.SupportedControllers + ". Altre console: scegli la porta qui sopra e usa Impara.";
+        MidiActivity.Text = "Salvata: " + file;
+        RefreshMidiRows();
+    }
+
+    private void MidiExport_Click(object sender, RoutedEventArgs e)
+    {
+        ControllerPreset preset;
+        try { preset = _vm.ExportCurrentMapping(); }
+        catch (Exception ex) { MidiActivity.Text = ex.Message; return; }
+        var dlg = new Microsoft.Win32.SaveFileDialog { Title = "Esporta mappatura", Filter = "Mappatura Mixfonia (*.json)|*.json", FileName = preset.Id + ".json" };
+        if (dlg.ShowDialog(this) != true) return;
+        var json = System.Text.Json.JsonSerializer.Serialize(preset, new System.Text.Json.JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault });
+        File.WriteAllText(dlg.FileName, json);
+        MidiActivity.Text = $"Esportata: {dlg.FileName} ({preset.Mappings.Count} controlli). Mandacela: la aggiungiamo per tutti.";
+    }
+
+    private void MidiFolder_Click(object sender, RoutedEventArgs e)
+    {
+        Directory.CreateDirectory(ControllerPresets.UserDir);
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", ControllerPresets.UserDir) { UseShellExecute = true }); } catch { }
+    }
+
+    private void RefreshMidiRows()
+    {
+        foreach (var r in _midiRows) { r.Binding = _vm.Midi.KeyFor(r.Id)?.ToString() ?? "—"; r.Invert = _vm.Midi.IsInverted(r.Id); r.Relative = _vm.Midi.IsRelative(r.Id); }
+    }
 
     private void MidiConnect_Click(object sender, RoutedEventArgs e)
     {

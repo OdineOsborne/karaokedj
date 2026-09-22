@@ -85,6 +85,16 @@ public sealed class MidiService : IDisposable
     public int Count => _map.Count;
 
     public MidiKey? KeyFor(string action) => _map.FirstOrDefault(kv => kv.Value == action).Key;
+    public string? ActionFor(MidiKey key) => _map.TryGetValue(key, out var a) ? a : null;
+    public bool IsInverted(string action) => KeyFor(action) is { } k && _invert.Contains(k);
+    public bool IsRelative(string action) => KeyFor(action) is { } k && _relative.Contains(k);
+    /// <summary>Inverti / relativo sul controllo già mappato a questa azione (correzioni fai-da-te: fader al contrario, encoder).</summary>
+    public void SetFlags(string action, bool invert, bool relative)
+    {
+        if (KeyFor(action) is not { } k) return;
+        if (invert) _invert.Add(k); else _invert.Remove(k);
+        if (relative) _relative.Add(k); else { _relative.Remove(k); _relPos.Remove(k); }
+    }
 
     public void SetMapping(string action, MidiKey key)
     {

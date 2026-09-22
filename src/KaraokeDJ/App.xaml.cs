@@ -109,7 +109,8 @@ public partial class App : Application
             var plugins = string.Join("; ", Vm.Plugins.Plugins.Select(p => p.Name + (p.Ok ? "" : " ERR: " + p.Error)));
             var sources = string.Join(", ", Vm.ImportSources.Select(s => s.Id));
             Console.Error.WriteLine("SELFTEST OK");
-            try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-selftest.log"), "OK\nplugins: " + plugins + "\nsources: " + sources + "\ncontrollers: " + KaraokeDJ.Services.ControllerPresets.All.Count + " preset, midi: " + (Vm.Midi.DeviceName ?? "nessuno")); } catch { }
+            try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-selftest.log"), "OK\nplugins: " + plugins + "\nsources: " + sources + "\ncontrollers: " + KaraokeDJ.Services.ControllerPresets.All.Count + " preset, midi: " + (Vm.Midi.DeviceName ?? "nessuno")
+                + "\nmappings: " + KaraokeDJ.Services.ControllerPresets.All.Sum(p => p.Mappings.Count) + ", sample: " + string.Join(",", KaraokeDJ.Services.ControllerPresets.All.Take(2).Select(p => p.Id + "=" + p.Mappings[0].Action)) + ImportTest()); } catch { }
             Shutdown(0);
         }
         catch (Exception ex)
@@ -118,6 +119,15 @@ public partial class App : Application
             try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-selftest.log"), ex.ToString()); } catch { }
             Environment.Exit(2);
         }
+    }
+
+    /// <summary>Selftest: se MIXFONIA_IMPORT_TEST punta a un file (Mixxx XML / djay / JSON), prova l'importazione e riporta il risultato.</summary>
+    private static string ImportTest()
+    {
+        var f = Environment.GetEnvironmentVariable("MIXFONIA_IMPORT_TEST");
+        if (string.IsNullOrEmpty(f)) return "";
+        try { var (p, rep) = KaraokeDJ.Services.ControllerPresets.Import(f); return $"\nimport: {p.Name} [{string.Join("|", p.Match)}] {rep}; play={p.Mappings.FirstOrDefault(m => m.Action == "a.play")?.Key}"; }
+        catch (Exception ex) { return "\nimport: ERRORE " + ex.Message; }
     }
 
     protected override void OnExit(ExitEventArgs e)

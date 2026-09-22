@@ -13,3 +13,7 @@ node unmapped.js "<file>.midi.xml"                              # cosa il conver
 
 `script-map.js` contiene le euristiche per i controlli legati a script (nome funzione + descrizione + gruppo + numero).
 La Instinct P8 è scritta a mano (scratchpad p8.js → hercules-instinct-p8.json) dal PDF "MIDI Command List v1.1" di Hercules.
+
+Scritti a mano: `instinct-p8.js` (Hercules Instinct P8, dal PDF ufficiale) e `launchpad.js` (Novation Launchpad, due layout).
+La stessa logica di conversione vive anche nell'app (`Services/MappingImporters.cs`): Impostazioni → MIDI → *Importa mappatura…*
+accetta direttamente i file Mixxx/djay/JSON, così l'utente non ha bisogno di questi script. Guida utente: docs/console.md.
