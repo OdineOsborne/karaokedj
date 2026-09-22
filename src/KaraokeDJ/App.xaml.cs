@@ -98,6 +98,13 @@ public partial class App : Application
         try
         {
             // --size LARGHEZZAxALTEZZA insieme a --shot: per vedere l'app come su un portatile piccolo
+            // MIXFONIA_SHOT_TRACK="pezzo del titolo": carica quel brano sul deck A prima della foto (verifiche visive)
+            var want = Environment.GetEnvironmentVariable("MIXFONIA_SHOT_TRACK");
+            if (!string.IsNullOrWhiteSpace(want))
+            {
+                var t = Vm!.Tracks.FirstOrDefault(x => x.Display.Contains(want, StringComparison.OrdinalIgnoreCase));
+                if (t != null) Vm.LoadToDeck(Vm.DeckA, t, confirmIfPlaying: false);
+            }
             var size = Environment.GetEnvironmentVariable("MIXFONIA_SIZE");
             if (size != null && size.Split('x') is [var sw, var sh] && double.TryParse(sw, out var pw) && double.TryParse(sh, out var ph))
             { win.Width = pw; win.Height = ph; win.UpdateLayout(); }

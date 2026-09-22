@@ -99,7 +99,8 @@ KaraokeDJ.exe --showtest schermo.png
 Fotografa il proiettore con striscia e applausometro (due file: `schermo-striscia.png` e `schermo.png`).
 
 - **Registrazione della serata**: tasto `⏺ REC` nella barra LIVE (o azione `record`). Registra il mix **prima del volume
-  master**, quindi quello che hai suonato, non quanto era alta la sala. File WAV in `%AppData%\KaraokeDJegistrazioni`,
+  master**, quindi quello che hai suonato, non quanto era alta la sala. File WAV in `%AppData%\KaraokeDJ
+egistrazioni`,
   circa **10 MB al minuto** (~2,4 GB per quattro ore); si ferma da sola se sul disco restano meno di 500 MB.
   Non si ferma con FERMA TUTTO: fermarla per sbaglio vorrebbe dire perdere la serata.
 
@@ -108,3 +109,17 @@ KaraokeDJ.exe --rectest
 ```
 Registra un tono di prova **con il volume master a zero** (si puo lanciare con le casse accese) e riapre il file
 per misurare che dentro ci sia davvero l'audio, con la durata giusta e nessun campione perso.
+
+## Struttura del brano (beta 16)
+
+L'analisi cerca **dove cambia la musica** (fine intro, entrata del ritornello, finale) e l'auto-mix comincia il
+passaggio lì invece che a un tempo fisso dalla fine. Ogni brano ha un punteggio: quanto i confini trovati stanno
+sopra la "novità" media del brano. **Sotto 1,00 l'app non si fida** e l'auto-mix fa come prima.
+
+I *nomi* delle sezioni (ritornello, pieno, medio, calma) sono un'ipotesi — ritornello = la parte che torna più volte
+ed è meno di metà brano. Le *posizioni* invece sono misurate, ed è solo di quelle che l'auto-mix si serve.
+
+```bash
+KaraokeDJ.exe --structtest 30     # cosa trova e quanto vale, brano per brano
+KaraokeDJ.exe --sections          # calcola la struttura ai brani già analizzati (silenzioso)
+```
