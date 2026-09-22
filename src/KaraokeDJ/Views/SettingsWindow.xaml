@@ -80,6 +80,11 @@
                             <TextBox x:Name="IdleSubtitleBox"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,8">
+                            <TextBlock Text="Dimensione interfaccia" Width="140" VerticalAlignment="Center" ToolTip="Su schermi piccoli l'interfaccia si rimpicciolisce da sola: qui puoi fissarla. Anche con Ctrl + / Ctrl − / Ctrl 0."/>
+                            <TextBlock x:Name="ScaleNow" DockPanel.Dock="Right" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            <ComboBox x:Name="ScaleCombo" SelectionChanged="ScaleCombo_Changed" MaxWidth="220" HorizontalAlignment="Left"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,8">
                             <TextBlock Text="Aspetto" Width="140" VerticalAlignment="Center"/>
                             <CheckBox x:Name="GlassBox" Content="Effetto vetro dietro la finestra (Windows 11, riavvio)" VerticalAlignment="Center" ToolTip="Sfondo Mica: i pannelli semitrasparenti lasciano intravedere il desktop. Se non ti piace o dà problemi grafici, toglilo."/>
                         </DockPanel>

@@ -62,6 +62,8 @@ public partial class App : Application
         if (selfTest) RunSelfTest(win);
         // --audiotest: misura che EQ, filtro, fader e trim cambino davvero il suono, poi esce
         if (e.Args.Contains("--audiotest")) RunAudioTest();
+        // --layouttest: prova il layout alle misure dei portatili (vedi Services/LayoutTest)
+        if (e.Args.Contains("--layouttest")) RunLayoutTest(win);
         // --soak <minuti>: prova di resistenza sulla libreria vera (vedi Services/SoakTest)
         if (soakIdx >= 0) _ = KaraokeDJ.Services.SoakTest.RunAsync(Vm, soakIdx + 1 < e.Args.Length && int.TryParse(e.Args[soakIdx + 1], out var m) ? m : 30);
         if (recovered) Vm.StatusText = "Ripristinato dopo un errore imprevisto: coda e impostazioni conservate (dettagli in crash.log)";
@@ -74,6 +76,10 @@ public partial class App : Application
     {
         try
         {
+            // --size LARGHEZZAxALTEZZA insieme a --shot: per vedere l'app come su un portatile piccolo
+            var size = Environment.GetEnvironmentVariable("MIXFONIA_SIZE");
+            if (size != null && size.Split('x') is [var sw, var sh] && double.TryParse(sw, out var pw) && double.TryParse(sh, out var ph))
+            { win.Width = pw; win.Height = ph; win.UpdateLayout(); }
             await System.Threading.Tasks.Task.Delay(4000);
             var rtb = new System.Windows.Media.Imaging.RenderTargetBitmap((int)win.ActualWidth, (int)win.ActualHeight, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
             rtb.Render(win);
@@ -121,6 +127,17 @@ public partial class App : Application
             try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-selftest.log"), ex.ToString()); } catch { }
             Environment.Exit(2);
         }
+    }
+
+    private async void RunLayoutTest(MainWindow win)
+    {
+        await System.Threading.Tasks.Task.Delay(2500);
+        string res;
+        try { res = KaraokeDJ.Services.LayoutTest.Run(win); }
+        catch (Exception ex) { res = "layout: FAIL " + ex; }
+        Console.Error.WriteLine(res);
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-layouttest.log"), res); } catch { }
+        Shutdown(res.StartsWith("layout: OK") ? 0 : 2);
     }
 
     /// <summary>--audiotest: prova che i comandi cambino davvero il suono (vedi Services/AudioTest).</summary>

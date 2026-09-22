@@ -4,12 +4,17 @@
         xmlns:v="clr-namespace:KaraokeDJ.Views"
         xmlns:vm="clr-namespace:KaraokeDJ.ViewModels"
         xmlns:m="clr-namespace:KaraokeDJ.Models"
-        Title="Mixfonia" Width="1500" Height="960" MinWidth="1100" MinHeight="760"
+        Title="Mixfonia" Width="1500" Height="960" MinWidth="940" MinHeight="600"
         Background="{StaticResource WindowBgBrush}" WindowStartupLocation="CenterScreen"
         d:DataContext="{d:DesignInstance vm:MainViewModel}"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d">
-    <Grid Margin="10">
+    <!-- L'interfaccia si rimpicciolisce da sola quando la finestra è più piccola del formato di riferimento
+         (portatili 13", schermi scalati al 125/150 %): vedi MainWindow.ApplyUiScale. -->
+    <Grid x:Name="Root" Margin="10">
+        <Grid.LayoutTransform>
+            <ScaleTransform x:Name="UiScale" ScaleX="1" ScaleY="1"/>
+        </Grid.LayoutTransform>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -723,11 +728,12 @@
                         <TextBox Text="{Binding DownloadInput, UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding ImportHint}"
                                  KeyDown="DownloadBox_KeyDown"/>
                     </DockPanel>
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,6,0,0">
-                        <RadioButton Content="Audio MP3" IsChecked="{Binding DownloadVideo, Converter={StaticResource InverseBool}}" Foreground="{StaticResource TextBrush}" Margin="0,0,12,0"/>
-                        <RadioButton Content="Video (karaoke con testo)" IsChecked="{Binding DownloadVideo}" Foreground="{StaticResource TextBrush}" IsEnabled="{Binding SelectedSource.SupportsVideo}"/>
+                    <!-- il suggerimento prende lo spazio che resta e si accorcia: in un pannello orizzontale uscirebbe dalla finestra -->
+                    <DockPanel Grid.Row="2" Margin="0,6,0,0" LastChildFill="True">
+                        <RadioButton DockPanel.Dock="Left" Content="Audio MP3" IsChecked="{Binding DownloadVideo, Converter={StaticResource InverseBool}}" Foreground="{StaticResource TextBrush}" Margin="0,0,12,0"/>
+                        <RadioButton DockPanel.Dock="Left" Content="Video (karaoke con testo)" IsChecked="{Binding DownloadVideo}" Foreground="{StaticResource TextBrush}" IsEnabled="{Binding SelectedSource.SupportsVideo}"/>
                         <TextBlock Text="{Binding ImportHint}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="12,0,0,0" TextTrimming="CharacterEllipsis"/>
-                    </StackPanel>
+                    </DockPanel>
                     <StackPanel Grid.Row="3" VerticalAlignment="Bottom">
                         <ProgressBar Height="6" Minimum="0" Maximum="100" Value="{Binding DownloadPercent}" Margin="0,6,0,4"
                                      Visibility="{Binding IsDownloading, Converter={StaticResource BoolToVis}}"/>
@@ -745,6 +751,8 @@
                        Visibility="{Binding NowSinging, Converter={StaticResource NullToVis}}"/>
             <TextBlock DockPanel.Dock="Right" Text="{Binding AiStatus}" Foreground="{StaticResource MagentaBrush}" Margin="10,0,0,0" Visibility="{Binding AiStatus, Converter={StaticResource NullToVis}}"/>
             <TextBlock DockPanel.Dock="Right" Text="{Binding AnalyzeStatus}" Style="{StaticResource Muted}" Margin="10,0,0,0" Visibility="{Binding AnalyzeStatus, Converter={StaticResource NullToVis}}"/>
+            <TextBlock DockPanel.Dock="Right" Text="{Binding UiScaleLabel}" Style="{StaticResource Muted}" Margin="10,0,0,0" VerticalAlignment="Center"
+                       ToolTip="Dimensione dell'interfaccia: Ctrl + ingrandisce, Ctrl − rimpicciolisce, Ctrl 0 torna automatica (Impostazioni → Generale)"/>
             <TextBlock Text="{Binding StatusText}" Style="{StaticResource Muted}" TextTrimming="CharacterEllipsis"/>
         </DockPanel>
     </Grid>

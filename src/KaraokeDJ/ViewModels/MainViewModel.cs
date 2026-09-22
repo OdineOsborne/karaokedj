@@ -148,6 +148,8 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnSetGenresChanged(string value) => Settings.SetGenres = value;
     [ObservableProperty] private double _crossfadeSeconds = 6;
     [ObservableProperty] private string _statusText = "Pronto";
+    /// <summary>Dimensione attuale dell'interfaccia, mostrata nella barra di stato (Ctrl + / − / 0).</summary>
+    [ObservableProperty] private string _uiScaleLabel = "";
     [ObservableProperty] private bool _isScanning;
     [ObservableProperty] private double _scanPercent;
     [ObservableProperty] private bool _isProjectorOpen;

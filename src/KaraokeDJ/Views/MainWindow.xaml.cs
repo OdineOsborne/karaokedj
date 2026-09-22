@@ -22,10 +22,14 @@ public partial class MainWindow : Window
             {
                 vm.PropertyChanged += Vm_PropertyChanged;
                 vm.SearchFocusRequested += FocusSearch;
-                Width = vm.Settings.WindowWidth;
-                Height = vm.Settings.WindowHeight;
+                // non aprire più grande dello schermo (portatili piccoli, schermo cambiato dall'ultima volta)
+                var wa = SystemParameters.WorkArea;
+                Width = Math.Min(vm.Settings.WindowWidth, wa.Width);
+                Height = Math.Min(vm.Settings.WindowHeight, wa.Height);
+                ApplyUiScale();
             }
         };
+        SizeChanged += (_, _) => ApplyUiScale();
         PreviewKeyDown += MainWindow_PreviewKeyDown;
         SourceInitialized += (_, _) => { if (Vm.Settings.GlassEffect) WindowBackdrop.Apply(this); };
         PreviewKeyUp += MainWindow_PreviewKeyUp;
@@ -38,6 +42,87 @@ public partial class MainWindow : Window
     }
 
     private MainViewModel Vm => (MainViewModel)DataContext;
+
+    // ---------------------------------------------------------------- dimensione dell'interfaccia
+    // Formato di riferimento del layout: sotto questa misura l'interfaccia viene rimpicciolita invece di essere tagliata.
+    private const double DesignWidth = 1180, DesignHeight = 944;
+    // altezze misurate del layout: fisse (barre, deck, mixer, stato) + libreria minima + i due pannelli facoltativi
+    private const double MixViewHeight = 78, StripHeight = 133, LibraryMin = 170, NeedFull = 944;
+    /// <summary>Sotto questa scala si preferisce chiudere un pannello invece di continuare a rimpicciolire i testi.</summary>
+    private const double ComfortScale = 0.8;
+    /// <summary>Sotto questo fattore i testi diventano illeggibili: meglio fermarsi e lasciare che l'utente chiuda qualche pannello.</summary>
+    private const double MinScale = 0.6;
+
+    /// <summary>
+    /// Adatta l'interfaccia alla finestra: automatica (rimpicciolisce quanto basta perché non venga tagliato niente)
+    /// oppure fissa se l'utente ha scelto una percentuale (Impostazioni → Aspetto, o Ctrl + / Ctrl − / Ctrl 0).
+    /// </summary>
+    public double CurrentUiScale => UiScale?.ScaleX ?? 1;
+    /// <summary>Griglia principale (per il test di layout).</summary>
+    public System.Windows.Controls.Grid RootGrid => Root;
+
+    public void ApplyUiScale()
+    {
+        if (DataContext is not MainViewModel vm || UiScale == null) return;
+        double s;
+        if (vm.Settings.UiScale > 0.05) s = Math.Clamp(vm.Settings.UiScale, MinScale, 2);
+        else
+        {
+            double w = ActualWidth > 0 ? ActualWidth : Width, h = ActualHeight > 0 ? ActualHeight : Height;
+            double Fit(double need) => Math.Min(1, Math.Min((w - 4) / DesignWidth, (h - 4) / need));
+            // Prima si rimpicciolisce un po' (fino all'80 %); se non basta si chiudono i pannelli meno importanti
+            // — prima la striscia jingle/importazione, poi la vista mix — così la libreria resta sempre utilizzabile.
+            s = Fit(NeedFull);
+            bool hideStrip = false, hideMix = false;
+            if (s < ComfortScale) { hideStrip = true; s = Fit(NeedFull - StripHeight); }
+            if (s < ComfortScale && hideStrip) { hideMix = true; s = Fit(NeedFull - StripHeight - MixViewHeight); }
+            s = Math.Clamp(s, MinScale, 1);
+            AutoHide(vm, hideStrip, hideMix);
+        }
+        if (Math.Abs(UiScale.ScaleX - s) < 0.005) return;
+        UiScale.ScaleX = UiScale.ScaleY = s;
+        vm.UiScaleLabel = vm.Settings.UiScale > 0.05 ? $"Interfaccia {s * 100:0} %" : $"Interfaccia {s * 100:0} % (automatica)";
+    }
+
+    private bool _autoHidStrip, _autoHidMix, _stripByUser, _mixByUser, _applyingAutoHide;
+
+    /// <summary>Chiude (o riapre) i pannelli facoltativi per far stare la libreria; se li tocca l'utente non ci mettiamo più mano.</summary>
+    private void AutoHide(MainViewModel vm, bool hideStrip, bool hideMix)
+    {
+        _applyingAutoHide = true;
+        try { AutoHideCore(vm, hideStrip, hideMix); } finally { _applyingAutoHide = false; }
+    }
+
+    private void AutoHideCore(MainViewModel vm, bool hideStrip, bool hideMix)
+    {
+        if (!_stripByUser)
+        {
+            if (hideStrip && vm.BottomStripVisible) { vm.BottomStripVisible = false; _autoHidStrip = true; vm.StatusText = "Schermo piccolo: nascosta la striscia jingle/importazione (tasto 🎛 per riaprirla)"; }
+            else if (!hideStrip && _autoHidStrip) { vm.BottomStripVisible = true; _autoHidStrip = false; }
+        }
+        if (!_mixByUser)
+        {
+            if (hideMix && vm.MixViewVisible) { vm.MixViewVisible = false; _autoHidMix = true; vm.StatusText = "Schermo piccolo: nascosta la vista mix (tasto 〰 per riaprirla)"; }
+            else if (!hideMix && _autoHidMix) { vm.MixViewVisible = true; _autoHidMix = false; }
+        }
+    }
+
+    /// <summary>L'utente ha riaperto a mano un pannello: da qui in poi comanda lui.</summary>
+    public void PanelToggledByUser(string which)
+    {
+        if (which == "strip") { _stripByUser = true; _autoHidStrip = false; }
+        else { _mixByUser = true; _autoHidMix = false; }
+    }
+
+    /// <summary>Ctrl + / Ctrl − cambiano la dimensione a mano, Ctrl 0 torna automatica.</summary>
+    private void ChangeUiScale(int dir)
+    {
+        var vm = Vm;
+        double cur = vm.Settings.UiScale > 0.05 ? vm.Settings.UiScale : UiScale.ScaleX;
+        vm.Settings.UiScale = dir == 0 ? 0 : Math.Clamp(Math.Round((cur + dir * 0.05) * 100) / 100, MinScale, 1.5);
+        ApplyUiScale();
+        vm.StatusText = vm.Settings.UiScale > 0.05 ? $"Interfaccia al {UiScale.ScaleX * 100:0} % (Ctrl+0 = automatica)" : "Interfaccia: dimensione automatica";
+    }
 
     private void MainWindow_Closing(object? sender, CancelEventArgs e)
     {
@@ -57,6 +142,9 @@ public partial class MainWindow : Window
 
     private void Vm_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        // se i pannelli li apre/chiude l'utente, l'adattamento automatico non ci mette più mano
+        if (!_applyingAutoHide && e.PropertyName == nameof(MainViewModel.BottomStripVisible)) PanelToggledByUser("strip");
+        if (!_applyingAutoHide && e.PropertyName == nameof(MainViewModel.MixViewVisible)) PanelToggledByUser("mix");
         if (e.PropertyName == nameof(MainViewModel.IsProjectorOpen))
         {
             if (Vm.IsProjectorOpen) ShowProjector();
@@ -100,6 +188,13 @@ public partial class MainWindow : Window
     private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape && Vm.IsProjectorOpen && _projector != null && _projector.IsActive) { Vm.IsProjectorOpen = false; return; }
+        // dimensione dell'interfaccia: Ctrl + / Ctrl − / Ctrl 0 (come nei browser)
+        if ((Keyboard.Modifiers & ModifierKeys.Control) != 0)
+        {
+            if (e.Key is Key.OemPlus or Key.Add) { ChangeUiScale(+1); e.Handled = true; return; }
+            if (e.Key is Key.OemMinus or Key.Subtract) { ChangeUiScale(-1); e.Handled = true; return; }
+            if (e.Key is Key.D0 or Key.NumPad0) { ChangeUiScale(0); e.Handled = true; return; }
+        }
         if (e.IsRepeat) { if (IsMappedNow(e)) e.Handled = true; return; }
         var g = Services.KeyboardService.GestureText(e.Key == Key.System ? e.SystemKey : e.Key, Keyboard.Modifiers);
         if (g == null) return;

@@ -90,6 +90,8 @@ public sealed class AppSettings
     public List<Services.MidiMapping> MidiMappings { get; set; } = new();
     /// <summary>Scorciatoie da tastiera (vuoto = predefinite).</summary>
     public List<Services.KeyMapping> KeyMappings { get; set; } = new();
+    /// <summary>Dimensione dell'interfaccia: 0 = automatica (si adatta alla finestra), altrimenti 0,6…1,5.</summary>
+    public double UiScale { get; set; }
     public double WindowWidth { get; set; } = 1500;
     public double WindowHeight { get; set; } = 960;
 }

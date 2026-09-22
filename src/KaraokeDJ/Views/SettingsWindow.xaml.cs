@@ -47,7 +47,10 @@ public partial class SettingsWindow : Window
         cueDevices.AddRange(devices.Skip(1));
         CueCombo.ItemsSource = cueDevices;
         CueCombo.SelectedValue = cueDevices.Any(d => d.Id == (vm.Settings.CueDeviceId ?? "")) ? (vm.Settings.CueDeviceId ?? "") : "";
-        var mics = MicInput.ListInputDevices();
+        ScaleCombo.ItemsSource = ScaleOptions;
+        ScaleCombo.SelectedItem = ScaleOptions.FirstOrDefault(o => Math.Abs(o.Value - vm.Settings.UiScale) < 0.001) ?? ScaleOptions[0];
+        ScaleNow.Text = vm.UiScaleLabel;
+                var mics = MicInput.ListInputDevices();
         MicCombo.ItemsSource = mics;
         MicCombo.SelectedValue = mics.Any(d => d.Id == (vm.Settings.MicDeviceId ?? "")) ? (vm.Settings.MicDeviceId ?? "") : "";
 
@@ -81,6 +84,20 @@ public partial class SettingsWindow : Window
         FillPlugins();
         Closed += (_, _) => { vm.Midi.MessageReceived -= OnMidiMessage; vm.Midi.CancelLearn(); vm.SaveSettings(); };
         PreviewKeyDown += KeyLearn_PreviewKeyDown;
+    }
+
+    private sealed record ScaleOption(string Name, double Value) { public override string ToString() => Name; }
+    private static readonly ScaleOption[] ScaleOptions =
+    {
+        new("Automatica (si adatta alla finestra)", 0), new("100 %", 1), new("90 %", 0.9), new("80 %", 0.8), new("70 %", 0.7), new("110 %", 1.1), new("125 %", 1.25),
+    };
+
+    private void ScaleCombo_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (ScaleCombo.SelectedItem is not ScaleOption o || _vm == null) return;
+        _vm.Settings.UiScale = o.Value;
+        if (Owner is MainWindow mw) { mw.ApplyUiScale(); ScaleNow.Text = _vm.UiScaleLabel; }
+        else if (Application.Current?.MainWindow is MainWindow mw2) { mw2.ApplyUiScale(); ScaleNow.Text = _vm.UiScaleLabel; }
     }
 
     private void OnMidiMessage(MidiKey key, int value)
