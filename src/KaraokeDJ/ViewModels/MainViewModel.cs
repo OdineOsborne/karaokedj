@@ -2163,6 +2163,27 @@ public sealed partial class MainViewModel : ObservableObject
         ExecuteAction(action, pressed, norm, continuous);
     }
 
+    private DateTime _lastAudibleHint;
+
+    /// <summary>
+    /// Se muovi EQ, filtro, trim o fader di un deck che in quel momento non si sente (fermo, fader a zero,
+    /// escluso dal crossfader, master a zero), lo scrive nella barra di stato: in serata evita di girare manopole a vuoto.
+    /// </summary>
+    private void HintIfInaudible(DeckViewModel d, string sub)
+    {
+        if (sub is not ("eqlow" or "eqmid" or "eqhigh" or "filtervalue" or "volume" or "fader" or "pan")) return;
+        if ((DateTime.UtcNow - _lastAudibleHint).TotalSeconds < 3) return;
+        string? why = !d.HasTrack ? "non ha nessun brano caricato"
+            : !d.IsPlaying ? "è in pausa"
+            : d.Fader < 0.02 && sub != "fader" ? "ha il fader di canale a zero"
+            : d.Deck.CrossGain < 0.05 ? "è escluso dal crossfader"
+            : MasterVolume < 0.02 ? "esce col volume master a zero"
+            : null;
+        if (why == null) return;
+        _lastAudibleHint = DateTime.UtcNow;
+        StatusText = $"Deck {d.Name} {why}: il comando non si sente";
+    }
+
     /// <summary>Solo per diagnostica (--selftest): simula un messaggio MIDI già mappato su un'azione.</summary>
     public void SimulateMidi(string action, int value, bool continuous = true) => HandleMidiAction(action, value, continuous);
 
@@ -2269,6 +2290,7 @@ public sealed partial class MainViewModel : ObservableObject
                     }
                     break;
             }
+            if (continuous) HintIfInaudible(deck, sub);
             return;
         }
 

@@ -76,7 +76,7 @@
         <Grid Grid.Row="2" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="276"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
@@ -134,7 +134,7 @@
                                     </Slider>
                                 </Grid>
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
-                                    <v:Knob Label="CUE" Value="{Binding CueVolume}" Minimum="0" Maximum="1.5" DefaultValue="1" Diameter="24" Accent="{StaticResource TextBrush}" v:Shortcut.Action="cuevolume" Margin="0,0,6,0" ToolTip="Volume cuffie (pre-ascolto)"/>
+                                    <v:Knob Label="CUE" Value="{Binding CueVolume}" Minimum="0" Maximum="1.5" DefaultValue="1" Diameter="24" Accent="{StaticResource TextBrush}" v:Shortcut.Action="cuevolume" Margin="0,0,4,0" ToolTip="Volume cuffie (pre-ascolto)"/>
                                     <v:Knob Label="MIC" Value="{Binding MicGainDb}" Minimum="-24" Maximum="24" DefaultValue="0" Diameter="24" Accent="{StaticResource TextBrush}" v:Shortcut.Action="micvolume" ToolTip="{Binding MicGainLabel, StringFormat=Gain microfono: {0}}"/>
                                 </StackPanel>
                             </StackPanel>

@@ -50,14 +50,16 @@ public sealed class Knob : FrameworkElement
     static Knob() { Body.Freeze(); BodyPen.Freeze(); TrackPen.Freeze(); KillPen.Freeze(); Pointer.Freeze(); LabelBrush.Freeze(); }
 
     private const double StartDeg = 135, Sweep = 270; // da ore 7 a ore 5 passando in alto
+    private const double Margin = 5;                  // spazio per l'anello attorno al corpo
     private Point _dragStart; private double _dragValue; private bool _dragging;
 
     public Knob() { Cursor = Cursors.Hand; Focusable = false; ToolTipService.SetInitialShowDelay(this, 300); }
 
     protected override Size MeasureOverride(Size availableSize)
     {
+        // l'anello sta 2,5 px fuori dal corpo e la penna è spessa 3: servono ~5 px di margine su ogni lato, altrimenti si taglia
         double lw = Label.Length > 0 ? new FormattedText(Label, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, LabelFace, 9, LabelBrush, 1.0).Width + 4 : 0;
-        return new Size(Math.Max(Diameter + 8, lw), Diameter + (Label.Length > 0 ? 14 : 2));
+        return new Size(Math.Max(Diameter + Margin * 2, lw), Diameter + Margin * 2 + (Label.Length > 0 ? 11 : 0));
     }
 
     private double Norm => Maximum > Minimum ? Math.Clamp((Value - Minimum) / (Maximum - Minimum), 0, 1) : 0;
@@ -80,7 +82,7 @@ public sealed class Knob : FrameworkElement
     protected override void OnRender(DrawingContext dc)
     {
         double d = Diameter, r = d / 2;
-        var c = new Point(ActualWidth / 2, r + 1);
+        var c = new Point(ActualWidth / 2, r + Margin);
         double a0 = -StartDeg, a1 = -StartDeg + Sweep, av = -StartDeg + Sweep * Norm;
         dc.DrawGeometry(null, IsKilled ? KillPen : TrackPen, Arc(c, r + 2.5, a0, a1));
         if (!IsKilled)
@@ -93,7 +95,7 @@ public sealed class Knob : FrameworkElement
         if (Label.Length > 0)
         {
             var ft = new FormattedText(Label, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, LabelFace, 9, LabelBrush, 1.0);
-            dc.DrawText(ft, new Point(c.X - ft.Width / 2, d + 2));
+            dc.DrawText(ft, new Point(c.X - ft.Width / 2, c.Y + r + Margin - 3));
         }
     }
 

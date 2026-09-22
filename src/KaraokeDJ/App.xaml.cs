@@ -60,6 +60,8 @@ public partial class App : Application
         Vm.Start();
 
         if (selfTest) RunSelfTest(win);
+        // --audiotest: misura che EQ, filtro, fader e trim cambino davvero il suono, poi esce
+        if (e.Args.Contains("--audiotest")) RunAudioTest();
         // --soak <minuti>: prova di resistenza sulla libreria vera (vedi Services/SoakTest)
         if (soakIdx >= 0) _ = KaraokeDJ.Services.SoakTest.RunAsync(Vm, soakIdx + 1 < e.Args.Length && int.TryParse(e.Args[soakIdx + 1], out var m) ? m : 30);
         if (recovered) Vm.StatusText = "Ripristinato dopo un errore imprevisto: coda e impostazioni conservate (dettagli in crash.log)";
@@ -119,6 +121,18 @@ public partial class App : Application
             try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-selftest.log"), ex.ToString()); } catch { }
             Environment.Exit(2);
         }
+    }
+
+    /// <summary>--audiotest: prova che i comandi cambino davvero il suono (vedi Services/AudioTest).</summary>
+    private async void RunAudioTest()
+    {
+        await System.Threading.Tasks.Task.Delay(1500);
+        string res;
+        try { res = KaraokeDJ.Services.AudioTest.Run(); }
+        catch (Exception ex) { res = "audio: FAIL " + ex; }
+        Console.Error.WriteLine(res);
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-audiotest.log"), res); } catch { }
+        Shutdown(res.StartsWith("audio: OK") ? 0 : 2);
     }
 
     /// <summary>

@@ -37,6 +37,7 @@ public sealed class MidiService : IDisposable
     /// <summary>Encoder relativi mappati su azioni assolute (es. SHIFT+jog → tempo): teniamo noi la posizione 0..127.</summary>
     private readonly HashSet<MidiKey> _relative = new();
     private readonly Dictionary<MidiKey, int> _relPos = new();
+    private readonly Dictionary<MidiKey, DateTime> _relLast = new();
     private Action<MidiKey>? _learnCallback;
 
     /// <summary>(azione, valore 0..127, è un CC continuo). Chiamato sul thread UI.</summary>
@@ -182,10 +183,16 @@ public sealed class MidiService : IDisposable
                 int v = value;
                 if (continuous && _relative.Contains(key) && !TakesDelta(action))
                 {
-                    // encoder relativo su un controllo assoluto: accumuliamo la posizione partendo dal centro
+                    // Encoder relativo su un controllo assoluto: accumuliamo la posizione partendo dal centro.
+                    // Un passo = 1/127 della corsa sarebbe lentissimo (127 scatti per una corsa intera): moltiplichiamo,
+                    // e se si gira veloce (scatti ravvicinati) il passo cresce, come sui mixer veri.
                     int delta = v == 0 ? 0 : v < 64 ? v : v - 128;
                     if (delta == 0) return;
-                    v = Math.Clamp(_relPos.GetValueOrDefault(key, 64) + delta, 0, 127);
+                    var now = DateTime.UtcNow;
+                    double ms = _relLast.TryGetValue(key, out var prev) ? (now - prev).TotalMilliseconds : 9999;
+                    _relLast[key] = now;
+                    int step = ms < 25 ? 12 : ms < 60 ? 7 : 4;
+                    v = Math.Clamp(_relPos.GetValueOrDefault(key, 64) + delta * step, 0, 127);
                     _relPos[key] = v;
                 }
                 ActionTriggered?.Invoke(action, continuous && _invert.Contains(key) ? 127 - v : v, continuous);
