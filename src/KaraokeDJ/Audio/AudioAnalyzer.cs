@@ -1,10 +1,11 @@
-using NAudio.Dsp;
+﻿using NAudio.Dsp;
 
 namespace KaraokeDJ.Audio;
 
 /// <param name="Waveform">Per colonna: [picco 0..255, RMS 0..255], <see cref="AudioAnalyzer.WaveColumns"/> colonne.</param>
 public sealed record AnalysisResult(double Bpm, string Key, string Camelot, double KeyConfidence, double IntroEndSec, double OutroStartSec, byte[] Waveform,
-    double Energy = 0, double Brightness = 0, double BeatOffsetSec = -1, double[]? Beats = null);
+    double Energy = 0, double Brightness = 0, double BeatOffsetSec = -1, double[]? Beats = null,
+    List<TrackSection>? Sections = null, double SectionsScore = 0);
 
 /// <summary>
 /// Stima BPM (flusso spettrale + autocorrelazione) e tonalità (chroma + profili di Krumhansl)
@@ -210,7 +211,13 @@ public static class AudioAnalyzer
             }
             catch (OperationCanceledException) { throw; }
             catch { }
-            return core with { IntroEndSec = introEnd, OutroStartSec = outroStart, Waveform = wave, Beats = beats.Length > 0 ? beats : null };
+            // struttura del brano (intro / ritornelli / finale): serve al passaggio automatico per mixare sul cambio
+            List<TrackSection>? sections = null; double score = 0;
+            try { (sections, score) = StructureAnalyzer.Analyze(path, beats.Length > 0 ? beats : null, ct); }
+            catch (OperationCanceledException) { throw; }
+            catch { }
+            return core with { IntroEndSec = introEnd, OutroStartSec = outroStart, Waveform = wave, Beats = beats.Length > 0 ? beats : null,
+                               Sections = sections is { Count: > 1 } ? sections : null, SectionsScore = score };
         }
     }
 

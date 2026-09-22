@@ -78,6 +78,11 @@ public partial class App : Application
         // --midiwatch <secondi>: ascolta la console senza eseguire niente e scrive che cosa manda (per capire i comandi impazziti)
         int watchIdx = Array.IndexOf(e.Args, "--midiwatch");
         if (watchIdx >= 0) RunMidiWatch(watchIdx + 1 < e.Args.Length && int.TryParse(e.Args[watchIdx + 1], out var ws) ? ws : 10);
+        // --sections [force]: calcola la struttura ai brani che non ce l'hanno (silenzioso)
+        if (e.Args.Contains("--sections")) RunSections(e.Args.Contains("force"));
+        // --structtest [quanti]: la struttura trovata nei brani e quanto e affidabile
+        int structIdx = Array.IndexOf(e.Args, "--structtest");
+        if (structIdx >= 0) RunStructTest(structIdx + 1 < e.Args.Length && int.TryParse(e.Args[structIdx + 1], out var sn) ? sn : 12);
         // --rectest: prova la registrazione della serata (in silenzio: master a zero)
         if (e.Args.Contains("--rectest")) RunRecTest();
         // --showtest <file.png>: fotografa il proiettore con striscia messaggi e applausometro
@@ -342,6 +347,53 @@ public partial class App : Application
             Console.Error.WriteLine($"showtest: OK {path} (striscia \"{vm.TickerLine.Trim()}\", applausometro {vm.ApplauseScore})");
         }
         catch (Exception ex) { Console.Error.WriteLine("showtest: FAIL " + ex.Message); Shutdown(2); return; }
+        Shutdown(0);
+    }
+
+    /// <summary>
+    /// --sections: calcola la struttura ai brani già analizzati che non ce l'hanno (BPM, tonalità e griglia restano
+    /// com'erano). Non fa rumore e non tocca l'audio: si può lanciare a PC libero.
+    /// </summary>
+    private async void RunSections(bool force)
+    {
+        var vm = Vm!;
+        await System.Threading.Tasks.Task.Delay(1500);
+        var todo = vm.Tracks.Where(t => t.Analyzed && !string.IsNullOrEmpty(t.FilePath) && File.Exists(t.FilePath)
+                                        && (force || t.Sections == null)).ToList();
+        Console.Error.WriteLine($"STRUTTURA: {todo.Count} brani da fare su {vm.Tracks.Count}");
+        int done = 0, found = 0, good = 0;
+        var t0 = DateTime.UtcNow;
+        foreach (var t in todo)
+        {
+            try
+            {
+                var beats = t.Beats?.Select(b => (double)b).ToArray();
+                var (sections, score) = await System.Threading.Tasks.Task.Run(() => KaraokeDJ.Audio.StructureAnalyzer.Analyze(t.FilePath, beats));
+                if (sections.Count > 1)
+                {
+                    t.Sections = sections; t.SectionsScore = Math.Round(score, 2);
+                    found++; if (score >= 1.0) good++;
+                }
+                vm.Library.Save(t);
+            }
+            catch (Exception ex) { Console.Error.WriteLine($"  {t.Display}: {ex.Message}"); }
+            if (++done % 10 == 0) Console.Error.WriteLine($"  {done}/{todo.Count} · {(DateTime.UtcNow - t0).TotalMinutes:0.0} min");
+        }
+        var msg = $"STRUTTURA FINITA in {(DateTime.UtcNow - t0).TotalMinutes:0.0} min · trovata su {found}/{todo.Count}, affidabile su {good}";
+        Console.Error.WriteLine(msg);
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-sezioni.log"), msg); } catch { }
+        Shutdown(0);
+    }
+
+    /// <summary>--structtest: struttura dei brani e quanto i confini valgono rispetto al caso (vedi Services/StructTest).</summary>
+    private async void RunStructTest(int n)
+    {
+        await System.Threading.Tasks.Task.Delay(2000);
+        string res;
+        try { res = await KaraokeDJ.Services.StructTest.RunAsync(Vm!, n); }
+        catch (Exception ex) { res = "struttura: FAIL " + ex.Message; }
+        Console.Error.WriteLine(res);
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-struct.log"), res); } catch { }
         Shutdown(0);
     }
 

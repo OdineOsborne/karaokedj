@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -198,6 +198,8 @@ public sealed partial class DeckViewModel : ObservableObject
     [ObservableProperty] private double _beatOffsetSec = -1;
     /// <summary>Griglia fluida del brano caricato (istanti dei battiti), per onda e vista mix.</summary>
     [ObservableProperty] private float[]? _beats;
+    /// <summary>Struttura del brano per l'onda (null se non trovata o non affidabile).</summary>
+    [ObservableProperty] private IReadOnlyList<Audio.TrackSection>? _sections;
     partial void OnBeatOffsetSecChanged(double v) => OnPropertyChanged(nameof(GridAnchorSec));
 
     /// <summary>Griglia stimata dai bassi (se il brano non l'ha già o non è stata corretta a mano).</summary>
@@ -637,6 +639,7 @@ public sealed partial class DeckViewModel : ObservableObject
         BpmLabel = t.Bpm > 0 ? (t.Bpm * factor).ToString("0.0") + " BPM" : "";
         NativeBpm = t.Bpm;
         Beats = t.Beats;
+        Sections = t.SectionsScore >= 1.0 ? t.Sections : null;
         if (t.BeatOffsetSec < 0 && !t.BeatManual && FineWaveform != null) EstimateBeatGridIfNeeded(t, FineWaveform);
         if (string.IsNullOrEmpty(t.Key)) { KeyDisplay = ""; return; }
         int semis = KeyShift + (KeyLock ? 0 : (int)Math.Round(12 * Math.Log2(factor)));
@@ -694,6 +697,7 @@ public sealed partial class DeckViewModel : ObservableObject
             CueSec = track.CueSec;
             NativeBpm = track.Bpm;
             Beats = track.Beats;
+            Sections = track.SectionsScore >= 1.0 ? track.Sections : null;
             BeatOffsetSec = track.BeatOffsetSec;
             OnPropertyChanged(nameof(GenreTags));
             LoopExit();
@@ -729,7 +733,7 @@ public sealed partial class DeckViewModel : ObservableObject
         IsEnding = false;
         BpmLabel = "";
         KeyDisplay = "";
-        _fineCts?.Cancel(); FineWaveform = null; NativeBpm = 0; CueSec = -1; BeatOffsetSec = -1; Beats = null;
+        _fineCts?.Cancel(); FineWaveform = null; NativeBpm = 0; CueSec = -1; BeatOffsetSec = -1; Beats = null; Sections = null;
         RefreshHotCues();
         Tick();
         TrackLoaded?.Invoke(this);

@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace KaraokeDJ.Models;
 
@@ -81,6 +81,32 @@ public sealed class Track
     public float[]? Beats { get; set; }
     /// <summary>Quanto "respira" il tempo (% fra i battiti più corti e i più lunghi): sopra il 6% è un brano suonato a mano.</summary>
     public double BeatDriftPercent { get; set; }
+
+    /// <summary>Struttura del brano (intro, strofa, ritornello, finale) dall'analisi. Null = non trovata.</summary>
+    public List<Audio.TrackSection>? Sections { get; set; }
+    /// <summary>Quanto valgono i confini (scarti tipo sopra la novità media): sotto 1 non ci si fa affidamento.</summary>
+    public double SectionsScore { get; set; }
+
+    /// <summary>Confine di sezione più vicino a <paramref name="sec"/> entro <paramref name="tolerance"/>, o -1.</summary>
+    public double NearestSectionStart(double sec, double tolerance)
+    {
+        if (Sections == null || Sections.Count < 2 || SectionsScore < 1.0) return -1;
+        double best = -1, bestD = tolerance;
+        foreach (var s in Sections)
+        {
+            double d = Math.Abs(s.Start - sec);
+            if (d < bestD) { bestD = d; best = s.Start; }
+        }
+        return best;
+    }
+
+    /// <summary>Inizio dell'ultima sezione se cade nell'ultimo quarto del brano: è lì che conviene cominciare a mixare via.</summary>
+    public double FinalSectionStart(double durationSec)
+    {
+        if (Sections == null || Sections.Count < 2 || SectionsScore < 1.0 || durationSec <= 0) return -1;
+        double last = Sections[^1].Start;
+        return last > durationSec * 0.6 && last < durationSec - 8 ? last : -1;
+    }
 
     /// <summary>Indice del battito più vicino a questo istante (-1 se non c'è griglia fluida).</summary>
     public int NearestBeatIndex(double sec)

@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
 
 namespace KaraokeDJ.Views;
@@ -49,6 +49,9 @@ public sealed class WaveformView : FrameworkElement
     private static readonly Pen BarPen = new(new SolidColorBrush(Color.FromArgb(0x38, 0xFF, 0xFF, 0xFF)), 1);
     private static readonly Pen PhrasePen = new(new SolidColorBrush(Color.FromArgb(0x80, 0xFF, 0xFF, 0xFF)), 1);
     private static readonly Pen CuePen = new(new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0x8C, 0x00)), 2);
+    // struttura del brano: tacca sottile ciano, discreta, che non deve coprire l'onda
+    private static readonly Pen SectionPen = new(new SolidColorBrush(Color.FromArgb(0x70, 0x00, 0xE5, 0xFF)), 1);
+    private static readonly Brush SectionText = new SolidColorBrush(Color.FromArgb(0xB0, 0x9A, 0xE8, 0xFF));
     private static readonly Pen MarkerPen = new(new SolidColorBrush(Color.FromArgb(0xC0, 0xFA, 0xCC, 0x15)), 1) { DashStyle = DashStyles.Dash };
 
     static WaveformView()
@@ -66,6 +69,15 @@ public sealed class WaveformView : FrameworkElement
     public double BeatSec { get => (double)GetValue(BeatSecProperty); set => SetValue(BeatSecProperty, value); }
 
     /// <summary>Griglia fluida: istanti dei battiti veri. Se c'è, si disegna questa invece della griglia a BPM fisso.</summary>
+    public static readonly DependencyProperty SectionsProperty =
+        DependencyProperty.Register(nameof(Sections), typeof(System.Collections.Generic.IReadOnlyList<Audio.TrackSection>), typeof(WaveformView), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+    /// <summary>Struttura del brano: una tacca con il nome dove cambia sezione.</summary>
+    public System.Collections.Generic.IReadOnlyList<Audio.TrackSection>? Sections
+    {
+        get => (System.Collections.Generic.IReadOnlyList<Audio.TrackSection>?)GetValue(SectionsProperty);
+        set => SetValue(SectionsProperty, value);
+    }
+
     public static readonly DependencyProperty BeatsProperty =
         DependencyProperty.Register(nameof(Beats), typeof(float[]), typeof(WaveformView), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
     public float[]? Beats { get => (float[]?)GetValue(BeatsProperty); set => SetValue(BeatsProperty, value); }
@@ -183,6 +195,20 @@ public sealed class WaveformView : FrameworkElement
                 if (!phrase && every > 1 && ((idx % every) + every) % every != 0) continue;
                 double x = w * t / DurationSec;
                 dc.DrawLine(phrase ? PhrasePen : BarPen, new Point(x, phrase ? 0 : h * 0.25), new Point(x, phrase ? h : h * 0.75));
+            }
+        }
+        // struttura: dove cambia la musica (i punti buoni per mixare via). Il nome e un'ipotesi, la posizione e misurata.
+        if (Sections is { Count: > 1 } secs && DurationSec > 0)
+        {
+            foreach (var sec in secs)
+            {
+                if (sec.Start <= 0.01 || sec.Start >= DurationSec) continue;
+                double x = w * sec.Start / DurationSec;
+                dc.DrawLine(SectionPen, new Point(x, 0), new Point(x, h));
+                if (w / secs.Count < 46) continue;                     // troppo strette: solo le tacche
+                var ft = new FormattedText(sec.Kind.ToUpperInvariant(), System.Globalization.CultureInfo.InvariantCulture,
+                    FlowDirection.LeftToRight, new Typeface("Segoe UI"), 8.5, SectionText, 1.0);
+                dc.DrawText(ft, new Point(x + 3, h - 13));
             }
         }
         if (CueFraction >= 0) dc.DrawLine(CuePen, new Point(w * CueFraction, 0), new Point(w * CueFraction, h));

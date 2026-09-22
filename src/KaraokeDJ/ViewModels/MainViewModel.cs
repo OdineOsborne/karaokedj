@@ -890,6 +890,11 @@ public sealed partial class MainViewModel : ObservableObject
             double mixAt = dur - lead;
             if (AutoMixUseCues && d.Track?.OutroStartSec > 0 && d.Track.OutroStartSec < dur - 0.5)
                 mixAt = Math.Min(mixAt, d.Track.OutroStartSec - 4);
+            // se conosciamo la struttura, si comincia sul cambio di sezione: mixare a metà ritornello si sente,
+            // mixare dove il brano cambia da solo no. Si guarda solo l'ultima parte del pezzo.
+            if (d.Track?.FinalSectionStart(dur) is > 0 and var fin && fin < mixAt + 20 && fin > mixAt - 30)
+                mixAt = fin;
+            else if (d.Track?.NearestSectionStart(mixAt, 8) is > 0 and var near) mixAt = near;
             if (d.Deck.PositionSec < mixAt) continue;
 
             var e = Queue[0];
@@ -1285,6 +1290,7 @@ public sealed partial class MainViewModel : ObservableObject
                 if (gbpm > 0 && Math.Abs(gbpm - track.Bpm) / track.Bpm < 0.06) track.Bpm = Math.Round(gbpm, 1);
                 track.BeatDriftPercent = Math.Round(drift, 1);
             }
+            if (r.Sections is { Count: > 1 }) { track.Sections = r.Sections; track.SectionsScore = Math.Round(r.SectionsScore, 2); }
             track.Analyzed = true;
             if (r.Waveform.Length > 0) WaveformStore.Save(track.Id, r.Waveform);
         }
