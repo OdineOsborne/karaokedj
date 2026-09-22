@@ -1451,18 +1451,32 @@ public sealed partial class MainViewModel : ObservableObject
         Suggestions.Clear();
         if (r == null) { SuggestionsLabel = ""; return; }
         var queued = new HashSet<string>(Queue.Select(q => q.Track.Id));
-        var scored = Tracks
+        var all = Tracks
             .Where(t => t.Id != r.Id && !queued.Contains(t.Id) && !t.PlayedThisSession && !t.IsKaraoke)
-            .Select(t => { var (s, why) = SuggestScoreWhy(r, t); return (t, s: s * (t.Analyzed ? 1.0 : 0.6), why); })
-            .Where(x => x.s > 0.45)              // sotto questa soglia sono accostamenti che nessun DJ farebbe
+            .Select(t => { var (s, why, off) = SuggestScoreWhy(r, t); return (t, s: s * (t.Analyzed ? 1.0 : 0.6), why, off); })
+            .Where(x => x.s > 0)
             .OrderByDescending(x => x.s)
             .ThenBy(x => x.t.PlayCount)
-            .Take(6)
             .ToList();
-        foreach (var (t, s, why) in scored) { t.MatchLabel = (s * 100).ToString("0") + "%"; t.MatchWhy = why; Suggestions.Add(t); }
+
+        // prima scelta: brani dello stesso mondo musicale e con un punteggio decente
+        var good = all.Where(x => !x.off && x.s > 0.45).Take(6).ToList();
+        // se non ce n'è nessuno mostriamo comunque i "meno peggio", ma segnati con ⚠ e col motivo
+        var fallback = good.Count > 0 ? new List<(Track t, double s, string why, bool off)>() : all.Take(3).ToList();
+
+        foreach (var (t, s, why, off) in good.Concat(fallback))
+        {
+            bool weak = good.Count == 0;
+            t.MatchLabel = (weak ? "⚠ " : "") + (s * 100).ToString("0") + "%";
+            t.MatchWhy = (weak ? "ripiego — " : "") + why;
+            Suggestions.Add(t);
+        }
+
         var health = MusicTaste.LibraryGenreHealth(Tracks);
         var genreInfo = MusicTaste.UsefulGenres(r).Count > 0 ? " · " + string.Join(", ", MusicTaste.UsefulGenres(r)) : (health.Length > 0 ? " · " + health : "");
-        SuggestionsLabel = (scored.Count == 0 ? $"Nessun suggerimento sensato dopo {r.Display}" : $"dopo: {r.Display}") + genreInfo;
+        SuggestionsLabel = good.Count > 0 ? $"dopo: {r.Display}" + genreInfo
+            : fallback.Count > 0 ? $"⚠ niente di davvero adatto dopo {r.Display}: ecco i meno peggio" + genreInfo
+            : $"Nessun brano mixabile dopo {r.Display}" + genreInfo;
     }
 
     [RelayCommand] private void RefreshSuggestions() => UpdateSuggestions();
@@ -1526,23 +1540,31 @@ public sealed partial class MainViewModel : ObservableObject
     public SuggestionFeedback Feedback { get; } = new();
 
     /// <summary>Compatibilità BPM/tonalità pesata con la coerenza decade/genere richiesta e con i giudizi del DJ.</summary>
-    private double SuggestScore(Track r, Track t) => SuggestScoreWhy(r, t).Score;
+    /// <summary>
+    /// Punteggio secco (automix, filtro "compatibili"). I brani fuori stile valgono la metà: l'automix li usa solo
+    /// se non ha alternative, perché in serata il silenzio è peggio di un accostamento discutibile.
+    /// </summary>
+    private double SuggestScore(Track r, Track t)
+    {
+        var (score, _, off) = SuggestScoreWhy(r, t);
+        return off ? score * 0.5 : score;
+    }
 
     /// <summary>
     /// Punteggio e motivo. Parte dalla compatibilità BPM/tonalità (mixabilità) e la pesa con l'affinità musicale
     /// (artista, genere vero, epoca, carattere del suono): senza questo pezzo uscivano accostamenti senza senso,
     /// tipo Battisti dopo gli AC/DC, perché i file scaricati hanno tutti genere "Music".
     /// </summary>
-    private (double Score, string Why) SuggestScoreWhy(Track r, Track t)
+    private (double Score, string Why, bool OffStyle) SuggestScoreWhy(Track r, Track t)
     {
-        if (Feedback.IsRejectedNow(t)) return (0, "");
-        var (s, why) = SetFlow.Rank(t, FlowContextNow(r));
-        if (s <= 0) return (0, why);
+        if (Feedback.IsRejectedNow(t)) return (0, "", false);
+        var (s, why, off) = SetFlow.Rank(t, FlowContextNow(r));
+        if (s <= 0) return (0, why, off);
         s *= Feedback.Factor(r, t);
         // il filtro scelto dal DJ stringe ulteriormente
         if (SuggestBy == "decade") s *= DecadeAffinity(r, t);
         else if (SuggestBy == "genre") s *= GenreAffinity(r, t);
-        return (s, why);
+        return (s, why, off);
     }
 
     /// <summary>Come vogliamo che vada la serata adesso: il brano di riferimento, l'intenzione del DJ e cosa è già suonato.</summary>

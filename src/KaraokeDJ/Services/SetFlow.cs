@@ -19,15 +19,15 @@ public sealed record FlowContext(
 /// </summary>
 public static class SetFlow
 {
-    /// <summary>Punteggio 0…1 e motivo. 0 = da non proporre.</summary>
-    public static (double Score, string Why) Rank(Track c, FlowContext ctx)
+    /// <summary>Punteggio 0…1, motivo, e se il brano è fuori dal mondo musicale del precedente (da proporre solo in mancanza d'altro).</summary>
+    public static (double Score, string Why, bool OffStyle) Rank(Track c, FlowContext ctx)
     {
         var r = ctx.Reference;
         double mix = SearchUtil.Compatibility(r, c);
-        if (mix <= 0) return (0, "");
+        if (mix <= 0) return (0, "", false);
 
         var (style, styleWhy) = MusicTaste.Affinity(r, c);
-        if (style < 0.32) return (0, styleWhy);      // due mondi diversi: nessun BPM lo giustifica
+        bool offStyle = style < 0.32;               // due mondi diversi: si propone solo se non c'è altro
 
         var reasons = new List<string>();
         if (styleWhy.Length > 0) reasons.Add(styleWhy);
@@ -47,7 +47,7 @@ public static class SetFlow
         if (learned > 1.02) reasons.Add("funziona nelle serate");
         else if (learned < 0.98) reasons.Add("di solito scartato");
         score *= learned;
-        return (Math.Clamp(score, 0, 1), string.Join(", ", reasons));
+        return (Math.Clamp(score, 0, 1), string.Join(", ", reasons), offStyle);
     }
 
     /// <summary>Energia: la si tiene, la si alza o si calma la sala. Senza analisi non possiamo dire niente.</summary>
