@@ -168,7 +168,7 @@
                     </Grid.RowDefinitions>
                     <local:WaveformView Grid.Row="0" x:Name="SeekBar" Height="84" Cursor="Hand"
                             Data="{Binding Waveform}" Fine="{Binding FineWaveform}" Progress="{Binding Progress}" IntroFraction="{Binding IntroFraction}" OutroFraction="{Binding OutroFraction}" LoopStart="{Binding LoopStartFraction}" LoopEnd="{Binding LoopEndFraction}"
-                            BeatSec="{Binding BeatOffsetSec}" Bpm="{Binding NativeBpm}" DurationSec="{Binding DurationSec}" CueFraction="{Binding CueFraction}" HotCues="{Binding HotCueFractions}"
+                            BeatSec="{Binding BeatOffsetSec}" Bpm="{Binding NativeBpm}" Beats="{Binding Beats}" DurationSec="{Binding DurationSec}" CueFraction="{Binding CueFraction}" HotCues="{Binding HotCueFractions}"
                             Accent="{Binding Accent, ElementName=Root}"
                             MouseLeftButtonDown="SeekBar_MouseDown" MouseMove="SeekBar_MouseMove" MouseRightButtonDown="SeekBar_RightDown"
                             ToolTip="Click: vai al punto. Tasto destro: intro/uscita, griglia dei battiti (battere qui, BPM ±), cue.">

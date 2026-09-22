@@ -73,6 +73,7 @@
                            BpmA="{Binding DeckA.NativeBpm}" BpmB="{Binding DeckB.NativeBpm}"
                            TempoA="{Binding DeckA.TempoFactor}" TempoB="{Binding DeckB.TempoFactor}"
                            AnchorA="{Binding DeckA.GridAnchorSec}" AnchorB="{Binding DeckB.GridAnchorSec}"
+                           BeatsA="{Binding DeckA.Beats}" BeatsB="{Binding DeckB.Beats}"
                            AccentA="{StaticResource AccentABrush}" AccentB="{StaticResource AccentBBrush}"
                            ToolTip="Onde dei due deck sovrapposte (A sopra, B sotto) centrate sull'istante attuale, con la griglia dei battiti. Rotella = zoom. Metti il CUE su un battere per allineare la griglia."/>
         </Border>
@@ -92,17 +93,15 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="MIXER" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center"/>
 
-                    <Button Grid.Row="1" Content="⏭  PROSSIMO IN CODA" v:Shortcut.Action="next" Style="{StaticResource AccentButton}" Height="34" FontSize="12.5"
+                    <Button Grid.Row="0" Content="⏭  PROSSIMO IN CODA" v:Shortcut.Action="next" Style="{StaticResource AccentButton}" Height="34" FontSize="12.5"
                             Command="{Binding PlayNextCommand}" ToolTip="Carica il primo in coda sull'altro deck, lo avvia e sfuma (Ctrl+N)"/>
 
-                    <StackPanel Grid.Row="2" Margin="0,12,0,0">
+                    <StackPanel Grid.Row="1" Margin="0,10,0,0">
                         <!-- mixer: manopole all'esterno (verso il deck), fader di canale sopra il VU verticale, master al centro con VU stereo, cuffie e mic -->
                         <Grid Margin="0,0,0,6">
                             <Grid.ColumnDefinitions>
@@ -174,7 +173,6 @@
                             <Button Grid.Column="2" Content="B" Width="34" Height="34" Padding="0" FontWeight="SemiBold" Foreground="{StaticResource AccentBBrush}" v:Shortcut.Action="fadeB"
                                     Command="{Binding CrossfadeToBCommand}" ToolTip="Sfuma verso B"/>
                         </Grid>
-                        <TextBlock Text="CROSSFADER" Style="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                     </StackPanel>
 
                 </Grid>
@@ -193,14 +191,53 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
+                <!-- Quando l'auto-mix è acceso tutta la sezione si illumina: dal vivo, a due metri dal portatile,
+                     si deve capire in un colpo d'occhio chi sta comandando la serata, e fermarlo con un tasto solo. -->
+                <Border Grid.Column="0" CornerRadius="3" Padding="8,5" Margin="-4,-3,6,-3" BorderThickness="1.5">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderBrush" Value="Transparent"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding AutoMix}" Value="True">
+                                    <Setter Property="Background" Value="#1F8A2BFF"/>
+                                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding AutoMixHold}" Value="True">
+                                    <Setter Property="Background" Value="#1FF2A33C"/>
+                                    <Setter Property="BorderBrush" Value="{StaticResource WarnBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                <StackPanel>
+                    <!-- tutto su una riga sola: nella barra LIVE lo spazio in orizzontale c'è, e in serata si guarda una riga sola -->
                     <DockPanel>
-                        <TextBlock Text="AUTO-MIX" Style="{StaticResource SectionTitle}" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                        <CheckBox IsChecked="{Binding AutoMix}" Content="dalla coda" v:Shortcut.Action="automix" Margin="0,0,12,0" VerticalAlignment="Center" ToolTip="A fine brano parte automaticamente il prossimo in coda con il passaggio da DJ"/>
-                        <CheckBox IsChecked="{Binding AutoMixEndless}" Content="mai fermarsi" Margin="0,0,12,0" VerticalAlignment="Center" ToolTip="Coda vuota → il prossimo brano viene preso dai suggeriti (stesso genere, non ancora suonato stasera)"/>
-                        <CheckBox IsChecked="{Binding BpmMatch}" Content="aggancia BPM" Margin="0,0,12,0" VerticalAlignment="Center" ToolTip="Il brano entrante viene portato ai BPM di quello in uscita (×1, ×2 o ×½, max ±25 %)"/>
+                        <TextBlock Text="AUTO-MIX" Style="{StaticResource SectionTitle}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding AutoMixStateLabel}" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" Margin="0,0,10,0" MinWidth="48">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding AutoMix}" Value="True"><Setter Property="Foreground" Value="{StaticResource AccentBrush}"/></DataTrigger>
+                                        <DataTrigger Binding="{Binding AutoMixHold}" Value="True"><Setter Property="Foreground" Value="{StaticResource WarnBrush}"/></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <ToggleButton Content="⏸ PAUSA" IsChecked="{Binding AutoMixHold}" Style="{StaticResource ToolToggle}" Height="24" Padding="8,0" FontSize="10.5" MinWidth="0" Margin="0,0,4,0"
+                                      IsEnabled="{Binding AutoMix}" ToolTip="Finisce il brano in corso e si ferma lì, senza perdere le impostazioni. Ripremi per riprendere."/>
+                        <Button Content="⏹ STOP" Command="{Binding AutoMixStopCommand}" Style="{StaticResource SmallButton}" Height="24" Padding="8,0" FontSize="10.5" Margin="0,0,4,0"
+                                ToolTip="Ferma subito: annulla il passaggio in corso e spegne l'auto-mix"/>
+                        <Button Content="⏭ MIXA ORA" Command="{Binding PlayNextCommand}" Style="{StaticResource SmallButton}" Height="24" Padding="8,0" FontSize="10.5" Margin="0,0,14,0"
+                                ToolTip="Fa partire subito il passaggio al prossimo in coda (Ctrl+N)"/>
+                        <CheckBox IsChecked="{Binding AutoMix}" Content="dalla coda" v:Shortcut.Action="automix" Margin="0,0,10,0" VerticalAlignment="Center" ToolTip="A fine brano parte automaticamente il prossimo in coda con il passaggio da DJ"/>
+                        <CheckBox IsChecked="{Binding AutoMixEndless}" Content="mai fermarsi" Margin="0,0,10,0" VerticalAlignment="Center" ToolTip="Coda vuota → il prossimo brano viene preso dai suggeriti (stesso genere, non ancora suonato stasera)"/>
+                        <CheckBox IsChecked="{Binding BpmMatch}" Content="aggancia BPM" Margin="0,0,14,0" VerticalAlignment="Center" ToolTip="Il brano entrante viene portato ai BPM di quello in uscita (×1, ×2 o ×½, max ±25 %)"/>
                         <TextBlock Text="Generi serata" Style="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,6,0" ToolTip="Quando l'automix sceglie da solo pesca solo in questi generi. Vuoto = segue il genere del brano in corso."/>
-                        <TextBox Text="{Binding SetGenres, UpdateSourceTrigger=LostFocus}" FontSize="11" Padding="6,2" Width="180" HorizontalAlignment="Left" ToolTip="Generi separati da virgola, come nei tag (es. Dance, House, Pop italiano)"/>
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding MixStatus}" Style="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" Margin="12,0,0,0" MaxWidth="260" TextTrimming="CharacterEllipsis"/>
+                        <TextBox Text="{Binding SetGenres, UpdateSourceTrigger=LostFocus}" FontSize="11" Padding="6,2" MinWidth="120" MaxWidth="240" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                 ToolTip="Generi separati da virgola, come nei tag (es. Dance, House, Pop italiano)"/>
                     </DockPanel>
                     <Expander Margin="0,4,0,0" IsExpanded="False" Foreground="{StaticResource MutedBrush}">
                                     <Expander.Header><TextBlock Text="Avanzate" Style="{StaticResource Muted}" FontSize="11" FontWeight="SemiBold"/></Expander.Header>
@@ -232,6 +269,7 @@
                                     </StackPanel>
                                 </Expander>
                 </StackPanel>
+                </Border>
                 <!-- microfono: on, talk-over, meter; la sezione EQ/effetti si apre col tasto EQ -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Top">
                     <TextBlock Text="MIC" Style="{StaticResource SectionTitle}" VerticalAlignment="Center" Margin="0,0,6,0"/>

@@ -32,6 +32,12 @@ public sealed class MixWaveView : FrameworkElement
     public double PosA { get => (double)GetValue(PosAProperty); set => SetValue(PosAProperty, value); }
     public double PosB { get => (double)GetValue(PosBProperty); set => SetValue(PosBProperty, value); }
     /// <summary>BPM naturali del brano (0 = ignoti: niente griglia).</summary>
+    public static readonly DependencyProperty BeatsAProperty = DependencyProperty.Register(nameof(BeatsA), typeof(float[]), typeof(MixWaveView), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+    public static readonly DependencyProperty BeatsBProperty = DependencyProperty.Register(nameof(BeatsB), typeof(float[]), typeof(MixWaveView), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+    /// <summary>Griglia fluida dei due deck (istanti dei battiti veri).</summary>
+    public float[]? BeatsA { get => (float[]?)GetValue(BeatsAProperty); set => SetValue(BeatsAProperty, value); }
+    public float[]? BeatsB { get => (float[]?)GetValue(BeatsBProperty); set => SetValue(BeatsBProperty, value); }
+
     public double BpmA { get => (double)GetValue(BpmAProperty); set => SetValue(BpmAProperty, value); }
     public double BpmB { get => (double)GetValue(BpmBProperty); set => SetValue(BpmBProperty, value); }
     /// <summary>Fattore tempo del deck (1 = normale): la forma d'onda scorre più veloce o più lenta.</summary>
@@ -75,8 +81,8 @@ public sealed class MixWaveView : FrameworkElement
         double mid = h / 2;
         dc.DrawLine(Mid, new Point(0, mid), new Point(w, mid));
 
-        DrawDeck(dc, DataA, PosA, BpmA, TempoA, AnchorA, AccentA, BeatA, BarA, w, 0, mid, up: true);
-        DrawDeck(dc, DataB, PosB, BpmB, TempoB, AnchorB, AccentB, BeatB, BarB, w, mid, h, up: false);
+        DrawDeck(dc, DataA, PosA, BpmA, TempoA, AnchorA, AccentA, BeatA, BarA, w, 0, mid, up: true, beats: BeatsA);
+        DrawDeck(dc, DataB, PosB, BpmB, TempoB, AnchorB, AccentB, BeatB, BarB, w, mid, h, up: false, beats: BeatsB);
 
         dc.DrawLine(Center, new Point(w / 2, 0), new Point(w / 2, h));
         var ft = new FormattedText($"{WindowSec:0} s", CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
@@ -86,7 +92,7 @@ public sealed class MixWaveView : FrameworkElement
 
     /// <summary>Disegna metà vista: onda del deck attorno alla posizione, con griglia battiti/battute.</summary>
     private void DrawDeck(DrawingContext dc, byte[]? data, double pos, double bpm, double tempo, double anchor, Brush accent,
-                          Pen beatPen, Pen barPen, double w, double top, double bottom, bool up)
+                          Pen beatPen, Pen barPen, double w, double top, double bottom, bool up, float[]? beats = null)
     {
         double hh = bottom - top;
         double baseY = up ? bottom : top;             // linea di base: al centro
@@ -119,7 +125,24 @@ public sealed class MixWaveView : FrameworkElement
             }
         }
 
-        if (bpm > 0)
+        // griglia fluida: si disegnano i battiti veri che cadono nella finestra
+        if (beats is { Length: > 8 })
+        {
+            double from = pos - halfFile, to = pos + halfFile;
+            for (int i = 0; i < beats.Length; i++)
+            {
+                double t = beats[i];
+                if (t < from) continue;
+                if (t > to) break;
+                bool bar = i % 4 == 0;
+                double x = (t - from) * pxPerFileSec;
+                double len = bar ? hh : hh * 0.45;
+                var q1 = new Point(x, baseY); var q2 = new Point(x, baseY + dir * len);
+                dc.DrawLine(BeatShadow, q1, q2);
+                dc.DrawLine(bar ? barPen : beatPen, q1, q2);
+            }
+        }
+        else if (bpm > 0)
         {
             double beat = 60.0 / bpm;                     // in secondi del file
             double first = anchor + Math.Floor((pos - halfFile - anchor) / beat) * beat;

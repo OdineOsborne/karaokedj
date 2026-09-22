@@ -36,6 +36,17 @@ public static class GridTest
 
             // Il confronto va fatto col CASO: una griglia più fitta azzecca di più senza essere più giusta.
             // "x" = quante volte meglio del caso; sotto 1,5 la griglia non sta dicendo niente.
+            // con la griglia fluida il confronto si fa sui battiti veri, non su BPM+aggancio
+            if (t.Beats is { Length: > 8 })
+            {
+                var (hf, lf) = HitsBeats(onsets, t.Beats);
+                var (bb, bo, bl) = BestGrid(onsets);
+                var (sbpm, drift) = Audio.BeatTracker.Summary(t.Beats.Select(x => (double)x).ToArray());
+                totOk += lf; counted++;
+                lines.Add($"  x{lf,4:0.0} ({hf,4:P0})  {sbpm,6:0.0} BPM fluida ({t.Beats.Length} battiti, respiro {drift:0.0}%)  {t.Display}" +
+                          $"   [migliore possibile: x{bl:0.0} a {bb:0.0} BPM agg. {bo:0.00}s]");
+                continue;
+            }
             var (hit, lift) = Hits(onsets, t.Bpm, off);
             var (_, liftHalf) = Hits(onsets, t.Bpm / 2, BeatGrid.EstimateOffset(fine, t.Bpm / 2));
             var (_, liftDouble) = Hits(onsets, t.Bpm * 2, BeatGrid.EstimateOffset(fine, t.Bpm * 2));
@@ -94,6 +105,26 @@ public static class GridTest
             }
         }
         return (bestBpm, bestOff, bestLift);
+    }
+
+    /// <summary>Quota di colpi entro la tolleranza da un battito della griglia fluida, e quanto è meglio del caso.</summary>
+    private static (double Rate, double Lift) HitsBeats(List<double> onsets, float[] beats)
+    {
+        if (beats.Length < 2 || onsets.Count == 0) return (0, 0);
+        int ok = 0;
+        foreach (var o in onsets)
+        {
+            int lo = 0, hi = beats.Length - 1;
+            while (lo < hi) { int mid = (lo + hi) / 2; if (beats[mid] < o) lo = mid + 1; else hi = mid; }
+            double d = Math.Abs(beats[lo] - o);
+            if (lo > 0) d = Math.Min(d, Math.Abs(beats[lo - 1] - o));
+            if (d <= Tol) ok++;
+        }
+        double span = beats[^1] - beats[0];
+        double meanGap = span / Math.Max(1, beats.Length - 1);
+        double chance = Math.Min(1, 2 * Tol / meanGap);
+        double rate = (double)ok / onsets.Count;
+        return (rate, chance > 0 ? rate / chance : 0);
     }
 
     private const double Tol = 0.04;   // ±40 ms: quanto può stare "sul battito" un colpo suonato da persone vere

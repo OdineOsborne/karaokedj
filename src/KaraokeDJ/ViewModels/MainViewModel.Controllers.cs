@@ -113,6 +113,48 @@ public partial class MainViewModel
         StatusText = "Mappatura di fabbrica ripristinata";
     }
 
+    // ---------------------------------------------------------------- diario MIDI (per capire cosa manda davvero una console)
+
+    private System.IO.StreamWriter? _midiLog;
+    public bool MidiLogging => _midiLog != null;
+    public static string MidiLogFile => Path.Combine(AppPaths.Root, "midi-log.txt");
+
+    /// <summary>
+    /// Registra su file ogni messaggio che arriva dalla console, con l'azione a cui è mappato.
+    /// Serve quando un controllo non fa quello che dovrebbe: si registra mezzo minuto muovendolo e si legge cosa manda.
+    /// </summary>
+    [RelayCommand]
+    public void ToggleMidiLog()
+    {
+        if (_midiLog != null) { StopMidiLog(); return; }
+        try
+        {
+            Directory.CreateDirectory(AppPaths.Root);
+            _midiLog = new StreamWriter(MidiLogFile, append: true) { AutoFlush = true };
+            _midiLog.WriteLine($"--- {DateTime.Now:yyyy-MM-dd HH:mm:ss} · console: {Midi.DeviceName ?? "nessuna"} · preset: {ActivePreset?.Name ?? "nessuno"} ---");
+            Midi.MessageReceived += OnMidiLogMessage;
+            StatusText = "Registrazione MIDI avviata: muovi i controlli, poi premi di nuovo per fermare (" + MidiLogFile + ")";
+        }
+        catch (Exception ex) { StatusText = "Non riesco a registrare il MIDI: " + ex.Message; }
+        OnPropertyChanged(nameof(MidiLogging));
+    }
+
+    private void OnMidiLogMessage(MidiKey key, int value)
+    {
+        var action = Midi.ActionFor(key);
+        _midiLog?.WriteLine($"{DateTime.Now:HH:mm:ss.fff}  {key}  = {value,3}  → {action ?? "(non mappato)"}");
+    }
+
+    public void StopMidiLog()
+    {
+        if (_midiLog == null) return;
+        Midi.MessageReceived -= OnMidiLogMessage;
+        _midiLog.WriteLine("--- fine ---");
+        _midiLog.Dispose(); _midiLog = null;
+        StatusText = "Registrazione MIDI finita: " + MidiLogFile;
+        OnPropertyChanged(nameof(MidiLogging));
+    }
+
     /// <summary>Elenco delle console con preset (per le impostazioni).</summary>
     public static string SupportedControllers => string.Join(", ", ControllerPresets.All.Select(p => p.Name + (p.IsUser ? " (tua)" : "")));
 }

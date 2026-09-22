@@ -4,7 +4,7 @@ namespace KaraokeDJ.Audio;
 
 /// <param name="Waveform">Per colonna: [picco 0..255, RMS 0..255], <see cref="AudioAnalyzer.WaveColumns"/> colonne.</param>
 public sealed record AnalysisResult(double Bpm, string Key, string Camelot, double KeyConfidence, double IntroEndSec, double OutroStartSec, byte[] Waveform,
-    double Energy = 0, double Brightness = 0, double BeatOffsetSec = -1);
+    double Energy = 0, double Brightness = 0, double BeatOffsetSec = -1, double[]? Beats = null);
 
 /// <summary>
 /// Stima BPM (flusso spettrale + autocorrelazione) e tonalità (chroma + profili di Krumhansl)
@@ -35,6 +35,53 @@ public static class AudioAnalyzer
     /// Istanti dei colpi (onset) in secondi, dal flusso spettrale a piena risoluzione (~12 ms).
     /// Serve a verificare la griglia dei battiti: l'onda "fine" (50 colonne al secondo) è troppo grossa per quello.
     /// </summary>
+    /// <summary>Inviluppo degli attacchi (flusso spettrale) e passo temporale: base per battiti e griglia fluida.</summary>
+    public static (double[] Flux, double HopSec) FluxEnvelope(string path, double maxSeconds, CancellationToken ct = default)
+    {
+        var (reader, provider) = SourceFactory.Open(path);
+        using (reader)
+        {
+            int fs = SourceFactory.SampleRate;
+            int want = (int)(maxSeconds * fs);
+            var x = new float[want];
+            int got = 0;
+            var buf = new float[8192 * 2];
+            while (got < want)
+            {
+                ct.ThrowIfCancellationRequested();
+                int n = provider.Read(buf, 0, buf.Length);
+                if (n == 0) break;
+                for (int i = 0; i + 1 < n && got < want; i += 2) x[got++] = 0.5f * (buf[i] + buf[i + 1]);
+            }
+            int frames = (got - Fft) / Hop;
+            if (frames < 50) return (Array.Empty<double>(), (double)Hop / fs);
+
+            var flux = new double[frames];
+            var prevMag = new double[Fft / 2];
+            var window = new double[Fft];
+            for (int i = 0; i < Fft; i++) window[i] = FastFourierTransform.HannWindow(i, Fft);
+            var cplx = new Complex[Fft];
+            int m = (int)Math.Log2(Fft);
+            for (int fr = 0; fr < frames; fr++)
+            {
+                if ((fr & 63) == 0) ct.ThrowIfCancellationRequested();
+                int off = fr * Hop;
+                for (int i = 0; i < Fft; i++) { cplx[i].X = (float)(x[off + i] * window[i]); cplx[i].Y = 0; }
+                FastFourierTransform.FFT(true, m, cplx);
+                double fl = 0;
+                for (int k = 1; k < Fft / 2; k++)
+                {
+                    double mag = Math.Sqrt(cplx[k].X * cplx[k].X + cplx[k].Y * cplx[k].Y);
+                    double d = mag - prevMag[k];
+                    if (d > 0) fl += d;
+                    prevMag[k] = mag;
+                }
+                flux[fr] = fl;
+            }
+            return (flux, (double)Hop / fs);
+        }
+    }
+
     public static List<double> OnsetTimes(string path, double maxSeconds = 90, CancellationToken ct = default)
     {
         var (reader, provider) = SourceFactory.Open(path);
@@ -154,7 +201,16 @@ public static class AudioAnalyzer
 
             var (introEnd, outroStart) = DetectIntroOutro(env, 0.1, pos / (double)fs);
             var core = AnalyzeSamples(excerpt, exGot, fs, ct, exStart);
-            return core with { IntroEndSec = introEnd, OutroStartSec = outroStart, Waveform = wave };
+            // griglia fluida: i battiti veri lungo TUTTO il brano (il tempo dei pezzi suonati a mano respira)
+            double[] beats = Array.Empty<double>();
+            try
+            {
+                var (flux, hopSec) = FluxEnvelope(path, Math.Min(total + 1, 900), ct);
+                if (flux.Length > 0) beats = BeatTracker.Track(flux, hopSec, core.Bpm);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch { }
+            return core with { IntroEndSec = introEnd, OutroStartSec = outroStart, Waveform = wave, Beats = beats.Length > 0 ? beats : null };
         }
     }
 

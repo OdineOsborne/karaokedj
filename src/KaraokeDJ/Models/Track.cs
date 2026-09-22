@@ -73,6 +73,53 @@ public sealed class Track
     public void SetHotCue(int i, double sec) { if (HotCues == null || HotCues.Length < 8) HotCues = EmptyHotCues(); if (i >= 0 && i < 8) HotCues[i] = sec; }
     /// <summary>Fase della griglia dei battiti: secondi del primo "1" (-1 = non ancora stimata).</summary>
     public double BeatOffsetSec { get; set; } = -1;
+
+    /// <summary>
+    /// Griglia fluida: istanti dei battiti in secondi (dall'analisi). Quando c'è, comanda lei;
+    /// BPM e <see cref="BeatOffsetSec"/> restano per i brani vecchi e come etichetta.
+    /// </summary>
+    public float[]? Beats { get; set; }
+    /// <summary>Quanto "respira" il tempo (% fra i battiti più corti e i più lunghi): sopra il 6% è un brano suonato a mano.</summary>
+    public double BeatDriftPercent { get; set; }
+
+    /// <summary>Indice del battito più vicino a questo istante (-1 se non c'è griglia fluida).</summary>
+    public int NearestBeatIndex(double sec)
+    {
+        if (Beats == null || Beats.Length < 2) return -1;
+        int lo = 0, hi = Beats.Length - 1;
+        while (lo < hi)
+        {
+            int mid = (lo + hi) / 2;
+            if (Beats[mid] < sec) lo = mid + 1; else hi = mid;
+        }
+        if (lo > 0 && Math.Abs(Beats[lo - 1] - sec) <= Math.Abs(Beats[lo] - sec)) lo--;
+        return lo;
+    }
+
+    /// <summary>Istante del battito più vicino (o -1).</summary>
+    public double NearestBeat(double sec)
+    {
+        int i = NearestBeatIndex(sec);
+        return i < 0 ? -1 : Beats![i];
+    }
+
+    /// <summary>Istante del battito spostato di n posizioni da qui (per salti e loop). -1 se fuori.</summary>
+    public double BeatFrom(double sec, int n)
+    {
+        int i = NearestBeatIndex(sec);
+        if (i < 0) return -1;
+        int j = i + n;
+        return j >= 0 && j < Beats!.Length ? Beats[j] : -1;
+    }
+
+    /// <summary>Durata del battito qui (secondi): serve a loop e salti quando il tempo cambia.</summary>
+    public double BeatLengthAt(double sec)
+    {
+        int i = NearestBeatIndex(sec);
+        if (i < 0) return Bpm > 0 ? 60.0 / Bpm : 0;
+        int a = Math.Max(0, Math.Min(i, Beats!.Length - 2));
+        return Beats[a + 1] - Beats[a];
+    }
     /// <summary>Griglia corretta a mano: la stima automatica non la sovrascrive.</summary>
     public bool BeatManual { get; set; }
     public int PlayCount { get; set; }

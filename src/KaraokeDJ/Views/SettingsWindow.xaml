@@ -148,7 +148,9 @@
                                         ToolTip="File JSON Mixfonia, XML di Mixxx (*.midi.xml: oltre 200 console su github.com/mixxxdj/mixxx/tree/main/res/controllers) o djay (*.djayMidiMapping)"/>
                                 <Button Content="Esporta la mia mappatura…" Style="{StaticResource SmallButton}" Click="MidiExport_Click" Margin="0,0,6,0"
                                         ToolTip="Salva preset + correzioni della console collegata in un file JSON da tenere o da condividere"/>
-                                <Button Content="Cartella mappature" Style="{StaticResource SmallButton}" Click="MidiFolder_Click" Margin="0,0,6,0"
+                                <ToggleButton Content="Registra cosa manda la console" IsChecked="{Binding MidiLogging, Mode=OneWay}" Command="{Binding ToggleMidiLogCommand}" Style="{StaticResource ToolToggle}" Padding="8,2" Height="24" MinWidth="0" FontSize="11" Margin="0,0,6,0"
+                                        ToolTip="Scrive in un file ogni messaggio MIDI ricevuto e l'azione collegata. Serve per capire perché un controllo non risponde: registra, muovi quel controllo, ferma e mandami il file (%AppData%KaraokeDJmidi-log.txt)."/>
+                                                                <Button Content="Cartella mappature" Style="{StaticResource SmallButton}" Click="MidiFolder_Click" Margin="0,0,6,0"
                                         ToolTip="Le mappature tue stanno qui: un file JSON per console, vincono su quelle dell'app"/>
                             </WrapPanel>
                         </StackPanel>

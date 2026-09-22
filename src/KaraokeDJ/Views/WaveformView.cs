@@ -64,6 +64,11 @@ public sealed class WaveformView : FrameworkElement
     public Brush Accent { get => (Brush)GetValue(AccentProperty); set => SetValue(AccentProperty, value); }
     /// <summary>Griglia dei battiti: secondi del primo "1" (-1 = nessuna), BPM e durata del brano.</summary>
     public double BeatSec { get => (double)GetValue(BeatSecProperty); set => SetValue(BeatSecProperty, value); }
+
+    /// <summary>Griglia fluida: istanti dei battiti veri. Se c'è, si disegna questa invece della griglia a BPM fisso.</summary>
+    public static readonly DependencyProperty BeatsProperty =
+        DependencyProperty.Register(nameof(Beats), typeof(float[]), typeof(WaveformView), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+    public float[]? Beats { get => (float[]?)GetValue(BeatsProperty); set => SetValue(BeatsProperty, value); }
     public double Bpm { get => (double)GetValue(BpmProperty); set => SetValue(BpmProperty, value); }
     public double DurationSec { get => (double)GetValue(DurationSecProperty); set => SetValue(DurationSecProperty, value); }
     /// <summary>Punto cue in frazione (-1 = nessuno).</summary>
@@ -150,8 +155,21 @@ public sealed class WaveformView : FrameworkElement
             dc.DrawLine(LoopPen, new Point(x0, 0), new Point(x0, h));
             dc.DrawLine(LoopPen, new Point(x1, 0), new Point(x1, h));
         }
-        // griglia: una tacca ogni battuta (4 battiti), più marcata ogni frase (16 battiti)
-        if (Bpm > 0 && BeatSec >= 0 && DurationSec > 0)
+        // griglia fluida: le battute cadono sui battiti veri (brani suonati a mano: il tempo cambia strada facendo)
+        if (Beats is { Length: > 8 } bt && DurationSec > 0)
+        {
+            double pxPerBarF = w * (bt[^1] - bt[0]) / Math.Max(1, bt.Length - 1) * 4 / DurationSec;
+            int everyF = pxPerBarF >= 3 ? 4 : pxPerBarF >= 0.75 ? 8 : 16;   // ogni quante battute disegnare
+            for (int i = 0; i < bt.Length; i += 4)
+            {
+                bool phrase = i % 16 == 0;
+                if (!phrase && (i % everyF) != 0) continue;
+                double x = w * bt[i] / DurationSec;
+                dc.DrawLine(phrase ? PhrasePen : BarPen, new Point(x, phrase ? 0 : h * 0.25), new Point(x, phrase ? h : h * 0.75));
+            }
+        }
+        // griglia classica (brani analizzati con le versioni precedenti): una tacca ogni battuta
+        else if (Bpm > 0 && BeatSec >= 0 && DurationSec > 0)
         {
             double bar = 4 * 60.0 / Bpm;
             double pxPerBar = w * bar / DurationSec;

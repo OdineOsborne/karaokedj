@@ -196,6 +196,8 @@ public sealed partial class DeckViewModel : ObservableObject
     // ---------------------------------------------------------------- griglia dei battiti
     /// <summary>Secondi del primo "1" della griglia (-1 = ignoto).</summary>
     [ObservableProperty] private double _beatOffsetSec = -1;
+    /// <summary>Griglia fluida del brano caricato (istanti dei battiti), per onda e vista mix.</summary>
+    [ObservableProperty] private float[]? _beats;
     partial void OnBeatOffsetSecChanged(double v) => OnPropertyChanged(nameof(GridAnchorSec));
 
     /// <summary>Griglia stimata dai bassi (se il brano non l'ha già o non è stata corretta a mano).</summary>
@@ -435,6 +437,12 @@ public sealed partial class DeckViewModel : ObservableObject
 
     private double BeatSec()
     {
+        // con la griglia fluida la durata del battito è quella locale, qui dove siamo
+        if (Track?.Beats is { Length: > 8 })
+        {
+            double b = Track.BeatLengthAt(Deck.PositionSec);
+            if (b > 0.1 && b < 2) return b;
+        }
         double bpm = Track?.Bpm > 0 ? Track.Bpm : 120;
         return 60.0 / bpm; // in secondi di brano (il tempo del deck non cambia la posizione nel brano)
     }
@@ -628,6 +636,7 @@ public sealed partial class DeckViewModel : ObservableObject
         double factor = 1.0 + TempoPercent / 100.0;
         BpmLabel = t.Bpm > 0 ? (t.Bpm * factor).ToString("0.0") + " BPM" : "";
         NativeBpm = t.Bpm;
+        Beats = t.Beats;
         if (t.BeatOffsetSec < 0 && !t.BeatManual && FineWaveform != null) EstimateBeatGridIfNeeded(t, FineWaveform);
         if (string.IsNullOrEmpty(t.Key)) { KeyDisplay = ""; return; }
         int semis = KeyShift + (KeyLock ? 0 : (int)Math.Round(12 * Math.Log2(factor)));
@@ -684,6 +693,7 @@ public sealed partial class DeckViewModel : ObservableObject
             HasInstrumental = track.HasInstrumental; HasStems = track.HasStems;
             CueSec = track.CueSec;
             NativeBpm = track.Bpm;
+            Beats = track.Beats;
             BeatOffsetSec = track.BeatOffsetSec;
             OnPropertyChanged(nameof(GenreTags));
             LoopExit();
@@ -719,7 +729,7 @@ public sealed partial class DeckViewModel : ObservableObject
         IsEnding = false;
         BpmLabel = "";
         KeyDisplay = "";
-        _fineCts?.Cancel(); FineWaveform = null; NativeBpm = 0; CueSec = -1; BeatOffsetSec = -1;
+        _fineCts?.Cancel(); FineWaveform = null; NativeBpm = 0; CueSec = -1; BeatOffsetSec = -1; Beats = null;
         RefreshHotCues();
         Tick();
         TrackLoaded?.Invoke(this);
@@ -885,7 +895,14 @@ public sealed partial class DeckViewModel : ObservableObject
     /// <summary>Aggancia un tempo al battito più vicino, se la quantizzazione è attiva e la griglia è nota.</summary>
     public double Snap(double sec)
     {
-        if (!Quantize || Track == null || Track.Bpm <= 0) return sec;
+        if (!Quantize || Track == null) return sec;
+        // griglia fluida: si aggancia al battito vero più vicino (il tempo dei brani suonati a mano cambia)
+        if (Track.Beats is { Length: > 8 })
+        {
+            double b = Track.NearestBeat(sec);
+            if (b >= 0) return Math.Clamp(b, 0, Math.Max(0, DurationSec - 0.05));
+        }
+        if (Track.Bpm <= 0) return sec;
         double beat = 60.0 / Track.Bpm, anchor = GridAnchorSec;
         double k = Math.Round((sec - anchor) / beat);
         return Math.Clamp(anchor + k * beat, 0, Math.Max(0, DurationSec - 0.05));
@@ -923,7 +940,14 @@ public sealed partial class DeckViewModel : ObservableObject
     public void BeatJump(string? beatsStr)
     {
         if (!HasTrack || !double.TryParse(beatsStr, System.Globalization.CultureInfo.InvariantCulture, out var beats)) return;
-        double target = Deck.PositionSec + BeatSec() * beats;
+        double target;
+        // con la griglia fluida si salta di N battiti VERI, non di N volte un battito medio
+        if (Track?.Beats is { Length: > 8 } && Math.Abs(beats - Math.Round(beats)) < 0.01)
+        {
+            double t = Track.BeatFrom(Deck.PositionSec, (int)Math.Round(beats));
+            target = t >= 0 ? t : Deck.PositionSec + BeatSec() * beats;
+        }
+        else target = Deck.PositionSec + BeatSec() * beats;
         if (Quantize && Track?.Bpm > 0) target = Snap(target);
         Deck.Seek(Math.Clamp(target, 0, Math.Max(0, DurationSec - 0.05)));
     }

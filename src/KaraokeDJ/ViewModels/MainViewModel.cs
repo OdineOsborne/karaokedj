@@ -804,8 +804,35 @@ public sealed partial class MainViewModel : ObservableObject
         _crossfadeSpeed = 2.0 / secs; // percorso da -1 a +1 in "secs" secondi
     }
 
+    /// <summary>Automix in pausa: finisce il brano e si ferma lì, senza perdere le impostazioni (tasto PAUSA della sezione).</summary>
+    [ObservableProperty] private bool _autoMixHold;
+    partial void OnAutoMixHoldChanged(bool value)
+    {
+        OnPropertyChanged(nameof(AutoMixStateLabel));
+        StatusText = value ? "Auto-mix in pausa: finisce questo brano e si ferma" : AutoMix ? "Auto-mix attivo" : "Auto-mix spento";
+    }
+    partial void OnAutoMixChanged(bool value) { Settings.AutoMix = value; OnPropertyChanged(nameof(AutoMixStateLabel)); }
+
+    /// <summary>Stato leggibile per la sezione automix (anche a due metri dal portatile).</summary>
+    public string AutoMixStateLabel => !AutoMix ? "SPENTO" : AutoMixHold ? "IN PAUSA" : "ATTIVO";
+
+    /// <summary>Ferma subito l'automix: annulla il passaggio in corso e lo spegne.</summary>
+    [RelayCommand]
+    private void AutoMixStop()
+    {
+        if (IsMixing) AbortMix("fermato dal DJ");
+        _crossfadeTarget = null;
+        AutoMix = false; AutoMixHold = false;
+        StatusText = "Auto-mix fermato: da qui in avanti comandi tu";
+    }
+
+    /// <summary>Pausa/riprendi l'automix senza perdere le impostazioni.</summary>
+    [RelayCommand]
+    private void AutoMixTogglePause() => AutoMixHold = !AutoMixHold;
+
     private void CheckAutoMix()
     {
+        if (AutoMixHold) return;
         foreach (var (d, other, dir) in new[] { (DeckA, DeckB, 1.0), (DeckB, DeckA, -1.0) })
         {
             if (!d.IsPlaying || !d.HasTrack) continue;
@@ -1210,6 +1237,13 @@ public sealed partial class MainViewModel : ObservableObject
             if (!track.CuesManual) { track.IntroEndSec = r.IntroEndSec; track.OutroStartSec = r.OutroStartSec; }
             track.Energy = r.Energy; track.Brightness = r.Brightness;   // carattere del suono, per i suggerimenti
             if (!track.BeatManual && r.BeatOffsetSec >= 0) track.BeatOffsetSec = r.BeatOffsetSec;   // griglia agganciata ai colpi veri
+            if (!track.BeatManual && r.Beats is { Length: > 8 })
+            {
+                track.Beats = r.Beats.Select(b => (float)b).ToArray();                                 // griglia fluida
+                var (gbpm, drift) = Audio.BeatTracker.Summary(r.Beats);
+                if (gbpm > 0 && Math.Abs(gbpm - track.Bpm) / track.Bpm < 0.06) track.Bpm = Math.Round(gbpm, 1);
+                track.BeatDriftPercent = Math.Round(drift, 1);
+            }
             track.Analyzed = true;
             if (r.Waveform.Length > 0) WaveformStore.Save(track.Id, r.Waveform);
         }
