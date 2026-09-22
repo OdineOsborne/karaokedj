@@ -1,4 +1,4 @@
-using NAudio.CoreAudioApi;
+﻿using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 
@@ -35,7 +35,10 @@ public sealed class AudioEngine : IDisposable
         _mixer.AddMixerInput(Rhythm);
         Mic = new MicInput();
         _mixer.AddMixerInput(Mic);
-        _master = new VolumeSampleProvider(_mixer);
+        // la registrazione prende il mix prima del volume master: quello che e stato suonato,
+        // indipendentemente da quanto era alta la sala
+        Recorder = new NightRecorder(_mixer);
+        _master = new VolumeSampleProvider(Recorder);
         _tap = new MasterTap(_master, this);
         _cue = new CueProvider(this);
         Crossfader = 0;
@@ -48,6 +51,9 @@ public sealed class AudioEngine : IDisposable
     public RhythmEngine Rhythm { get; }
     /// <summary>Canale microfono (talk-over, effetti voce).</summary>
     public MicInput Mic { get; }
+
+    /// <summary>Registrazione della serata su file (vedi <see cref="NightRecorder"/>).</summary>
+    public NightRecorder Recorder { get; }
 
     public float MasterVolume { get => _master.Volume; set => _master.Volume = Math.Clamp(value, 0f, 1.5f); }
 
@@ -295,6 +301,7 @@ public sealed class AudioEngine : IDisposable
 
     public void Dispose()
     {
+        Recorder.Dispose();
         StopCue();
         StopOutput();
         Mic.Dispose();

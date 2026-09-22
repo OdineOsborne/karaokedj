@@ -239,6 +239,7 @@ public sealed partial class MainViewModel : ObservableObject
         UsageStats.Save();
         if (Settings.UsageStatsOptIn) { try { UsageStats.SendAsync(Settings, force: true).Wait(TimeSpan.FromSeconds(4)); } catch { } }
         _timer.Stop();
+        try { Engine.Recorder.Stop(); } catch { }   // la registrazione va chiusa bene o il file resta monco
         _scanCts?.Cancel();
         _downloadCts?.Cancel();
         SaveSettings();
@@ -328,6 +329,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (AutoMix) CheckAutoMix();
         CheckFillMusic();
         TickApplause();
+        TickRecording();
         TickControllerJog();
         UpdateActiveKaraokeDeck();
         UpdateDedication();
@@ -2556,6 +2558,7 @@ public sealed partial class MainViewModel : ObservableObject
             case "padstop": StopAllPadsCommand.Execute(null); break;
             case "panic": Panic(); break;
             case "applause": StartApplause(); break;
+            case "record": ToggleRecording(); break;
             case "ticker": ToggleTicker(); break;
             case "midimute": MidiMuted = !MidiMuted; break;
             case "mic": MicOn = !MicOn; break;

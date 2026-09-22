@@ -51,6 +51,7 @@ public static class AppActions
         new("padstop", "Stop tutti i pad", false),
         new("panic", "FERMA TUTTO (silenzio immediato)", false), new("midimute", "Ignora la console (MIDI off)", false),
         new("applause", "Applausometro sul proiettore", false), new("ticker", "Striscia messaggi on/off", false),
+        new("record", "Registra la serata on/off", false),
         new("mic", "Microfono on/off", false), new("talk", "Talk-over (tieni premuto)", false, true), new("micvolume", "Microfono: gain", true), new("cuemix", "Cuffia: cue/master", true), new("cuevolume", "Cuffia: volume", true),
         new("fill", "Musica di riempimento on/off", false), new("rotation", "Rotazione cantanti on/off", false),
         new("pad1", "Pad 1", false), new("pad2", "Pad 2", false), new("pad3", "Pad 3", false), new("pad4", "Pad 4", false),

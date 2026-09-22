@@ -303,6 +303,15 @@
                               Visibility="{Binding FillMusicOn, Converter={StaticResource BoolToVis}}" ToolTip="Playlist di riempimento (vuota = tutta la musica non karaoke)"/>
                     <ToggleButton Content="🔁 ROTAZIONE" IsChecked="{Binding RotationOn}" v:Shortcut.Action="rotation" Style="{StaticResource ToolToggle}" Padding="8,0" Height="26" FontSize="10.5" Margin="0,0,3,0"
                                   ToolTip="Rotazione equa dei cantanti: la coda si riordina a giri; chi ha già cantato aspetta chi non lo ha ancora fatto"/>
+                    <!-- registrazione della serata: il mix com'è uscito, su file WAV -->
+                    <ToggleButton IsChecked="{Binding Recording}" Command="{Binding ToggleRecordingCommand}" v:Shortcut.Action="record" Style="{StaticResource ToolToggle}" Padding="8,0" Height="26" FontSize="10.5" Margin="0,0,3,0"
+                                  ToolTip="Registra la serata su file (in %AppData%\KaraokeDJ\registrazioni). Va avanti anche se fermi la musica: si ferma solo quando lo dici tu.">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⏺" Foreground="#FFE05252" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBlock Text="REC" VerticalAlignment="Center" Visibility="{Binding Recording, Converter={StaticResource BoolToVisInv}}"/>
+                            <TextBlock Text="{Binding RecordingStatus}" VerticalAlignment="Center" Visibility="{Binding Recording, Converter={StaticResource BoolToVis}}"/>
+                        </StackPanel>
+                    </ToggleButton>
                     <!-- via di fuga: se la console manda da sola, la si isola con un tasto senza staccare il cavo -->
                     <ToggleButton Content="🎛 IGNORA CONSOLE" IsChecked="{Binding MidiMuted}" v:Shortcut.Action="midimute" Style="{StaticResource ToolToggle}" Padding="8,0" Height="26" FontSize="10.5" Margin="0,0,3,0"
                                   Visibility="{Binding ControllerConnected, Converter={StaticResource BoolToVis}}"

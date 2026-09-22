@@ -36,6 +36,64 @@ public partial class MainViewModel
 
     [RelayCommand] private void ToggleTicker() => TickerOn = !TickerOn;
 
+    // ---------------------------------------------------------------- registrazione della serata
+
+    [ObservableProperty] private bool _recording;
+    /// <summary>"REC 1:23:45 · 780 MB" mentre registra, altrimenti l'esito dell'ultima registrazione.</summary>
+    [ObservableProperty] private string _recordingStatus = "";
+
+    /// <summary>Dove finiscono i file: %AppData%\KaraokeDJ\registrazioni.</summary>
+    public static string RecordingsDir => Path.Combine(Services.AppPaths.Root, "registrazioni");
+
+    /// <summary>
+    /// Avvia/ferma la registrazione del mix. Non c'entra con FERMA TUTTO: se fermi la musica la registrazione
+    /// continua (e registra il silenzio), perché fermarla per sbaglio vorrebbe dire perdere la serata.
+    /// </summary>
+    [RelayCommand]
+    public void ToggleRecording()
+    {
+        var rec = Engine.Recorder;
+        if (rec.IsRecording)
+        {
+            var path = rec.Stop();
+            Recording = false;
+            RecordingStatus = path == null ? "" : $"Registrato {Format(rec.Seconds)} in {Path.GetFileName(path)}";
+            StatusText = path == null ? "Registrazione non attiva" :
+                $"Registrazione salvata: {path} ({rec.Seconds / 60:0} min" + (rec.Dropped > 0 ? $", {rec.Dropped} campioni persi" : "") + ")";
+            return;
+        }
+        try
+        {
+            var name = DateTime.Now.ToString("yyyy-MM-dd HH-mm") + ".wav";
+            rec.Start(Path.Combine(RecordingsDir, name));
+            Recording = true;
+            RecordingStatus = "REC 0:00";
+            StatusText = "Registrazione avviata: " + Path.Combine(RecordingsDir, name);
+        }
+        catch (Exception ex)
+        {
+            Recording = false;
+            StatusText = "Non riesco a registrare: " + ex.Message;
+        }
+    }
+
+    private static string Format(double seconds) =>
+        TimeSpan.FromSeconds(seconds).ToString(seconds >= 3600 ? @"h\:mm\:ss" : @"m\:ss");
+
+    /// <summary>Aggiorna la scritta REC (chiamata dal timer principale, una volta al secondo basta e avanza).</summary>
+    private void TickRecording()
+    {
+        var rec = Engine.Recorder;
+        if (Recording && !rec.IsRecording)      // fermata da sola: disco pieno o errore
+        {
+            Recording = false;
+            RecordingStatus = rec.LastError == null ? "Registrazione fermata" : "Registrazione interrotta";
+            return;
+        }
+        if (!rec.IsRecording) return;
+        RecordingStatus = $"REC {Format(rec.Seconds)} · {rec.BytesWritten / 1024 / 1024} MB" + (rec.Dropped > 0 ? " ⚠" : "");
+    }
+
     // ---------------------------------------------------------------- applausometro
 
     /// <summary>Misura in corso o risultato ancora a schermo.</summary>

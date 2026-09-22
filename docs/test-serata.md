@@ -1,4 +1,4 @@
-# Mixfonia — piano di test prima della serata del 2 ottobre 2026
+﻿# Mixfonia — piano di test prima della serata del 2 ottobre 2026
 
 Obiettivo: arrivare al 2 ottobre con una versione che **non si ferma** durante lo show. Non serve che ogni funzione sia perfetta:
 serve che musica e testi non si interrompano mai e che, se qualcosa cade, riparta da solo.
@@ -97,3 +97,14 @@ Le usi solo se le hai passate al punto 2 o 3.
 KaraokeDJ.exe --showtest schermo.png
 ```
 Fotografa il proiettore con striscia e applausometro (due file: `schermo-striscia.png` e `schermo.png`).
+
+- **Registrazione della serata**: tasto `⏺ REC` nella barra LIVE (o azione `record`). Registra il mix **prima del volume
+  master**, quindi quello che hai suonato, non quanto era alta la sala. File WAV in `%AppData%\KaraokeDJegistrazioni`,
+  circa **10 MB al minuto** (~2,4 GB per quattro ore); si ferma da sola se sul disco restano meno di 500 MB.
+  Non si ferma con FERMA TUTTO: fermarla per sbaglio vorrebbe dire perdere la serata.
+
+```bash
+KaraokeDJ.exe --rectest
+```
+Registra un tono di prova **con il volume master a zero** (si puo lanciare con le casse accese) e riapre il file
+per misurare che dentro ci sia davvero l'audio, con la durata giusta e nessun campione perso.

@@ -78,6 +78,8 @@ public partial class App : Application
         // --midiwatch <secondi>: ascolta la console senza eseguire niente e scrive che cosa manda (per capire i comandi impazziti)
         int watchIdx = Array.IndexOf(e.Args, "--midiwatch");
         if (watchIdx >= 0) RunMidiWatch(watchIdx + 1 < e.Args.Length && int.TryParse(e.Args[watchIdx + 1], out var ws) ? ws : 10);
+        // --rectest: prova la registrazione della serata (in silenzio: master a zero)
+        if (e.Args.Contains("--rectest")) RunRecTest();
         // --showtest <file.png>: fotografa il proiettore con striscia messaggi e applausometro
         int showIdx = Array.IndexOf(e.Args, "--showtest");
         if (showIdx >= 0 && showIdx + 1 < e.Args.Length) RunShowTest(e.Args[showIdx + 1]);
@@ -203,6 +205,9 @@ public partial class App : Application
         var errors = new List<string>();
         var queueBackup = vm.Queue.ToList();
         bool autoMixWas = vm.AutoMix, endlessWas = vm.AutoMixEndless, fillWas = vm.FillMusicOn;
+        // il selftest deve poter girare mentre le casse sono accese: durante la prova l'uscita resta a zero
+        float volWas = vm.Engine.MasterVolume;
+        vm.Engine.MasterVolume = 0;
         try
         {
             // all'avvio non deve esserci niente in grado di far partire la musica da solo
@@ -234,6 +239,7 @@ public partial class App : Application
         {
             try
             {
+                vm.Engine.MasterVolume = volWas;
                 vm.DeckA.Eject();
                 vm.AutoMix = autoMixWas; vm.AutoMixEndless = endlessWas; vm.FillMusicOn = fillWas;
                 vm.Queue.Clear();
@@ -337,6 +343,18 @@ public partial class App : Application
         }
         catch (Exception ex) { Console.Error.WriteLine("showtest: FAIL " + ex.Message); Shutdown(2); return; }
         Shutdown(0);
+    }
+
+    /// <summary>--rectest: la registrazione della serata contiene davvero il mix (vedi Services/RecordTest).</summary>
+    private async void RunRecTest()
+    {
+        await System.Threading.Tasks.Task.Delay(1500);
+        string res;
+        try { res = await KaraokeDJ.Services.RecordTest.RunAsync(Vm!); }
+        catch (Exception ex) { res = "rec: FAIL " + ex.Message; }
+        Console.Error.WriteLine(res);
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-rectest.log"), res); } catch { }
+        Shutdown(res.StartsWith("rec: OK") ? 0 : 2);
     }
 
     /// <summary>Fotografa una finestra su PNG (per le verifiche visive).</summary>
