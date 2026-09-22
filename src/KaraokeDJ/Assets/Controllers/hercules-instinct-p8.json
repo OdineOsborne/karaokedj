@@ -1,0 +1,750 @@
+{
+ "id": "hercules-instinct-p8",
+ "name": "Hercules DJControl Instinct P8",
+ "match": [
+  "Instinct P8",
+  "InstinctP8",
+  "Instinct-P8"
+ ],
+ "source": "Hercules \"DJControl Instinct P8 MIDI Command List v1.1\" (documento ufficiale Hercules), canale 1",
+ "mappings": [
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 1,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 2,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 3,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 4,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 5,
+   "action": "a.hotcue5"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 6,
+   "action": "a.hotcue6"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 7,
+   "action": "a.hotcue7"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 8,
+   "action": "a.hotcue8"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 9,
+   "action": "a.echo"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 10,
+   "action": "a.reverb"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 11,
+   "action": "a.filter"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 12,
+   "action": "a.flanger"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 13,
+   "action": "a.fxreset"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 14,
+   "action": "a.brake"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 15,
+   "action": "a.backspin"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 16,
+   "action": "a.keymatch"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 25,
+   "action": "a.loop1"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 26,
+   "action": "a.loop2"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 27,
+   "action": "a.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 28,
+   "action": "a.loop8"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 29,
+   "action": "a.jumpback4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 30,
+   "action": "a.jumpfwd4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 31,
+   "action": "a.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 32,
+   "action": "a.quantize"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 33,
+   "action": "a.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 34,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 35,
+   "action": "a.sync"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 36,
+   "action": "a.stop"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 37,
+   "action": "a.playcue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 38,
+   "action": "a.temporeset"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 49,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 50,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 51,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 52,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 53,
+   "action": "b.hotcue5"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 54,
+   "action": "b.hotcue6"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 55,
+   "action": "b.hotcue7"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 56,
+   "action": "b.hotcue8"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 57,
+   "action": "b.echo"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 58,
+   "action": "b.reverb"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 59,
+   "action": "b.filter"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 60,
+   "action": "b.flanger"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 61,
+   "action": "b.fxreset"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 62,
+   "action": "b.brake"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 63,
+   "action": "b.backspin"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 64,
+   "action": "b.keymatch"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 73,
+   "action": "b.loop1"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 74,
+   "action": "b.loop2"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 75,
+   "action": "b.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 76,
+   "action": "b.loop8"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 77,
+   "action": "b.jumpback4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 78,
+   "action": "b.jumpfwd4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 79,
+   "action": "b.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 80,
+   "action": "b.quantize"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 81,
+   "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 82,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 83,
+   "action": "b.sync"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 84,
+   "action": "b.stop"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 85,
+   "action": "b.playcue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 86,
+   "action": "b.temporeset"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 17,
+   "action": "pad1"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 18,
+   "action": "pad2"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 19,
+   "action": "pad3"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 20,
+   "action": "pad4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 21,
+   "action": "pad5"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 22,
+   "action": "pad6"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 23,
+   "action": "pad7"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 24,
+   "action": "pad8"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 65,
+   "action": "pad9"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 66,
+   "action": "pad10"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 67,
+   "action": "pad11"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 68,
+   "action": "pad12"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 69,
+   "action": "padstop"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 70,
+   "action": "rhythm.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 71,
+   "action": "rhythm.tap"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 72,
+   "action": "rhythm.resync"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 87,
+   "action": "a.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 88,
+   "action": "b.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 89,
+   "action": "a.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 90,
+   "action": "b.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 91,
+   "action": "a.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 92,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 100,
+   "action": "a.keylock"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 101,
+   "action": "b.keylock"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 95,
+   "action": "loadA"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 96,
+   "action": "loadB"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 43,
+   "action": "browseload"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 44,
+   "action": "addqueue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 97,
+   "action": "a.jogtouch"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 98,
+   "action": "b.jogtouch"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 46,
+   "action": "automix"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 48,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 105,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 49,
+   "action": "a.tempo",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 106,
+   "action": "a.tempo",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 50,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 107,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 51,
+   "action": "b.tempo",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 108,
+   "action": "b.tempo",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 52,
+   "action": "a.filtervalue",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 87,
+   "action": "a.filtervalue",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 89,
+   "action": "a.filtervalue",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 97,
+   "action": "a.filtervalue",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 54,
+   "action": "b.filtervalue",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 99,
+   "action": "b.filtervalue",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 101,
+   "action": "b.filtervalue",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 103,
+   "action": "b.filtervalue",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 56,
+   "action": "browse",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 57,
+   "action": "browse",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 64,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 66,
+   "action": "b.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 65,
+   "action": "a.volume"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 67,
+   "action": "b.volume"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 68,
+   "action": "a.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 70,
+   "action": "a.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 72,
+   "action": "a.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 80,
+   "action": "b.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 82,
+   "action": "b.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 84,
+   "action": "b.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 86,
+   "action": "crossfader"
+  }
+ ]
+}

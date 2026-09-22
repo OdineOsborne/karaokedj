@@ -1,4 +1,4 @@
-<Window x:Class="KaraokeDJ.Views.BorderoWindow"
+<Window x:Class="KaraokeDJ.Views.BorderoWindow" FontFamily="{StaticResource UiFont}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Borderò SIAE · programma musicale" Width="1100" Height="720" MinWidth="900" MinHeight="520"
@@ -69,7 +69,7 @@
                 <CheckBox x:Name="SoloMusica" Content="escludi basi karaoke" VerticalAlignment="Center" Margin="0,0,10,0" Checked="Range_Changed" Unchecked="Range_Changed"/>
                 <Button Content="✨ Autori dai tag della libreria" Style="{StaticResource SmallButton}" Click="FillComposers_Click" Margin="0,0,6,0" ToolTip="Ricopia gli autori dal tag compositore dei file, dove presente"/>
                 <Button Content="− Togli riga" Style="{StaticResource SmallButton}" Click="Remove_Click" Margin="0,0,6,0"/>
-                <Button Content="＋ Aggiungi riga" Style="{StaticResource SmallButton}" Click="Add_Click" ToolTip="Brano eseguito ma non passato da VOXA (es. live)"/>
+                <Button Content="＋ Aggiungi riga" Style="{StaticResource SmallButton}" Click="Add_Click" ToolTip="Brano eseguito ma non passato da Mixfonia (es. live)"/>
             </StackPanel>
             <TextBlock/>
         </DockPanel>

@@ -22,6 +22,7 @@ public sealed partial class MainViewModel : ObservableObject
     private double _crossfadeSpeed;
     private DeckViewModel? _autoMixTriggeredFor;
     private DateTime _lastTick = DateTime.UtcNow;
+    private DateTime _lastAutosave = DateTime.UtcNow;
 
     public MainViewModel()
     {
@@ -83,6 +84,8 @@ public sealed partial class MainViewModel : ObservableObject
         IdleSubtitle = Settings.IdleSubtitle;
 
         Queue.CollectionChanged += (_, _) => { UpdateProjectorState(); SaveQueue(); UpdateSuggestions(); PrefetchNextGrid(); };
+        InitLive();
+        Engine.OutputRestarted += msg => Application.Current?.Dispatcher.BeginInvoke(() => { StatusText = msg; CrashLog.Write("audio: " + msg); });
 
         _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(40) };
         _timer.Tick += (_, _) => Tick();
@@ -104,9 +107,9 @@ public sealed partial class MainViewModel : ObservableObject
     public LibraryService Library { get; }
     public PluginManager Plugins { get; }
     /// <summary>Sorgenti di importazione disponibili (integrate + plugin) e quella scelta.</summary>
-    public ObservableCollection<VOXA.Plugins.IImportSource> ImportSources { get; } = new();
-    [ObservableProperty] private VOXA.Plugins.IImportSource? _selectedSource;
-    partial void OnSelectedSourceChanged(VOXA.Plugins.IImportSource? value) { if (value != null) Settings.ImportSourceId = value.Id; OnPropertyChanged(nameof(ImportHint)); }
+    public ObservableCollection<Mixfonia.Plugins.IImportSource> ImportSources { get; } = new();
+    [ObservableProperty] private Mixfonia.Plugins.IImportSource? _selectedSource;
+    partial void OnSelectedSourceChanged(Mixfonia.Plugins.IImportSource? value) { if (value != null) Settings.ImportSourceId = value.Id; OnPropertyChanged(nameof(ImportHint)); }
     public string ImportHint => SelectedSource?.InputHint ?? "Nessuna sorgente: Impostazioni → Plugin e fonti";
     public MidiService Midi { get; }
     public DeckViewModel DeckA { get; }
@@ -178,6 +181,7 @@ public sealed partial class MainViewModel : ObservableObject
         RefreshTracks();
         LoadQueue();
         LoadPlaylists();
+        ResolveFillPlaylist();
         JamendoSource.ClientId = Settings.JamendoClientId;
         Plugins.Load(TrackExists, s => StatusText = s);
         foreach (var src in Plugins.ImportSources) ImportSources.Add(src);
@@ -185,10 +189,8 @@ public sealed partial class MainViewModel : ObservableObject
         WireStems();
         StartAnimation();
         LoadLicense();
-        Midi.LoadMappings(Settings.MidiMappings);
         Keys.Load(Settings.KeyMappings, useDefaultsIfEmpty: true);
-        if (!string.IsNullOrEmpty(Settings.MidiDeviceName) && !Midi.Open(Settings.MidiDeviceName))
-            StatusText = "Controller MIDI non trovato: " + Settings.MidiDeviceName;
+        StartControllerWatch();
         _timer.Start();
         StatusText = $"Uscita: {Engine.OutputDescription} · {Tracks.Count} brani";
         if (Settings.LibraryFolders.Count > 0) StartFolderWatchers();
@@ -211,6 +213,14 @@ public sealed partial class MainViewModel : ObservableObject
             bool artistOk = a.Length == 0 || xa.Contains(a) || a.Contains(xa) || xt.Contains(a);
             return titleOk && artistOk;
         });
+    }
+
+    /// <summary>Salvataggio d'emergenza da un crash: solo file, niente audio, non deve lanciare.</summary>
+    public void EmergencySave()
+    {
+        try { SaveSettings(); } catch { }
+        try { SaveQueue(); } catch { }
+        try { Rhythm.Save(); } catch { }
     }
 
     public void Shutdown()
@@ -239,9 +249,10 @@ public sealed partial class MainViewModel : ObservableObject
         Settings.CrossfadeSeconds = CrossfadeSeconds;
         Settings.IdleTitle = IdleTitle;
         Settings.IdleSubtitle = IdleSubtitle;
-        Settings.MidiMappings = Midi.ExportMappings();
+        Settings.MidiMappings = UserMidiMappings();
         Settings.KeyMappings = Keys.Export();
         Settings.Pads = Pads.Select(p => new PadDto { Index = p.Index, Name = p.Name, FilePath = p.FilePath }).ToList();
+        SaveLiveSettings();
         JsonStore.Save(AppPaths.SettingsFile, Settings);
     }
 
@@ -274,6 +285,7 @@ public sealed partial class MainViewModel : ObservableObject
         double ml = Views.LevelMeter.ToScale(Engine.MasterPeakL), mr = Views.LevelMeter.ToScale(Engine.MasterPeakR);
         MasterL = ml > MasterL ? ml : Math.Max(0, MasterL - 0.06);
         MasterR = mr > MasterR ? mr : Math.Max(0, MasterR - 0.06);
+        if (MicOn) { double mm = Views.LevelMeter.ToScale(Engine.Mic.Peak); MicLevel = mm > MicLevel ? mm : Math.Max(0, MicLevel - 0.06); }
 
         if (_crossfadeTarget is double target)
         {
@@ -298,7 +310,11 @@ public sealed partial class MainViewModel : ObservableObject
         }
 
         TickMix(dt);
+        // salvataggio periodico: se l'app cade a metà serata, impostazioni e coda sono al massimo di un minuto fa
+        if ((now - _lastAutosave).TotalSeconds > 60) { _lastAutosave = now; try { SaveSettings(); SaveQueue(); } catch (Exception ex) { CrashLog.Write("autosave: " + ex.Message); } }
         if (AutoMix) CheckAutoMix();
+        CheckFillMusic();
+        TickControllerJog();
         UpdateActiveKaraokeDeck();
         UpdateDedication();
     }
@@ -338,6 +354,7 @@ public sealed partial class MainViewModel : ObservableObject
             "video" => t.IsVideo,
             "midi" => t.IsMidi,
             "compat" => _compatScores.TryGetValue(t.Id, out var sc) && sc >= 0.35,
+            "key" => KeyFilterOk(t),
             _ => true,
         };
         if (!kindOk) return false;
@@ -530,7 +547,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void AddToQueue(Track track, string singer, int keyShift)
     {
+        if (keyShift == 0) keyShift = RememberedKey(singer, track);
         Queue.Add(new QueueEntry { Track = track, Singer = singer.Trim(), KeyShift = keyShift });
+        ApplyRotation();
+        RefreshKnownSingers();
         StatusText = $"In coda: {track.Display}" + (string.IsNullOrWhiteSpace(singer) ? "" : $" ({singer})");
     }
 
@@ -732,6 +752,7 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var (d, other, dir) in new[] { (DeckA, DeckB, 1.0), (DeckB, DeckA, -1.0) })
         {
             if (!d.IsPlaying || !d.HasTrack) continue;
+            if (d.IsFill) continue; // il riempimento lo manda via il DJ col prossimo cantante
             if (_autoMixTriggeredFor == d) continue;
             if (other.IsPlaying) continue;
             if (IsMixing) continue;
@@ -840,7 +861,7 @@ public sealed partial class MainViewModel : ObservableObject
         d.Tick();
         // Con automix attivo e coda piena, se per qualche motivo la dissolvenza non è partita
         if (AutoMix && Queue.Count == 0 && AutoMixEndless && !DeckA.IsPlaying && !DeckB.IsPlaying) TryFillQueueFromSuggestions(d);
-        if (AutoMix && Queue.Count > 0 && !DeckA.IsPlaying && !DeckB.IsPlaying)
+        if (AutoMix && Queue.Count > 0 && !DeckA.IsPlaying && !DeckB.IsPlaying && !(FillMusicOn && (Queue[0].Track.IsKaraoke || d.IsFill)))
         {
             var other = d == DeckA ? DeckB : DeckA;
             var e = Queue[0];
@@ -1349,6 +1370,7 @@ public sealed partial class MainViewModel : ObservableObject
         track.PlayedThisSession = true;
         _playedThisSession.Add(track.Id);
         PlayLog.Record(track, deck.Name);
+        RememberSinger(deck, track);
         Library.Save(track);
         LibraryView.Refresh();
         UpdateSuggestions();
@@ -1736,6 +1758,8 @@ public sealed partial class MainViewModel : ObservableObject
     public UpdateService Updater { get; } = new();
     [ObservableProperty] private string _updateStatus = "";
     [ObservableProperty] private bool _updateAvailable;
+    /// <summary>C'è una versione nuova ma è uscita dopo la scadenza degli aggiornamenti della licenza.</summary>
+    [ObservableProperty] private bool _updateBlocked;
     [ObservableProperty] private bool _updating;
     public string AppVersion => "v" + Updater.CurrentVersion;
 
@@ -1744,7 +1768,12 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             var v = await Updater.CheckAsync();
-            if (v != null) { UpdateAvailable = true; UpdateStatus = $"Aggiornamento {v} disponibile"; }
+            if (v != null && !await CanInstallVersionAsync(v))
+            {
+                UpdateBlocked = true; UpdateAvailable = false;
+                UpdateStatus = $"Versione {v} disponibile: è uscita dopo la scadenza dei tuoi aggiornamenti ({UpdatesUntil:dd/MM/yyyy}). Rinnova (10 €/anno) per riceverla.";
+            }
+            else if (v != null) { UpdateAvailable = true; UpdateBlocked = false; UpdateStatus = $"Aggiornamento {v} disponibile"; }
             else if (!silent) UpdateStatus = Updater.IsInstalled ? "Nessun aggiornamento" : "Versione non installata (portabile/debug): niente auto-update";
         }
         catch (Exception ex) { if (!silent) UpdateStatus = "Controllo aggiornamenti fallito: " + ex.Message; }
@@ -1944,70 +1973,154 @@ public sealed partial class MainViewModel : ObservableObject
         if (title != DedicationTitle) DedicationTitle = title;
     }
 
-    // ---------------------------------------------------------------- licenza donationware (legata alla macchina)
+    // ---------------------------------------------------------------- licenza (perpetua per macchina + aggiornamenti annuali per account)
 
-    /// <summary>Servizio cloud VOXA (Vercel): donazioni → licenza istantanea, richieste canzoni.</summary>
+    /// <summary>Servizio cloud Mixfonia (Vercel): cassa Stripe → licenza istantanea, scaletta remota.</summary>
     public const string CloudBaseUrl = "https://voxa-cloud.vercel.app";
-    public static string DonationUrl => $"{CloudBaseUrl}/dona?m={LicenseService.MachineId}";
+    public const int TrialDays = 30;
+    public static string PurchaseUrl => $"{CloudBaseUrl}/dona?m={LicenseService.MachineId}";
+    public string RenewUrl => License != null && !License.IsLegacy ? $"{PurchaseUrl}&email={Uri.EscapeDataString(License.Account)}" : PurchaseUrl;
     private static readonly System.Net.Http.HttpClient CloudHttp = new() { Timeout = TimeSpan.FromSeconds(10) };
 
-    /// <summary>Chiede al cloud se esiste già una licenza per questa macchina (dopo una donazione). Ritorna la chiave o null.</summary>
-    public async Task<string?> FetchLicenseFromCloudAsync()
+    public sealed record CloudLicense(string? Key, string? Token, bool Revoked);
+
+    /// <summary>Chiede al cloud chiave e token aggiornamenti di questa macchina (dopo un acquisto, un rinnovo o una reinstallazione).</summary>
+    public async Task<CloudLicense?> FetchLicenseFromCloudAsync()
     {
         try
         {
             using var r = await CloudHttp.GetAsync($"{CloudBaseUrl}/api/license?m={LicenseService.MachineId}");
-            if (!r.IsSuccessStatusCode) return null;
-            using var doc = System.Text.Json.JsonDocument.Parse(await r.Content.ReadAsStringAsync());
-            return doc.RootElement.TryGetProperty("key", out var k) ? k.GetString() : null;
+            var body = await r.Content.ReadAsStringAsync();
+            using var doc = System.Text.Json.JsonDocument.Parse(body);
+            var root = doc.RootElement;
+            if (!r.IsSuccessStatusCode)
+                return root.TryGetProperty("revoked", out var rv) && rv.ValueKind == System.Text.Json.JsonValueKind.True ? new CloudLicense(null, null, true) : null;
+            return new CloudLicense(
+                root.TryGetProperty("key", out var k) && k.ValueKind == System.Text.Json.JsonValueKind.String ? k.GetString() : null,
+                root.TryGetProperty("token", out var t) && t.ValueKind == System.Text.Json.JsonValueKind.String ? t.GetString() : null, false);
         }
         catch { return null; }
     }
 
-    /// <summary>Dopo l'apertura della pagina di donazione: attende la chiave e attiva da solo (max 15 minuti).</summary>
+    /// <summary>Dopo l'apertura della cassa: attende chiave/token e attiva da solo (max 15 minuti). Ritorna true se qualcosa è cambiato.</summary>
     public async Task<bool> WaitForCloudLicenseAsync(CancellationToken ct)
     {
+        var before = (Settings.LicenseCode, Settings.UpdatesToken);
         for (int i = 0; i < 180 && !ct.IsCancellationRequested; i++)
         {
-            var key = await FetchLicenseFromCloudAsync();
-            if (key != null && ActivateLicense(key)) return true;
+            var c = await FetchLicenseFromCloudAsync();
+            if (c != null && ApplyCloudLicense(c) && (Settings.LicenseCode, Settings.UpdatesToken) != before) return true;
             try { await Task.Delay(5000, ct); } catch { break; }
         }
         return false;
     }
+
     public LicenseService.LicenseInfo? License { get; private set; }
+    public LicenseService.UpdatesToken? Token { get; private set; }
     public bool IsLicensed => License != null;
-    public string SupportLabel => IsLicensed ? $"❤ {License!.Name}" : "❤ Sostieni VOXA";
+    /// <summary>Ultimo giorno in cui le release pubblicate si possono installare (licenza o token dell'account, il più tardi).</summary>
+    public DateTime? UpdatesUntil
+    {
+        get
+        {
+            if (License == null) return null;
+            var u = License.UpdatesUntil;
+            if (Token != null && !License.IsLegacy && Token.Account == License.Account && Token.Until > u) u = Token.Until;
+            return u;
+        }
+    }
+    public bool UpdatesActive => UpdatesUntil is { } u && u.Date >= DateTime.UtcNow.Date;
+    public int TrialDaysLeft => Settings.TrialStart is { } s ? Math.Max(0, TrialDays - (int)(DateTime.UtcNow - s).TotalDays) : TrialDays;
+    public bool IsTrial => !IsLicensed && TrialDaysLeft > 0;
+    /// <summary>Senza licenza e prova finita: l'app suona ma proiettore con scritta, niente cloud/AI.</summary>
+    public bool IsDemo => !IsLicensed && TrialDaysLeft <= 0;
+    public string SupportLabel => IsLicensed ? $"❤ {License!.Name}" + (UpdatesActive ? "" : " · aggiornamenti scaduti") : IsTrial ? $"Prova: {TrialDaysLeft} giorni" : "DEMO · acquista la licenza (20 €)";
 
     private void LoadLicense()
     {
+        if (Settings.TrialStart == null) { Settings.TrialStart = DateTime.UtcNow; SaveSettings(); }
         License = LicenseService.Verify(Settings.LicenseCode);
-        OnPropertyChanged(nameof(IsLicensed)); OnPropertyChanged(nameof(SupportLabel));
-        // donazione fatta da un altro dispositivo o app reinstallata: recupero silenzioso
-        if (!IsLicensed) _ = Task.Run(async () => { var k = await FetchLicenseFromCloudAsync(); if (k != null) Application.Current?.Dispatcher.BeginInvoke(() => ActivateLicense(k)); });
+        Token = LicenseService.VerifyToken(Settings.UpdatesToken);
+        NotifyLicense();
+        // acquisto fatto da un altro dispositivo, rinnovo dell'account o app reinstallata: recupero silenzioso
+        _ = Task.Run(async () => { var c = await FetchLicenseFromCloudAsync(); if (c != null) Application.Current?.Dispatcher.BeginInvoke(() => ApplyCloudLicense(c)); });
     }
 
+    private void NotifyLicense()
+    {
+        foreach (var p in new[] { nameof(IsLicensed), nameof(SupportLabel), nameof(IsTrial), nameof(IsDemo), nameof(TrialDaysLeft), nameof(UpdatesUntil), nameof(UpdatesActive), nameof(RenewUrl) })
+            OnPropertyChanged(p);
+    }
+
+    /// <summary>Applica quanto arriva dal cloud: chiave nuova/diversa, token di rinnovo. Ritorna true se valido.</summary>
+    public bool ApplyCloudLicense(CloudLicense c)
+    {
+        bool ok = false;
+        if (c.Key != null && c.Key != Settings.LicenseCode) ok |= ActivateLicense(c.Key);
+        else if (c.Key != null) ok = true;
+        if (c.Token != null && c.Token != Settings.UpdatesToken) ok |= ActivateLicense(c.Token);
+        return ok;
+    }
+
+    /// <summary>Attiva una chiave (per questa macchina) o un token aggiornamenti (dell'account della chiave).</summary>
     public bool ActivateLicense(string? code)
     {
+        var tok = LicenseService.VerifyToken(code);
+        if (tok != null)
+        {
+            if (License == null || License.IsLegacy || tok.Account != License.Account) { StatusText = "Il token aggiornamenti è di un altro account."; return false; }
+            Settings.UpdatesToken = code!.Trim(); Token = tok; SaveSettings(); NotifyLicense();
+            StatusText = $"Aggiornamenti attivi fino al {UpdatesUntil:dd/MM/yyyy}.";
+            return true;
+        }
         var info = LicenseService.Verify(code);
         if (info == null) return false;
         Settings.LicenseCode = code!.Trim();
         License = info;
+        if (Token != null && Token.Account != info.Account) { Token = null; Settings.UpdatesToken = null; }
         SaveSettings();
-        OnPropertyChanged(nameof(IsLicensed)); OnPropertyChanged(nameof(SupportLabel));
+        NotifyLicense();
         StatusText = $"Grazie {info.Name}! Licenza attiva.";
         return true;
     }
 
-    /// <summary>Promemoria discreto, al massimo una volta al giorno, solo senza licenza.</summary>
+    /// <summary>Promemoria all'avvio: in demo ogni giorno, in prova solo negli ultimi 7 giorni (una volta al giorno).</summary>
     public bool ShouldShowSupportReminder()
     {
         if (IsLicensed) return false;
+        if (IsTrial && TrialDaysLeft > 7) return false;
         var last = Settings.LastSupportReminder;
         if (last != null && (DateTime.UtcNow - last.Value).TotalHours < 20) return false;
         Settings.LastSupportReminder = DateTime.UtcNow;
         SaveSettings();
         return true;
+    }
+
+    /// <summary>Funzioni riservate alla licenza (cloud, AI): in demo spiega e apre la finestra licenza.</summary>
+    public bool RequireLicense(string feature)
+    {
+        if (!IsDemo) return true;
+        StatusText = $"{feature}: serve la licenza Mixfonia (20 €, per sempre).";
+        if (Application.Current?.MainWindow is { } w) new Views.SupportWindow(this) { Owner = w }.ShowDialog();
+        return !IsDemo;
+    }
+
+    /// <summary>Le release pubblicate dopo la scadenza degli aggiornamenti non si installano (la data la dice GitHub).</summary>
+    public async Task<bool> CanInstallVersionAsync(string version)
+    {
+        if (IsDemo || IsTrial) return true; // in prova si aggiorna sempre; è la licenza scaduta che blocca
+        if (UpdatesUntil is not { } until) return true;
+        try
+        {
+            using var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, $"https://api.github.com/repos/OdineOsborne/karaokedj/releases/tags/v{version}");
+            req.Headers.UserAgent.ParseAdd("Mixfonia");
+            using var r = await CloudHttp.SendAsync(req);
+            if (!r.IsSuccessStatusCode) return true;
+            using var doc = System.Text.Json.JsonDocument.Parse(await r.Content.ReadAsStringAsync());
+            var published = doc.RootElement.GetProperty("published_at").GetDateTime().ToUniversalTime().Date;
+            return published <= until.Date;
+        }
+        catch { return true; }
     }
 
     // ---------------------------------------------------------------- rimozione brani (pulizia doppioni)
@@ -2061,7 +2174,8 @@ public sealed partial class MainViewModel : ObservableObject
         {
             if (!pressed)
             {
-                if (sub is "rev" or "slow" or "fwd" or "back") deck.HoldReleaseCommand.Execute(null);
+                if (sub is "rev" or "slow" or "fwd" or "back" or "nudgeup" or "nudgedown") deck.HoldReleaseCommand.Execute(null);
+                if (sub == "jogtouch") { deck.JogEnd(); }
                 return;
             }
             switch (sub)
@@ -2092,6 +2206,20 @@ public sealed partial class MainViewModel : ObservableObject
                 case "loophalf": deck.LoopHalfCommand.Execute(null); break;
                 case "loopdouble": deck.LoopDoubleCommand.Execute(null); break;
                 case "loopexit": deck.LoopExitCommand.Execute(null); break;
+                case "jumpback4": deck.BeatJump("-4"); break;
+                case "jumpfwd4": deck.BeatJump("4"); break;
+                case "jumpback8": deck.BeatJump("-8"); break;
+                case "jumpfwd8": deck.BeatJump("8"); break;
+                case "quantize": deck.Quantize = !deck.Quantize; break;
+                case "keymatch": KeyMatch(deck); break;
+                case "cuepfl": deck.CueOn = !deck.CueOn; break;
+                case "fader": if (continuous) deck.Fader = norm; break;
+                case "jogtouch": deck.JogStart(); deck.LastJogMessage = DateTime.UtcNow; break;
+                case "nudgeup": deck.Deck.JogStart(); deck.Deck.JogRate(1.06, 0.05); break;
+                case "nudgedown": deck.Deck.JogStart(); deck.Deck.JogRate(0.94, 0.05); break;
+                default:
+                    if (sub.StartsWith("hotcue") && int.TryParse(sub[6..], out var hc)) deck.HotCue((hc - 1).ToString());
+                    break;
                 case "filter": deck.FilterOn = !deck.FilterOn; break;
                 case "filtervalue": if (continuous) deck.FilterValue = norm * 2 - 1; break;
                 case "filterreset": deck.FilterValue = 0; break;
@@ -2126,14 +2254,20 @@ public sealed partial class MainViewModel : ObservableObject
                 case "fwd": deck.ForwardHoldCommand.Execute(null); break;
                 case "back": deck.BackwardHoldCommand.Execute(null); break;
                 case "jog":
-                    // encoder relativo (jog wheel MIDI): 1..63 avanti, 65..127 indietro
-                    if (continuous) { int v = (int)Math.Round(norm * 127); deck.Nudge(v == 0 ? 0 : v < 64 ? 1 : -1); }
+                    // encoder relativo (jog wheel MIDI): 1..63 avanti, 65..127 indietro (delta in tacche)
+                    if (continuous)
+                    {
+                        int v = (int)Math.Round(norm * 127);
+                        int delta = v == 0 ? 0 : v < 64 ? v : v - 128;
+                        if (deck.IsJogging) { deck.LastJogMessage = DateTime.UtcNow; deck.JogRate(Math.Clamp(delta * JogTicksToRate, -8, 8)); }
+                        else if (delta != 0) deck.Nudge(Math.Sign(delta));
+                    }
                     break;
             }
             return;
         }
 
-        if (!pressed) return;
+        if (!pressed) { if (action == "talk") TalkOver = false; return; }
         switch (action)
         {
             case "crossfader": if (continuous) { _crossfadeTarget = null; if (_mix != null) AbortMix("crossfader mosso a mano"); Crossfader = norm * 2 - 1; } break;
@@ -2148,15 +2282,51 @@ public sealed partial class MainViewModel : ObservableObject
             case "addqueue": AddToQueueCommand.Execute(null); break;
             case "queuetop": QueueToTopCommand.Execute(null); break;
             case "mixnow": MixNowCommand.Execute(null); break;
+            case "loadA": LoadSelectedToACommand.Execute(null); break;
+            case "loadB": LoadSelectedToBCommand.Execute(null); break;
+            case "browse": if (continuous) { int v = (int)Math.Round(norm * 127); MoveLibrarySelection(v == 0 ? 0 : v < 64 ? v : v - 128); } break;
+            case "browseup": MoveLibrarySelection(-1); break;
+            case "browsedown": MoveLibrarySelection(1); break;
+            case "browseload": if (SelectedTrack != null) LoadToDeck(FreeDeck(), SelectedTrack, SingerName, QueueKeyShift); break;
             case "rhythm.play": Rhythm.TogglePlayCommand.Execute(null); break;
             case "rhythm.tap": Rhythm.Tap(); break;
             case "rhythm.resync": Rhythm.ResyncCommand.Execute(null); break;
             case "rhythm.volume": if (continuous) Rhythm.Volume = (float)(norm * 1.2); break;
             case "padstop": StopAllPadsCommand.Execute(null); break;
+            case "mic": MicOn = !MicOn; break;
+            case "talk": TalkOver = pressed; break;
+            case "micvolume": if (continuous) MicGainDb = (norm - 0.5) * 48; break;
+            case "cuemix": if (continuous) CueMix = norm; break;
+            case "cuevolume": if (continuous) CueVolume = norm; break;
+            case "fill": FillMusicOn = !FillMusicOn; break;
+            case "rotation": RotationOn = !RotationOn; break;
             default:
                 if (action.StartsWith("pad") && int.TryParse(action[3..], out var n)) TriggerPadByIndex(n - 1);
                 break;
         }
+    }
+
+    /// <summary>Tacche del jog → velocità di scratch (dipende dalla risoluzione del piatto; le console Pioneer/Numark stanno intorno a 0,1).</summary>
+    public const double JogTicksToRate = 0.12;
+
+    /// <summary>Encoder BROWSE della console: sposta la selezione in libreria.</summary>
+    public void MoveLibrarySelection(int delta)
+    {
+        if (delta == 0) return;
+        var items = LibraryView.Cast<Track>().ToList();
+        if (items.Count == 0) return;
+        int i = SelectedTrack != null ? items.IndexOf(SelectedTrack) : -1;
+        i = Math.Clamp(i + delta, 0, items.Count - 1);
+        SelectedTrack = items[i];
+        LibraryScrollRequested?.Invoke(SelectedTrack);
+    }
+    public event Action<Track>? LibraryScrollRequested;
+
+    /// <summary>Dal timer: se la mano è sul piatto ma non arrivano più tacche, il disco si ferma (come un vinile tenuto).</summary>
+    private void TickControllerJog()
+    {
+        foreach (var d in new[] { DeckA, DeckB })
+            if (d.IsJogging && d.LastJogMessage != default && (DateTime.UtcNow - d.LastJogMessage).TotalMilliseconds > 70) { d.JogRate(0); d.LastJogMessage = DateTime.UtcNow; }
     }
 
     /// <summary>Tasto premuto/rilasciato nella finestra principale. Ritorna true se gestito.</summary>
@@ -2170,13 +2340,6 @@ public sealed partial class MainViewModel : ObservableObject
         return true;
     }
 
-    public void ApplyMidiDevice(string? name)
-    {
-        Settings.MidiDeviceName = name;
-        if (string.IsNullOrEmpty(name)) { Midi.Close(); StatusText = "MIDI disattivato"; return; }
-        StatusText = Midi.Open(name) ? "MIDI: " + name : "Impossibile aprire " + name;
-    }
-
     // ---------------------------------------------------------------- generi con AI
 
     [ObservableProperty] private bool _isClassifying;
@@ -2187,6 +2350,7 @@ public sealed partial class MainViewModel : ObservableObject
     private async Task ClassifyGenresAsync()
     {
         if (IsClassifying) { _classifyCts?.Cancel(); return; }
+        if (!RequireLicense("Generi con AI")) return;
         var key = Secret.Unprotect(Settings.AnthropicApiKeyProtected);
         if (string.IsNullOrEmpty(key)) { StatusText = "Serve la chiave API Anthropic (Impostazioni → AI)"; return; }
         var todo = Tracks.Where(t => !t.IsKaraoke && string.IsNullOrWhiteSpace(t.Genre) && !MainViewModel.IsCryptic(t)).ToList();
@@ -2391,7 +2555,7 @@ public sealed partial class MainViewModel : ObservableObject
             case "move": if (c.Index is int mi && c.To is int mt && mi >= 0 && mi < Queue.Count && mt >= 0 && mt < Queue.Count && mi != mt) Queue.Move(mi, mt); break;
             case "next": PlayNextCommand.Execute(null); StatusText = "Dal telefono: mix now"; break;
             case "fadeA": StartCrossfade(-1); break;
-            case "fadeB": StartCrossfade(1); break;
+            case "request": AddRequest(c); break;
         }
     }
 
@@ -2413,7 +2577,7 @@ public sealed partial class MainViewModel : ObservableObject
         _downloadCts = new CancellationTokenSource();
         IsDownloading = true;
         DownloadPercent = 0;
-        var progress = new Progress<VOXA.Plugins.ImportProgress>(s =>
+        var progress = new Progress<Mixfonia.Plugins.ImportProgress>(s =>
         {
             DownloadStatus = s.Message;
             if (s.Percent >= 0) DownloadPercent = s.Percent;
@@ -2465,6 +2629,7 @@ public sealed partial class MainViewModel : ObservableObject
     private async Task SuggestExternalAsync()
     {
         if (IsSuggestingExternal) return;
+        if (!RequireLicense("Suggerimenti AI")) return;
         var r = CompatReference();
         if (r == null) { ExternalSuggestionsLabel = "Manda in play (o seleziona) un brano di riferimento"; return; }
         var key = Secret.Unprotect(Settings.AnthropicApiKeyProtected);

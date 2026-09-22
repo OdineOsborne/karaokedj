@@ -15,6 +15,8 @@ public sealed class RemoteCommand
     [JsonPropertyName("index")] public int? Index { get; set; }
     [JsonPropertyName("to")] public int? To { get; set; }
     [JsonPropertyName("singer")] public string? Singer { get; set; }
+    [JsonPropertyName("title")] public string? Title { get; set; }
+    [JsonPropertyName("note")] public string? Note { get; set; }
 }
 
 /// <summary>

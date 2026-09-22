@@ -1,4 +1,4 @@
-<Window x:Class="KaraokeDJ.Views.SettingsWindow"
+<Window x:Class="KaraokeDJ.Views.SettingsWindow" FontFamily="{StaticResource UiFont}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Impostazioni" Width="860" Height="700" MinWidth="760" MinHeight="600" WindowStartupLocation="CenterOwner"
@@ -45,6 +45,14 @@
                         <DockPanel Margin="0,0,0,8">
                             <TextBlock Text="Uscita audio" Width="140" VerticalAlignment="Center"/>
                             <ComboBox x:Name="DeviceCombo" DisplayMemberPath="Name" SelectedValuePath="Id"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,8">
+                            <TextBlock Text="Cuffia (pre-ascolto)" Width="140" VerticalAlignment="Center" ToolTip="Seconda scheda audio per il pre-ascolto: i deck con 🎧 acceso si sentono qui, mescolati col master dalla manopola CUE del mixer."/>
+                            <ComboBox x:Name="CueCombo" DisplayMemberPath="Name" SelectedValuePath="Id"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,8">
+                            <TextBlock Text="Microfono" Width="140" VerticalAlignment="Center" ToolTip="Ingresso del microfono: gain, eco/riverbero e talk-over dal blocco MIC del mixer."/>
+                            <ComboBox x:Name="MicCombo" DisplayMemberPath="Name" SelectedValuePath="Id"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,8">
                             <TextBlock Text="Cartella download" Width="140" VerticalAlignment="Center" ToolTip="Dove salvare MP3/video scaricati (sottocartelle per playlist e Suno)"/>
@@ -108,6 +116,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="0,0,0,8">
@@ -115,11 +124,21 @@
                         <Button DockPanel.Dock="Right" Content="Collega" Click="MidiConnect_Click" Margin="6,0,0,0"/>
                         <ComboBox x:Name="MidiCombo"/>
                     </DockPanel>
-                    <DockPanel Grid.Row="1" Margin="0,0,0,8">
+                    <Border Grid.Row="1" Background="{StaticResource InnerPanelBrush}" CornerRadius="3" Padding="10,8" Margin="0,0,0,8">
+                        <StackPanel>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Mappatura di fabbrica" Style="{StaticResource SmallButton}" Command="{Binding ResetControllerMappingCommand}" Margin="8,0,0,0"
+                                        ToolTip="Cancella le mappature imparate e torna al preset della console"/>
+                                <TextBlock Text="{Binding ControllerStatus}" FontWeight="Medium" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                            </DockPanel>
+                            <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,6,0,0" x:Name="SupportedList"/>
+                        </StackPanel>
+                    </Border>
+                    <DockPanel Grid.Row="2" Margin="0,0,0,8">
                         <TextBlock x:Name="MidiActivity" Style="{StaticResource Muted}" Text="Nessun messaggio ricevuto" VerticalAlignment="Center"/>
                         <TextBlock Style="{StaticResource Muted}" HorizontalAlignment="Right" TextWrapping="Wrap" MaxWidth="520" TextAlignment="Right" Text="«Impara MIDI» poi muovi il controllo sul controller · «Impara tasto» poi premi la combinazione sulla tastiera. Nell'app: tasto destro su un comando fa lo stesso."/>
                     </DockPanel>
-                    <ListBox Grid.Row="2" x:Name="MidiList" HorizontalContentAlignment="Stretch">
+                    <ListBox Grid.Row="3" x:Name="MidiList" HorizontalContentAlignment="Stretch">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Grid>
@@ -179,7 +198,7 @@
                     <DockPanel Grid.Row="2" Margin="0,0,0,6">
                         <TextBlock Text="PLUGIN INSTALLATI" Style="{StaticResource SectionTitle}" VerticalAlignment="Center"/>
                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <Button Content="📦 Installa plugin…" Style="{StaticResource SmallButton}" Click="InstallPlugin_Click" Margin="0,0,6,0" ToolTip="Scegli lo zip (o la DLL) del plugin: viene copiato nella cartella plugin. Poi riavvia VOXA."/>
+                            <Button Content="📦 Installa plugin…" Style="{StaticResource SmallButton}" Click="InstallPlugin_Click" Margin="0,0,6,0" ToolTip="Scegli lo zip (o la DLL) del plugin: viene copiato nella cartella plugin. Poi riavvia Mixfonia."/>
                             <Button Content="📁 Apri cartella" Style="{StaticResource SmallButton}" Click="OpenPlugins_Click" ToolTip="%AppData%\KaraokeDJ\plugins"/>
                         </StackPanel>
                         <TextBlock/>
@@ -191,7 +210,7 @@
                                     <Button DockPanel.Dock="Right" Content="{Binding MaintenanceLabel}" Style="{StaticResource SmallButton}" Click="PluginMaintenance_Click" Tag="{Binding}"
                                             Visibility="{Binding MaintenanceLabel, Converter={StaticResource NullToVis}}" Margin="6,0,0,0"/>
                                     <StackPanel>
-                                        <TextBlock><Run Text="{Binding Name, Mode=OneWay}" FontWeight="Bold"/><Run Text="  "/><Run Text="{Binding Version, Mode=OneWay}" Foreground="{StaticResource MutedBrush}"/></TextBlock>
+                                        <TextBlock><Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold"/><Run Text="  "/><Run Text="{Binding Version, Mode=OneWay}" Foreground="{StaticResource MutedBrush}"/></TextBlock>
                                         <TextBlock Text="{Binding Description}" Style="{StaticResource Muted}" TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </DockPanel>

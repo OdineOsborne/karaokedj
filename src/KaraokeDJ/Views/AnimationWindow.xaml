@@ -1,4 +1,4 @@
-<Window x:Class="KaraokeDJ.Views.AnimationWindow"
+<Window x:Class="KaraokeDJ.Views.AnimationWindow" FontFamily="{StaticResource UiFont}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:m="clr-namespace:KaraokeDJ.Models"
@@ -27,7 +27,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox Grid.Column="0" Text="{Binding Celebration.Name, UpdateSourceTrigger=PropertyChanged}" FontSize="16" FontWeight="Bold" ToolTip="Nome del festeggiato (o dei festeggiati)"/>
+                    <TextBox Grid.Column="0" Text="{Binding Celebration.Name, UpdateSourceTrigger=PropertyChanged}" FontSize="16" FontWeight="SemiBold" ToolTip="Nome del festeggiato (o dei festeggiati)"/>
                     <ComboBox Grid.Column="1" x:Name="PronounCombo" Width="70" Margin="6,0,0,0" SelectedValuePath="Content" SelectedValue="{Binding Celebration.Pronoun}">
                         <ComboBoxItem Content="lui"/><ComboBoxItem Content="lei"/><ComboBoxItem Content="loro"/>
                     </ComboBox>
@@ -104,7 +104,7 @@
                 </WrapPanel>
                 <TextBlock Grid.Row="5" Text="{Binding LyricsStatus}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,8"/>
 
-                <Border Grid.Row="6" Background="{StaticResource InnerPanelBrush}" CornerRadius="8" Padding="8">
+                <Border Grid.Row="6" Background="{StaticResource InnerPanelBrush}" CornerRadius="3" Padding="8">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>

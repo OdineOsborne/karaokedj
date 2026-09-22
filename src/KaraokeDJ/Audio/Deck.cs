@@ -50,7 +50,15 @@ public sealed class Deck : ISampleProvider
     /// <summary>Pan -1 (sinistra) … +1 (destra), potenza costante.</summary>
     public float Pan { get => _pan; set => _pan = Math.Clamp(value, -1f, 1f); }
     private float _pan, _lastPanL = 1f, _lastPanR = 1f;
-    public float EffectiveGain => _volume * _crossGain;
+    /// <summary>Attenuazione dal talk-over del microfono (1 = niente), impostata dal motore.</summary>
+    public volatile float Duck = 1f;
+    /// <summary>Fader di linea del canale (0…1), come sulla console: separato dal gain (trim).</summary>
+    public float Fader { get => _fader; set => _fader = Math.Clamp(value, 0f, 1f); }
+    private float _fader = 1f;
+    public float EffectiveGain => _volume * _crossGain * Duck * _fader;
+    /// <summary>Pre-ascolto in cuffia (PFL): il segnale post-FX e pre-fader finisce nell'anello letto dall'uscita cuffia.</summary>
+    public volatile bool CueOn;
+    public SampleRing CueRing { get; } = new(SourceFactory.SampleRate * 2, SourceFactory.SampleRate / 5 * 2);
 
     public int KeyShift
     {
@@ -523,10 +531,15 @@ public sealed class Deck : ISampleProvider
         }
     }
 
+    /// <summary>Ultimo errore del thread audio (decoder rotto) e conteggio: diagnostica per il soak test e la barra di stato.</summary>
+    public string? LastError { get; private set; }
+    public int Faults { get; private set; }
+
     public int Read(float[] buffer, int offset, int count)
     {
         bool ended = false;
         lock (_gate)
+        try
         {
             if (!_playing || _st == null)
             {
@@ -555,6 +568,7 @@ public sealed class Deck : ISampleProvider
                     RecordHistory(buffer, offset, n);
                     break;
             }
+            if (CueOn) CueRing.Write(buffer, offset, n);
             ApplyGain(buffer, offset, n);
             float pl = 0, pr = 0;
             for (int i = 0; i + 1 < n; i += 2) { float a = Math.Abs(buffer[offset + i]); if (a > pl) pl = a; float b = Math.Abs(buffer[offset + i + 1]); if (b > pr) pr = b; }
@@ -568,7 +582,15 @@ public sealed class Deck : ISampleProvider
                 ended = true;
             }
         }
-        if (ended) TrackEnded?.Invoke();
+        catch (Exception ex)
+        {
+            // un decoder che si rompe a metà brano non deve far cadere tutto il mixer: silenzio, brano finito, si va avanti
+            Array.Clear(buffer, offset, count);
+            _playing = false; _positionSec = _durationSec; ended = true;
+            LastError = ex.Message; Faults++;
+            System.Diagnostics.Debug.WriteLine("Deck " + Name + " read error: " + ex);
+        }
+        if (ended) { try { TrackEnded?.Invoke(); } catch (Exception ex) { LastError = ex.Message; Faults++; } }
         return count;
     }
 

@@ -1,6 +1,6 @@
 using System.Net.Http;
 using System.Text.Json;
-using VOXA.Plugins;
+using Mixfonia.Plugins;
 
 namespace KaraokeDJ.Services;
 
@@ -11,7 +11,7 @@ namespace KaraokeDJ.Services;
 public static class LegalSources
 {
     public static readonly HttpClient Http = new() { Timeout = TimeSpan.FromMinutes(10) };
-    static LegalSources() { Http.DefaultRequestHeaders.UserAgent.ParseAdd("VOXA/1.6 (+https://voxa-cloud.vercel.app)"); }
+    static LegalSources() { Http.DefaultRequestHeaders.UserAgent.ParseAdd("Mixfonia/1.6 (+https://voxa-cloud.vercel.app)"); }
 
     public static IImportSource[] All { get; } = { new AudiusSource(), new JamendoSource(), new ArchiveSource() };
 
@@ -110,7 +110,7 @@ public sealed class AudiusSource : IImportSource
     {
         progress?.Report(new ImportProgress("Cerco su Audius…"));
         var host = await HostAsync(ct);
-        var json = await LegalSources.Http.GetStringAsync($"{host}/v1/tracks/search?query={Uri.EscapeDataString(input)}&app_name=VOXA", ct);
+        var json = await LegalSources.Http.GetStringAsync($"{host}/v1/tracks/search?query={Uri.EscapeDataString(input)}&app_name=Mixfonia", ct);
         using var doc = JsonDocument.Parse(json);
         var best = new List<(string id, string title, string artist, bool dl, double score)>();
         foreach (var t in doc.RootElement.GetProperty("data").EnumerateArray())
@@ -129,7 +129,7 @@ public sealed class AudiusSource : IImportSource
             throw new InvalidOperationException($"Trovato \"{top.artist} - {top.title}\" ma l'artista non ne consente il download (solo streaming). Prova un altro titolo.");
         }
         var dest = LegalSources.DestPath(destFolder, pick.artist, pick.title, ".mp3");
-        dest = await LegalSources.DownloadAsync(host + "/v1/tracks/" + pick.id + "/download?app_name=VOXA", dest, progress, "Audius · " + pick.artist + " - " + pick.title, ct);
+        dest = await LegalSources.DownloadAsync(host + "/v1/tracks/" + pick.id + "/download?app_name=Mixfonia", dest, progress, "Audius · " + pick.artist + " - " + pick.title, ct);
         LegalSources.Tag(dest, pick.artist, pick.title, "Audius");
         progress?.Report(new ImportProgress($"Scaricato da Audius: {pick.artist} - {pick.title}", 100));
         return new[] { dest };

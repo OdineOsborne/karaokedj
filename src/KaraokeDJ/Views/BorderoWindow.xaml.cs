@@ -179,7 +179,7 @@ public partial class BorderoWindow : Window
           .Append(".meta{font-size:12px;margin:0 0 12px}.meta b{display:inline-block;min-width:130px}.sign{margin-top:36px;font-size:12px}.sign span{display:inline-block;width:45%}")
           .Append("@media print{button{display:none}}</style></head><body>");
         sb.Append("<button onclick=\"window.print()\" style=\"float:right\">Stampa / salva PDF</button>");
-        sb.Append("<h1>Programma musicale (borderò SIAE)</h1><h2>Elenco delle opere eseguite — compilato con VOXA</h2>");
+        sb.Append("<h1>Programma musicale (borderò SIAE)</h1><h2>Elenco delle opere eseguite — compilato con Mixfonia</h2>");
         sb.Append("<div class=\"meta\">")
           .Append($"<div><b>Data</b> {from:dd/MM/yyyy} dalle {from:HH:mm} alle {to:HH:mm}</div>")
           .Append($"<div><b>Locale / evento</b> {H(Locale.Text.Trim())}</div><div><b>Comune</b> {H(Comune.Text.Trim())}</div>")
@@ -194,7 +194,7 @@ public partial class BorderoWindow : Window
         sb.Append("</body></html>");
         try
         {
-            var path = Path.Combine(Path.GetTempPath(), $"voxa-bordero-{from:yyyy-MM-dd}.html");
+            var path = Path.Combine(Path.GetTempPath(), $"mixfonia-bordero-{from:yyyy-MM-dd}.html");
             File.WriteAllText(path, sb.ToString(), Encoding.UTF8);
             Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
             Status.Text = "Aperto nel browser: usa Stampa → Salva come PDF";

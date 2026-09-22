@@ -3,9 +3,9 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>VOXA.Plugins</RootNamespace>
-    <AssemblyName>VOXA.Plugins</AssemblyName>
+    <RootNamespace>Mixfonia.Plugins</RootNamespace>
+    <AssemblyName>Mixfonia.Plugins</AssemblyName>
     <Version>1.0.0</Version>
-    <Description>Contratto dei plugin VOXA (sorgenti di importazione, host).</Description>
+    <Description>Contratto dei plugin Mixfonia (sorgenti di importazione, host).</Description>
   </PropertyGroup>
 </Project>

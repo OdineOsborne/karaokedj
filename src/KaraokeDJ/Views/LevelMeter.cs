@@ -16,9 +16,9 @@ public sealed class LevelMeter : FrameworkElement
 
     private static readonly Brush Bg = new SolidColorBrush(Color.FromRgb(0x0D, 0x0D, 0x12));
     private static readonly Brush Off = new SolidColorBrush(Color.FromRgb(0x22, 0x22, 0x2C));
-    private static readonly Brush Green = new SolidColorBrush(Color.FromRgb(0x00, 0xE5, 0xFF));
-    private static readonly Brush Yellow = new SolidColorBrush(Color.FromRgb(0xFF, 0xD6, 0x0A));
-    private static readonly Brush Red = new SolidColorBrush(Color.FromRgb(0xFF, 0x2D, 0x6D));
+    private static readonly Brush Green = new SolidColorBrush(Color.FromRgb(0x3D, 0xC9, 0x7A));
+    private static readonly Brush Yellow = new SolidColorBrush(Color.FromRgb(0xE8, 0xC5, 0x47));
+    private static readonly Brush Red = new SolidColorBrush(Color.FromRgb(0xF2, 0x5F, 0x5F));
     static LevelMeter() { Bg.Freeze(); Off.Freeze(); Green.Freeze(); Yellow.Freeze(); Red.Freeze(); }
 
     /// <summary>Converte un picco lineare (0..1+) in posizione 0..1 su scala dB (-60..0).</summary>

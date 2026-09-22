@@ -1,4 +1,4 @@
-namespace VOXA.Plugins;
+namespace Mixfonia.Plugins;
 
 /// <summary>Avanzamento di un'operazione lunga (messaggio, percentuale 0-100 oppure -1 = indeterminata).</summary>
 public sealed record ImportProgress(string Message, double Percent = -1);
@@ -34,8 +34,8 @@ public interface IPluginHost
     void SetStatus(string text);
 }
 
-/// <summary>Un plugin VOXA: una DLL in %AppData%\KaraokeDJ\plugins\&lt;cartella&gt;\ con una classe che implementa questa interfaccia.</summary>
-public interface IVoxaPlugin
+/// <summary>Un plugin Mixfonia: una DLL in %AppData%\KaraokeDJ\plugins\&lt;cartella&gt;\ con una classe che implementa questa interfaccia.</summary>
+public interface IMixfoniaPlugin
 {
     string Id { get; }
     string Name { get; }

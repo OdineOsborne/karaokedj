@@ -100,6 +100,8 @@ public partial class DeckControl : UserControl
         if (sender is Slider s) s.Value = 0;
     }
 
+    private void TempoReset_Click(object sender, MouseButtonEventArgs e) { if (DataContext is DeckViewModel vm) vm.TempoPercent = 0; }
+
     private void Pan_DoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (DataContext is DeckViewModel vm) vm.Pan = 0;
@@ -108,6 +110,16 @@ public partial class DeckControl : UserControl
     private void Gain_DoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (DataContext is DeckViewModel vm) vm.GainDb = 0;
+    }
+
+    private void HotCue_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button b && b.Tag is int i && DataContext is DeckViewModel vm) vm.HotCueCommand.Execute(i.ToString());
+    }
+
+    private void HotCue_Right(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Button b && b.Tag is int i && DataContext is DeckViewModel vm) { vm.HotCueClearCommand.Execute(i.ToString()); e.Handled = true; }
     }
 
     private void Loop_Click(object sender, RoutedEventArgs e)

@@ -1,0 +1,304 @@
+{
+ "id": "hercules-starlight",
+ "name": "Hercules DJControl Starlight",
+ "match": [
+  "Starlight"
+ ],
+ "source": "Mixxx mapping \"Hercules DJControl Starlight\" (DJ Phatso for Hercules Technical Support, contributions by Kerrick Staley), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 7,
+   "action": "a.play"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 6,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 5,
+   "action": "a.sync"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 12,
+   "action": "a.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 8,
+   "action": "a.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 7,
+   "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 6,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 5,
+   "action": "b.sync"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 12,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 8,
+   "action": "b.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 12,
+   "action": "cuemix"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 0,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 1,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 2,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 3,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 16,
+   "action": "a.loop1"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 17,
+   "action": "a.loop2"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 18,
+   "action": "a.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 19,
+   "action": "a.loop8"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 48,
+   "action": "pad1"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 49,
+   "action": "pad2"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 50,
+   "action": "pad3"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 51,
+   "action": "pad4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 0,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 1,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 2,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 3,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 16,
+   "action": "b.loop1"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 17,
+   "action": "b.loop2"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 18,
+   "action": "b.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 19,
+   "action": "b.loop8"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 48,
+   "action": "pad5"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 49,
+   "action": "pad6"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 50,
+   "action": "pad7"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 51,
+   "action": "pad8"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 0,
+   "action": "crossfader"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 0,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 2,
+   "action": "a.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 1,
+   "action": "a.filtervalue"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 8,
+   "action": "a.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 10,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 9,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 0,
+   "action": "b.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 2,
+   "action": "b.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 1,
+   "action": "b.filtervalue"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 8,
+   "action": "b.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 10,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 9,
+   "action": "b.jog",
+   "relative": true
+  }
+ ]
+}

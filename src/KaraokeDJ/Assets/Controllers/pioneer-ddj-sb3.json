@@ -1,0 +1,628 @@
+{
+ "id": "pioneer-ddj-sb3",
+ "name": "Pioneer DDJ-SB3",
+ "match": [
+  "DDJ-SB3"
+ ],
+ "source": "Mixxx mapping \"Pioneer-DDJ-SB3\" (Dancephy.com), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 11,
+   "action": "a.play"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 11,
+   "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 71,
+   "action": "a.play"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 71,
+   "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 12,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 12,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 72,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 72,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 88,
+   "action": "a.sync"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 88,
+   "action": "b.sync"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 92,
+   "action": "a.sync"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 92,
+   "action": "b.sync"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 34,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 34,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 35,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 35,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 54,
+   "action": "a.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 54,
+   "action": "b.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 53,
+   "action": "a.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 53,
+   "action": "b.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 103,
+   "action": "a.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 103,
+   "action": "b.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 33,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 33,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 0,
+   "action": "a.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 0,
+   "action": "b.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 5,
+   "action": "a.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 5,
+   "action": "b.tempo"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 26,
+   "action": "a.keylock"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 26,
+   "action": "b.keylock"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 19,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 19,
+   "action": "b.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 4,
+   "action": "a.volume"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 4,
+   "action": "b.volume"
+  },
+  {
+   "type": "cc",
+   "channel": 7,
+   "number": 8,
+   "action": "master"
+  },
+  {
+   "type": "cc",
+   "channel": 7,
+   "number": 13,
+   "action": "cuevolume"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 70,
+   "action": "loadA"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 71,
+   "action": "loadB"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 84,
+   "action": "a.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 84,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 20,
+   "action": "a.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 20,
+   "action": "b.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 80,
+   "action": "a.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 80,
+   "action": "b.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 18,
+   "action": "a.loophalf"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 18,
+   "action": "b.loophalf"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 19,
+   "action": "a.loopdouble"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 19,
+   "action": "b.loopdouble"
+  },
+  {
+   "type": "cc",
+   "channel": 7,
+   "number": 31,
+   "action": "crossfader"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 72,
+   "action": "a.jumpback4"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 72,
+   "action": "b.jumpback4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 73,
+   "action": "a.jumpback8"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 73,
+   "action": "b.jumpback8"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 66,
+   "action": "a.jumpback4"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 66,
+   "action": "b.jumpback4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 67,
+   "action": "a.jumpfwd4"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 67,
+   "action": "b.jumpfwd4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 76,
+   "action": "a.jumpfwd4"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 76,
+   "action": "b.jumpfwd4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 69,
+   "action": "a.back"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 69,
+   "action": "b.back"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 77,
+   "action": "a.jumpfwd8"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 77,
+   "action": "b.jumpfwd8"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 70,
+   "action": "a.fwd"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 70,
+   "action": "b.fwd"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 71,
+   "action": "a.rev"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 71,
+   "action": "b.rev"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 0,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 0,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 1,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 1,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 2,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 2,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 3,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 3,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 4,
+   "action": "a.hotcue5"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 4,
+   "action": "b.hotcue5"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 5,
+   "action": "a.hotcue6"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 5,
+   "action": "b.hotcue6"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 6,
+   "action": "a.hotcue7"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 6,
+   "action": "b.hotcue7"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 7,
+   "action": "a.hotcue8"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 7,
+   "action": "b.hotcue8"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 27,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 27,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 48,
+   "action": "pad1"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 48,
+   "action": "pad5"
+  },
+  {
+   "type": "note",
+   "channel": 10,
+   "number": 48,
+   "action": "pad1"
+  },
+  {
+   "type": "note",
+   "channel": 11,
+   "number": 48,
+   "action": "pad5"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 49,
+   "action": "pad2"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 49,
+   "action": "pad6"
+  },
+  {
+   "type": "note",
+   "channel": 10,
+   "number": 49,
+   "action": "pad2"
+  },
+  {
+   "type": "note",
+   "channel": 11,
+   "number": 49,
+   "action": "pad6"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 50,
+   "action": "pad3"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 50,
+   "action": "pad7"
+  },
+  {
+   "type": "note",
+   "channel": 10,
+   "number": 50,
+   "action": "pad3"
+  },
+  {
+   "type": "note",
+   "channel": 11,
+   "number": 50,
+   "action": "pad7"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 51,
+   "action": "pad4"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 51,
+   "action": "pad8"
+  },
+  {
+   "type": "note",
+   "channel": 10,
+   "number": 51,
+   "action": "pad4"
+  },
+  {
+   "type": "note",
+   "channel": 11,
+   "number": 51,
+   "action": "pad8"
+  }
+ ]
+}

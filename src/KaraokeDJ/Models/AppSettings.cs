@@ -4,6 +4,34 @@ public sealed class AppSettings
 {
     public List<string> LibraryFolders { get; set; } = new();
     public string? OutputDeviceId { get; set; }
+    /// <summary>Seconda uscita per la cuffia (pre-ascolto). Vuoto = nessuna.</summary>
+    public string? CueDeviceId { get; set; }
+    public double CueMix { get; set; } = 0;
+    public double CueVolume { get; set; } = 1;
+    /// <summary>Microfono: ingresso, gain, effetti voce, talk-over automatico.</summary>
+    public string? MicDeviceId { get; set; }
+    public bool MicOn { get; set; }
+    public double MicGainDb { get; set; } = 0;
+    public bool MicEcho { get; set; }
+    public bool MicReverb { get; set; } = true;
+    public bool MicAutoDuck { get; set; } = true;
+    public double MicDuckDb { get; set; } = -10;
+    public double MicDuckThresholdDb { get; set; } = -30;
+    public double MicEqLow { get; set; }
+    public double MicEqMid { get; set; }
+    public double MicEqHigh { get; set; }
+    /// <summary>Hot cue/loop/salti agganciati alla griglia.</summary>
+    public bool Quantize { get; set; } = true;
+    /// <summary>Musica di riempimento fra un cantante e l'altro: playlist (id) e volume.</summary>
+    public bool FillMusicOn { get; set; }
+    public string? FillPlaylistId { get; set; }
+    public double FillVolume { get; set; } = 0.7;
+    /// <summary>Rotazione equa dei cantanti nella coda.</summary>
+    public bool RotationOn { get; set; } = true;
+    /// <summary>Prenotazioni dal pubblico (pagina /canta via QR) accettate.</summary>
+    public bool PublicRequestsOn { get; set; } = true;
+    /// <summary>Filtro libreria: solo brani in tonalità compatibile col deck in riproduzione.</summary>
+    public bool KeyCompatFilter { get; set; }
     public int ProjectorScreenIndex { get; set; } = -1; // -1 = primo schermo non principale
     public double CrossfadeSeconds { get; set; } = 6;
     public bool AutoMix { get; set; }
@@ -37,8 +65,12 @@ public sealed class AppSettings
     /// <summary>Sorgente di importazione scelta (id) e client_id Jamendo (gratuito).</summary>
     public string? ImportSourceId { get; set; }
     public string? JamendoClientId { get; set; }
-    /// <summary>Chiave licenza donationware (legata alla macchina).</summary>
+    /// <summary>Chiave licenza (perpetua, legata alla macchina).</summary>
     public string? LicenseCode { get; set; }
+    /// <summary>Token aggiornamenti dell'account (rinnovo annuale), valido su tutte le macchine dell'account.</summary>
+    public string? UpdatesToken { get; set; }
+    /// <summary>Inizio del periodo di prova (30 giorni completi senza licenza).</summary>
+    public DateTime? TrialStart { get; set; }
     /// <summary>Cartella dove salvare i download (vuota = MusicaKaraokeDJ Downloads).</summary>
     public string? DownloadFolder { get; set; }
     public DateTime? LastSupportReminder { get; set; }

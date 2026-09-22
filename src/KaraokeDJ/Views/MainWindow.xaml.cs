@@ -43,7 +43,7 @@ public partial class MainWindow : Window
     {
         if (Vm.DeckA.IsPlaying || Vm.DeckB.IsPlaying)
         {
-            if (MessageBox.Show("C'è musica in riproduzione. Chiudere comunque?", "VOXA", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            if (MessageBox.Show("C'è musica in riproduzione. Chiudere comunque?", "Mixfonia", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             {
                 e.Cancel = true;
                 return;
@@ -123,6 +123,34 @@ public partial class MainWindow : Window
     private static bool TypingInTextBox() => Keyboard.FocusedElement is TextBox or System.Windows.Controls.Primitives.TextBoxBase or PasswordBox;
 
     private void FocusSearch() { SearchBox.Focus(); SearchBox.SelectAll(); }
+
+    /// <summary>Tasto destro sul nome cantante: menù con i nomi già visti (stasera e nelle serate passate).</summary>
+    private void SingerBox_Right(object sender, MouseButtonEventArgs e)
+    {
+        if (Vm.KnownSingers.Count == 0) { Vm.StatusText = "Nessun cantante ancora memorizzato"; return; }
+        var menu = new ContextMenu();
+        foreach (var name in Vm.KnownSingers)
+        {
+            var n = name;
+            var item = new MenuItem { Header = n + (Vm.SingerCountTonight(n) > 0 ? $"   ({Vm.SingerCountTonight(n)} stasera)" : "") };
+            item.Click += (_, _) => { Vm.SingerName = n; SingerBox.CaretIndex = n.Length; SingerBox.Focus(); };
+            menu.Items.Add(item);
+        }
+        menu.PlacementTarget = SingerBox; menu.IsOpen = true;
+        e.Handled = true;
+    }
+
+    // kill EQ dal tasto destro sulle manopole del mixer
+    private void KillHighA() => Vm.DeckA.EqHighKill = !Vm.DeckA.EqHighKill;
+    private void KillMidA() => Vm.DeckA.EqMidKill = !Vm.DeckA.EqMidKill;
+    private void KillLowA() => Vm.DeckA.EqLowKill = !Vm.DeckA.EqLowKill;
+    private void KillHighB() => Vm.DeckB.EqHighKill = !Vm.DeckB.EqHighKill;
+    private void KillMidB() => Vm.DeckB.EqMidKill = !Vm.DeckB.EqMidKill;
+    private void KillLowB() => Vm.DeckB.EqLowKill = !Vm.DeckB.EqLowKill;
+
+    private void Talk_Down(object sender, MouseButtonEventArgs e) { Vm.TalkOver = true; e.Handled = true; }
+    private void Talk_Up(object sender, MouseButtonEventArgs e) { Vm.TalkOver = false; e.Handled = true; }
+    private void MicGain_Reset(object sender, MouseButtonEventArgs e) => Vm.MicGainDb = 0;
 
     private void SingerBox_KeyDown(object sender, KeyEventArgs e)
     {
@@ -229,7 +257,13 @@ public partial class MainWindow : Window
 
     private void Duplicates_Click(object sender, RoutedEventArgs e) => new DuplicatesWindow(Vm) { Owner = this }.ShowDialog();
 
-    private void Remote_Click(object sender, RoutedEventArgs e) => new RemoteWindow(Vm) { Owner = this }.ShowDialog();
+    private void Remote_Click(object sender, RoutedEventArgs e) { if (Vm.RequireLicense("Scaletta remota")) new RemoteWindow(Vm) { Owner = this }.ShowDialog(); }
+
+    private void Renew_Click(object sender, RoutedEventArgs e)
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Vm.RenewUrl) { UseShellExecute = true }); } catch { }
+        new SupportWindow(Vm) { Owner = this }.ShowDialog();
+    }
 
     private void Bordero_Click(object sender, RoutedEventArgs e) => new BorderoWindow(Vm) { Owner = this }.ShowDialog();
 

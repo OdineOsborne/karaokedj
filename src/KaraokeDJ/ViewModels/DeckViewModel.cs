@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -74,6 +75,16 @@ public sealed partial class DeckViewModel : ObservableObject
     [ObservableProperty] private string? _videoPath;
     [ObservableProperty] private string? _loadError;
     [ObservableProperty] private bool _keyLock = true;
+    /// <summary>🎧 pre-ascolto in cuffia (PFL) di questo deck.</summary>
+    [ObservableProperty] private bool _cueOn;
+    /// <summary>Fader di canale 0…1 (linea), mosso dalla console o dal mixer a schermo.</summary>
+    [ObservableProperty] private double _fader = 1;
+    partial void OnFaderChanged(double value) => Deck.Fader = (float)value;
+    /// <summary>Ultimo messaggio jog dalla console (per fermare lo scratch quando la mano si ferma).</summary>
+    public DateTime LastJogMessage;
+    /// <summary>Sta suonando musica di riempimento fra un cantante e l'altro.</summary>
+    [ObservableProperty] private bool _isFill;
+    partial void OnCueOnChanged(bool value) => Deck.CueOn = value;
     [ObservableProperty] private string _bpmLabel = "";
     [ObservableProperty] private string _keyDisplay = "";
     [ObservableProperty] private bool _isAnalyzing;
@@ -87,6 +98,10 @@ public sealed partial class DeckViewModel : ObservableObject
 
     // ---------------------------------------------------------------- effetti
     [ObservableProperty] private bool _fxVisible;
+    [ObservableProperty] private bool _vinylVisible;
+    [ObservableProperty] private bool _stemsVisible;
+    [ObservableProperty] private bool _keyVisible;
+    [ObservableProperty] private bool _tagsVisible;
     [ObservableProperty] private bool _vocalRemove;
     [ObservableProperty] private double _vocalStrength = 1.0;
     [ObservableProperty] private double _filterValue;
@@ -425,7 +440,7 @@ public sealed partial class DeckViewModel : ObservableObject
     private void LoopBeats(string? beatsStr)
     {
         if (!HasTrack || !double.TryParse(beatsStr, System.Globalization.CultureInfo.InvariantCulture, out var beats)) return;
-        double start = Deck.LoopOn ? Deck.LoopStart : Deck.PositionSec;
+        double start = Deck.LoopOn ? Deck.LoopStart : Snap(Deck.PositionSec);
         double len = BeatSec() * beats;
         Deck.SetLoop(start, start + len);
         LoopOn = true;
@@ -646,7 +661,7 @@ public sealed partial class DeckViewModel : ObservableObject
             IsKaraoke = track.IsKaraoke;
             IsCdg = _cdg != null;
             IsVideo = track.IsVideo;
-            _lyrics = track.IsMidi ? MidiRenderService.ExtractLyrics(track.FilePath) : null;
+            _lyrics = track.IsMidi ? MidiRenderService.ExtractLyrics(track.FilePath) : track.IsLrc && track.LyricsPath != null ? LrcParser.Parse(track.LyricsPath) : null;
             _lineStarts = null; _lyricLine = -1; LyricPrev = LyricSung = LyricRest = LyricNext = "";
             IsMidiLyrics = _lyrics is { Count: > 0 };
             VideoPath = track.IsVideo ? track.FilePath : null;
@@ -668,6 +683,7 @@ public sealed partial class DeckViewModel : ObservableObject
             BeatOffsetSec = track.BeatOffsetSec;
             OnPropertyChanged(nameof(GenreTags));
             LoopExit();
+            RefreshHotCues();
             Tick();
             TrackLoaded?.Invoke(this);
             StartFineWaveform(track, audioPath);
@@ -700,6 +716,7 @@ public sealed partial class DeckViewModel : ObservableObject
         BpmLabel = "";
         KeyDisplay = "";
         _fineCts?.Cancel(); FineWaveform = null; NativeBpm = 0; CueSec = -1; BeatOffsetSec = -1;
+        RefreshHotCues();
         Tick();
         TrackLoaded?.Invoke(this);
     }
@@ -827,6 +844,84 @@ public sealed partial class DeckViewModel : ObservableObject
         if (Track == null) return;
         CueSec = -1; Track.CueSec = -1;
         CuesChanged?.Invoke(this);
+    }
+
+    // ---------------------------------------------------------------- hot cue / beat jump / quantize
+
+    public sealed partial class HotCueVm : ObservableObject
+    {
+        public int Index { get; init; }
+        [ObservableProperty] private double _sec = -1;
+        [ObservableProperty] private double _fraction = -1;
+        public bool HasCue => Sec >= 0;
+        public string Label => HasCue ? TimeSpan.FromSeconds(Sec).ToString(@"m\:ss") : (Index + 1).ToString();
+        public static readonly string[] Colors = { "#FFFF2D6D", "#FFFF8C00", "#FFFFD60A", "#FF3DFFA0", "#FF00E5FF", "#FF7DA3FF", "#FFB56BFF", "#FFFF6BD6" };
+        public string Color => Colors[Index % Colors.Length];
+        partial void OnSecChanged(double value) { OnPropertyChanged(nameof(HasCue)); OnPropertyChanged(nameof(Label)); }
+    }
+
+    public ObservableCollection<HotCueVm> HotCues { get; } = new(Enumerable.Range(0, 8).Select(i => new HotCueVm { Index = i }));
+    /// <summary>Frazioni 0..1 degli hot cue impostati (per l'onda); -1 = vuoto.</summary>
+    [ObservableProperty] private double[] _hotCueFractions = new double[8];
+    /// <summary>Quantizzazione: hot cue, loop e beat jump si agganciano al battito più vicino della griglia.</summary>
+    [ObservableProperty] private bool _quantize = true;
+
+    private void RefreshHotCues()
+    {
+        var f = new double[8];
+        for (int i = 0; i < 8; i++)
+        {
+            var s = Track?.HotCue(i) ?? -1;
+            HotCues[i].Sec = s;
+            HotCues[i].Fraction = f[i] = s >= 0 && DurationSec > 0 ? s / DurationSec : -1;
+        }
+        HotCueFractions = f;
+    }
+
+    /// <summary>Aggancia un tempo al battito più vicino, se la quantizzazione è attiva e la griglia è nota.</summary>
+    public double Snap(double sec)
+    {
+        if (!Quantize || Track == null || Track.Bpm <= 0) return sec;
+        double beat = 60.0 / Track.Bpm, anchor = GridAnchorSec;
+        double k = Math.Round((sec - anchor) / beat);
+        return Math.Clamp(anchor + k * beat, 0, Math.Max(0, DurationSec - 0.05));
+    }
+
+    /// <summary>Hot cue: vuoto → lo imposta qui (quantizzato); pieno → salta lì (e parte se in pausa).</summary>
+    [RelayCommand]
+    public void HotCue(string? idx)
+    {
+        if (Track == null || !int.TryParse(idx, out var i) || i < 0 || i > 7) return;
+        var hc = HotCues[i];
+        if (!hc.HasCue)
+        {
+            var sec = Math.Round(Snap(Deck.PositionSec), 3);
+            Track.SetHotCue(i, sec);
+            RefreshHotCues();
+            CuesChanged?.Invoke(this);
+            return;
+        }
+        Deck.Seek(hc.Sec);
+        if (!IsPlaying) Deck.Play();
+    }
+
+    [RelayCommand]
+    public void HotCueClear(string? idx)
+    {
+        if (Track == null || !int.TryParse(idx, out var i) || i < 0 || i > 7) return;
+        Track.SetHotCue(i, -1);
+        RefreshHotCues();
+        CuesChanged?.Invoke(this);
+    }
+
+    /// <summary>Salto di N battiti (negativo = indietro), agganciato alla griglia se quantizzato.</summary>
+    [RelayCommand]
+    public void BeatJump(string? beatsStr)
+    {
+        if (!HasTrack || !double.TryParse(beatsStr, System.Globalization.CultureInfo.InvariantCulture, out var beats)) return;
+        double target = Deck.PositionSec + BeatSec() * beats;
+        if (Quantize && Track?.Bpm > 0) target = Snap(target);
+        Deck.Seek(Math.Clamp(target, 0, Math.Max(0, DurationSec - 0.05)));
     }
 
     private readonly List<DateTime> _taps = new();

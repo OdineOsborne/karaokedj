@@ -1,9 +1,9 @@
-using VOXA.Plugins;
+using Mixfonia.Plugins;
 
-namespace VOXA.Plugin.YtDlp;
+namespace Mixfonia.Plugin.YtDlp;
 
 /// <summary>Plugin yt-dlp: YouTube (video, playlist), link Spotify (risolti in ricerca YouTube) e ricerca libera.</summary>
-public sealed class YtDlpPlugin : IVoxaPlugin, IImportSource
+public sealed class YtDlpPlugin : IMixfoniaPlugin, IImportSource
 {
     private readonly DownloadService _svc = new();
     private IPluginHost? _host;

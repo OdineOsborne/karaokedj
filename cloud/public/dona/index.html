@@ -3,83 +3,149 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sostieni VOXA</title>
+<title>Licenza Mixfonia</title>
+<link rel="icon" href="/brand/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
 <style>
-  :root { --violet:#8A2BFF; --cyan:#00E5FF; --pink:#FF2D6D; --bg:#0B0B0F; --text:#F4F4F8; --muted:#8A8AA0; }
+  :root { --violet:#8A2BFF; --cyan:#00E5FF; --pink:#FF2D6D; --bg:#0B0B0F; --text:#F4F4F8; --muted:#8A8AA0; --ok:#3DFFA0 }
   * { box-sizing:border-box }
   body { margin:0; min-height:100vh; background: radial-gradient(1200px 700px at 20% 0%, #2A1560 0%, var(--bg) 55%), var(--bg); color:var(--text); font-family:Montserrat, system-ui, sans-serif; display:flex; align-items:center; justify-content:center; padding:20px }
-  .card { width:100%; max-width:520px; background:linear-gradient(180deg,#17171F,#0F0F14); border:1px solid #2A2A38; border-radius:18px; padding:28px; box-shadow:0 0 60px rgba(138,43,255,.25) }
+  .card { width:100%; max-width:560px; background:linear-gradient(180deg,#17171F,#0F0F14); border:1px solid #2A2A38; border-radius:18px; padding:28px; box-shadow:0 0 60px rgba(138,43,255,.25) }
   h1 { margin:0 0 6px; font-size:34px; font-weight:900; letter-spacing:2px; background:linear-gradient(90deg,var(--violet),var(--cyan),var(--pink)); -webkit-background-clip:text; background-clip:text; color:transparent }
   .tag { color:var(--muted); letter-spacing:4px; font-size:11px; font-weight:600; margin-bottom:18px }
   p { line-height:1.5; margin:0 0 14px }
-  .id { font-family:Consolas, monospace; font-size:20px; font-weight:800; color:#FFD60A; background:#0D0D12; border-radius:10px; padding:10px 12px; margin:6px 0 16px; text-align:center; letter-spacing:1px }
-  .amounts { display:flex; gap:8px; margin:6px 0 16px; flex-wrap:wrap }
-  .amounts button { flex:1; min-width:70px; background:#1B1B24; color:var(--text); border:1px solid #2A2A38; border-radius:10px; padding:10px 8px; font:inherit; font-weight:800; cursor:pointer }
-  .amounts button.on { background:linear-gradient(135deg,var(--violet),var(--cyan)); border-color:transparent; color:#fff }
-  .amounts input { width:96px; background:#0D0D12; color:var(--text); border:1px solid #2A2A38; border-radius:10px; padding:10px; font:inherit; font-weight:800; text-align:center }
+  .lbl { color:var(--muted); font-size:11px; letter-spacing:2px; font-weight:600; margin:14px 0 4px }
+  .id { font-family:Consolas, monospace; font-size:20px; font-weight:800; color:#FFD60A; background:#0D0D12; border-radius:10px; padding:10px 12px; text-align:center; letter-spacing:1px }
+  input { width:100%; background:#0D0D12; color:var(--text); border:1px solid #2A2A38; border-radius:10px; padding:11px 12px; font:inherit; font-weight:600 }
+  input:focus { outline:none; border-color:var(--violet) }
+  .row { display:flex; gap:8px }
+  .btn { background:linear-gradient(135deg,var(--violet),var(--cyan)); color:#fff; border:0; border-radius:10px; padding:11px 16px; font:inherit; font-weight:800; cursor:pointer; white-space:nowrap }
+  .btn.ghost { background:#1B1B24; border:1px solid #2A2A38; color:var(--text) }
+  .btn:disabled { opacity:.5; cursor:default }
+  .opt { display:flex; align-items:center; gap:12px; background:#12121A; border:1px solid #2A2A38; border-radius:12px; padding:12px 14px; margin:8px 0 }
+  .opt .t { flex:1 } .opt b { display:block } .opt small { color:var(--muted) }
+  .price { font-weight:900; font-size:18px; color:var(--cyan); min-width:64px; text-align:right }
   .muted { color:var(--muted); font-size:12px }
-  #done { display:none; margin-top:16px; background:#0D0D12; border-radius:12px; padding:14px }
+  .err { color:var(--pink); font-weight:600; margin-top:10px; min-height:1em }
+  .ok { color:var(--ok); font-weight:800 }
   #key { font-family:Consolas, monospace; font-size:11px; word-break:break-all; background:#15151C; padding:10px; border-radius:8px; margin:8px 0 }
-  .btn { background:linear-gradient(135deg,var(--violet),var(--cyan)); color:#fff; border:0; border-radius:10px; padding:10px 16px; font:inherit; font-weight:800; cursor:pointer }
-  .err { color:var(--pink); font-weight:600; margin-top:10px }
+  .hide { display:none }
+  .status { background:#0D0D12; border-radius:12px; padding:12px 14px; margin-top:10px; line-height:1.6 }
 </style>
 </head>
 <body>
 <div class="card">
-  <h1>VOXA</h1>
+  <img src="/brand/wordmark.png" alt="Mixfonia" style="height:40px;display:block;margin:0 0 6px">
   <div class="tag">MIX · SING · TOGETHER</div>
-  <p>VOXA è <b>donationware</b>: tutte le funzioni sono libere. Con una donazione ricevi subito la chiave personale per questa macchina, che toglie il promemoria all'avvio.</p>
-  <div class="muted">ID MACCHINA</div>
+  <p><b>Licenza perpetua 20 €</b> con un anno di aggiornamenti, poi <b>10 €/anno</b> se vuoi continuare ad aggiornare. Fino a <b>3 PC</b> per account (10 € l'uno), un solo abbonamento per tutti. Cambio PC: 1 € + commissioni.</p>
+
+  <div class="lbl">ID DI QUESTO PC</div>
   <div class="id" id="machine">—</div>
-  <div class="muted">IMPORTO (€)</div>
-  <div class="amounts" id="amounts">
-    <button data-v="5">5 €</button><button data-v="10" class="on">10 €</button><button data-v="20">20 €</button><button data-v="50">50 €</button>
-    <input id="custom" type="number" min="2" step="1" placeholder="altro">
-  </div>
-  <div id="paypal-button-container"></div>
+
+  <div class="lbl">LA TUA EMAIL (È IL TUO ACCOUNT Mixfonia)</div>
+  <div class="row"><input id="email" type="email" placeholder="nome@esempio.it" autocomplete="email"><button class="btn" id="go">Continua</button></div>
   <div class="err" id="err"></div>
-  <div id="done">
-    <b>Grazie <span id="name"></span>! 🎉</b>
-    <p class="muted" style="margin:6px 0 0">VOXA si attiva da sola entro pochi secondi. Se l'app era chiusa, incolla questa chiave in <b>❤ Sostieni VOXA → Attiva</b>:</p>
-    <div id="key"></div>
-    <button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('key').textContent)">📋 Copia chiave</button>
+
+  <div id="status" class="status hide"></div>
+  <div id="options"></div>
+
+  <div id="done" class="hide">
+    <p class="ok" id="doneMsg">Grazie! 🎉</p>
+    <p class="muted" id="doneHint"></p>
+    <div id="key" class="hide"></div>
+    <button class="btn hide" id="copy" onclick="navigator.clipboard.writeText(document.getElementById('key').textContent)">📋 Copia chiave</button>
   </div>
-  <p class="muted" style="margin-top:18px">La chiave vale solo per l'ID indicato. Pagamento gestito da PayPal; VOXA non vede i dati della carta.</p>
+
+  <p class="muted" style="margin-top:18px">Pagamento gestito da Stripe (carta, PayPal, Apple/Google Pay); Mixfonia non vede i dati della carta. Fatture e disdetta dal portale clienti.</p>
 </div>
 <script>
-  const params = new URLSearchParams(location.search);
-  const machine = (params.get("m") || "").toUpperCase();
-  document.getElementById("machine").textContent = machine || "manca l'ID: apri questa pagina da VOXA (❤ Sostieni)";
-  let amount = 10;
-  const amounts = document.getElementById("amounts");
-  amounts.querySelectorAll("button").forEach(b => b.onclick = () => { amounts.querySelectorAll("button").forEach(x => x.classList.remove("on")); b.classList.add("on"); amount = Number(b.dataset.v); document.getElementById("custom").value = ""; });
-  document.getElementById("custom").oninput = e => { const v = Number(e.target.value); if (v >= 2) { amount = v; amounts.querySelectorAll("button").forEach(x => x.classList.remove("on")); } };
-  const err = m => document.getElementById("err").textContent = m || "";
+  const q = new URLSearchParams(location.search);
+  const machine = (q.get("m") || "").toUpperCase();
+  const $ = id => document.getElementById(id);
+  $("machine").textContent = machine || "manca l'ID: apri questa pagina da Mixfonia (❤ Licenza)";
+  if (q.get("email")) $("email").value = q.get("email");
+  const err = m => $("err").textContent = m || "";
+  const eur = c => (c / 100).toFixed(2).replace(".", ",") + " €";
+  let cfg = { prices: {} }, st = null;
 
-  fetch("/api/config").then(r => r.json()).then(cfg => {
-    if (!cfg.clientId) { err("Pagamenti non ancora configurati."); return; }
-    const s = document.createElement("script");
-    s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(cfg.clientId)}&currency=${cfg.currency || "EUR"}&intent=capture&disable-funding=credit`;
-    s.onload = () => paypal.Buttons({
-      style: { layout: "vertical", color: "black", shape: "pill", label: "donate" },
-      createOrder: async () => {
-        err("");
-        const r = await fetch("/api/order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ machine, amount }) });
-        const j = await r.json(); if (!r.ok) throw new Error(j.error); return j.id;
-      },
-      onApprove: async data => {
-        const r = await fetch("/api/capture", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: data.orderID }) });
-        const j = await r.json(); if (!r.ok) { err(j.error || "errore"); return; }
-        document.getElementById("name").textContent = j.name || "";
-        document.getElementById("key").textContent = j.key;
-        document.getElementById("done").style.display = "block";
-        document.getElementById("paypal-button-container").style.display = "none";
-      },
-      onError: e => err("Errore PayPal: " + (e?.message || e)),
-    }).render("#paypal-button-container");
-    document.head.appendChild(s);
+  async function post(url, body) {
+    const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error || r.status); return j;
+  }
+
+  async function load() {
+    err("");
+    const email = $("email").value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err("Scrivi un'email valida."); return; }
+    $("go").disabled = true;
+    try {
+      st = await (await fetch(`/api/account?email=${encodeURIComponent(email)}&m=${encodeURIComponent(machine)}`)).json();
+      if (st.error) throw new Error(st.error);
+      render(email);
+    } catch (e) { err(e.message); } finally { $("go").disabled = false; }
+  }
+
+  function opt(product, title, sub, extra) {
+    const p = cfg.prices[product]; if (!p) return "";
+    return `<div class="opt"><div class="t"><b>${title}</b><small>${sub}</small>${extra || ""}</div><div class="price">${eur(p.cents)}${p.mode === "subscription" ? "<small>/anno</small>" : ""}</div><button class="btn" data-p="${product}">Paga</button></div>`;
+  }
+
+  function render(email) {
+    const s = $("status"); s.classList.remove("hide");
+    const upd = st.updatesUntil ? new Date(st.updatesUntil).toLocaleDateString("it-IT") : null;
+    s.innerHTML = st.exists
+      ? `<b>${st.name || email}</b> · ${st.seats}/${st.maxSeats} PC (${st.machines.join(", ") || "nessuno"})<br>Aggiornamenti fino al <b>${upd}</b>${st.subscription ? " · rinnovo automatico attivo" : ""}<br>` +
+        (st.thisMachine === "mine" ? `<span class="ok">✓ questo PC è già attivo</span>` : st.thisMachine === "other" ? `<span style="color:var(--pink)">questo PC ha una licenza di un altro account</span>` : "questo PC non è ancora attivo") +
+        ` &nbsp; <a href="#" id="portal" style="color:var(--cyan)">fatture / disdetta</a>`
+      : `Nuovo account <b>${email}</b>`;
+    let h = "";
+    if (st.can.license) h += opt("voxa_license", "Licenza Mixfonia", "questo PC per sempre + 1 anno di aggiornamenti");
+    if (st.can.seat) h += opt("voxa_seat", "Aggiungi questo PC", `PC n° ${st.seats + 1} sul tuo account (max ${st.maxSeats})`);
+    if (st.can.transfer) h += opt("voxa_transfer", "Trasferisci qui una licenza", "il vecchio PC viene disattivato (1 € + commissioni)",
+      `<input id="from" placeholder="ID completo del vecchio PC (VOXA-XXXX-XXXX-XXXX)" style="margin-top:8px;font-family:Consolas,monospace;text-transform:uppercase">`);
+    if (st.can.updates) h += opt("voxa_updates", "Aggiornamenti annuali", st.updatesUntil && Date.parse(st.updatesUntil) > Date.now() ? "parte dalla scadenza attuale, si rinnova da solo, disdici quando vuoi" : "un anno di nuove versioni per tutti i tuoi PC, si rinnova da solo");
+    $("options").innerHTML = h || `<p class="muted">Niente da comprare da questo PC.</p>`;
+    $("options").querySelectorAll("button[data-p]").forEach(b => b.onclick = () => buy(b.dataset.p, email, b));
+    const pl = $("portal"); if (pl) pl.onclick = async e => { e.preventDefault(); try { location.href = (await post("/api/portal", { email })).url; } catch (x) { err(x.message); } };
+  }
+
+  async function buy(product, email, btn) {
+    if (!cfg.ready) { err("Pagamenti non ancora configurati."); return; }
+    err(""); btn.disabled = true;
+    try {
+      const from = product === "voxa_transfer" ? ($("from")?.value || "").trim().toUpperCase() : undefined;
+      location.href = (await post("/api/checkout", { product, email, machine, from })).url;
+    } catch (e) { err(e.message); btn.disabled = false; }
+  }
+
+  // ritorno da Stripe: aspetta il webhook e mostra la chiave (l'app la prende da sola, questo è il piano B)
+  async function afterPay(product) {
+    $("done").classList.remove("hide"); $("options").innerHTML = "";
+    $("doneHint").textContent = "Pagamento ricevuto, attivo la licenza…";
+    for (let i = 0; i < 40; i++) {
+      try {
+        if (product === "voxa_updates") {
+          const a = await (await fetch(`/api/account?email=${encodeURIComponent($("email").value.trim())}&m=${encodeURIComponent(machine)}`)).json();
+          if (a.subscription) { $("doneMsg").textContent = `Aggiornamenti attivi fino al ${new Date(a.updatesUntil).toLocaleDateString("it-IT")} 🎉`; $("doneHint").textContent = "Mixfonia lo rileva da sola al prossimo avvio (o da ❤ Licenza → Aggiorna)."; return; }
+        } else {
+          const r = await (await fetch(`/api/license?m=${encodeURIComponent(machine)}`)).json();
+          if (r.found) { $("doneMsg").textContent = `Grazie ${r.name || ""}! Licenza attiva 🎉`; $("doneHint").textContent = "Mixfonia si attiva da sola entro pochi secondi. Se l'app era chiusa, incolla questa chiave in ❤ Licenza → Attiva:"; $("key").textContent = r.key; $("key").classList.remove("hide"); $("copy").classList.remove("hide"); return; }
+        }
+      } catch {}
+      await new Promise(r => setTimeout(r, 3000));
+    }
+    $("doneHint").textContent = "Il pagamento è registrato ma l'attivazione tarda: riapri questa pagina fra un minuto o scrivi a supporto con la tua email.";
+  }
+
+  $("go").onclick = load;
+  $("email").onkeydown = e => { if (e.key === "Enter") load(); };
+  fetch("/api/config").then(r => r.json()).then(c => {
+    cfg = c;
+    if (!c.ready) err("Pagamenti non ancora configurati.");
+    if (q.get("ok")) afterPay(q.get("ok"));
+    else if (q.get("ko")) err("Pagamento annullato.");
+    else if (q.get("email")) load();
   }).catch(() => err("Servizio non raggiungibile."));
 </script>
 </body>

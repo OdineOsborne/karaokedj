@@ -14,6 +14,10 @@ public sealed class MidiMapping
     public string Type { get; set; } = "cc";   // cc | note
     public int Channel { get; set; }
     public int Number { get; set; }
+    /// <summary>Fader montato al contrario sulla console: il valore va invertito.</summary>
+    public bool Invert { get; set; }
+    /// <summary>Encoder relativo (jog, browse): il valore è un delta, non una posizione.</summary>
+    public bool Relative { get; set; }
 
     public MidiKey Key => new(Type, Channel, Number);
 }
@@ -29,6 +33,10 @@ public sealed class MidiService : IDisposable
 {
     private MidiIn? _in;
     private readonly Dictionary<MidiKey, string> _map = new();
+    private readonly HashSet<MidiKey> _invert = new();
+    /// <summary>Encoder relativi mappati su azioni assolute (es. SHIFT+jog → tempo): teniamo noi la posizione 0..127.</summary>
+    private readonly HashSet<MidiKey> _relative = new();
+    private readonly Dictionary<MidiKey, int> _relPos = new();
     private Action<MidiKey>? _learnCallback;
 
     /// <summary>(azione, valore 0..127, è un CC continuo). Chiamato sul thread UI.</summary>
@@ -52,12 +60,29 @@ public sealed class MidiService : IDisposable
 
     public void LoadMappings(IEnumerable<MidiMapping> mappings)
     {
-        _map.Clear();
-        foreach (var m in mappings) _map[m.Key] = m.Action;
+        _map.Clear(); _invert.Clear(); _relative.Clear(); _relPos.Clear();
+        foreach (var m in mappings) Put(m);
     }
 
     public List<MidiMapping> ExportMappings() =>
-        _map.Select(kv => new MidiMapping { Action = kv.Value, Type = kv.Key.Type, Channel = kv.Key.Channel, Number = kv.Key.Number }).ToList();
+        _map.Select(kv => new MidiMapping { Action = kv.Value, Type = kv.Key.Type, Channel = kv.Key.Channel, Number = kv.Key.Number, Invert = _invert.Contains(kv.Key), Relative = _relative.Contains(kv.Key) }).ToList();
+
+    /// <summary>Aggiunge le mappature senza cancellare le altre (preset di fabbrica + personalizzazioni).</summary>
+    public void AddMappings(IEnumerable<MidiMapping> mappings)
+    {
+        foreach (var m in mappings) Put(m);
+    }
+
+    private void Put(MidiMapping m)
+    {
+        _map[m.Key] = m.Action;
+        if (m.Invert) _invert.Add(m.Key); else _invert.Remove(m.Key);
+        if (m.Relative) _relative.Add(m.Key); else _relative.Remove(m.Key);
+    }
+
+    /// <summary>Azioni che leggono già un delta (1..63 avanti, 65..127 indietro): per loro il flag Relative non cambia niente.</summary>
+    private static bool TakesDelta(string action) => action == "browse" || action.EndsWith(".jog");
+    public int Count => _map.Count;
 
     public MidiKey? KeyFor(string action) => _map.FirstOrDefault(kv => kv.Value == action).Key;
 
@@ -143,7 +168,18 @@ public sealed class MidiService : IDisposable
                 return;
             }
             if (_map.TryGetValue(key, out var action))
-                ActionTriggered?.Invoke(action, value, continuous);
+            {
+                int v = value;
+                if (continuous && _relative.Contains(key) && !TakesDelta(action))
+                {
+                    // encoder relativo su un controllo assoluto: accumuliamo la posizione partendo dal centro
+                    int delta = v == 0 ? 0 : v < 64 ? v : v - 128;
+                    if (delta == 0) return;
+                    v = Math.Clamp(_relPos.GetValueOrDefault(key, 64) + delta, 0, 127);
+                    _relPos[key] = v;
+                }
+                ActionTriggered?.Invoke(action, continuous && _invert.Contains(key) ? 127 - v : v, continuous);
+            }
         });
     }
 

@@ -29,10 +29,18 @@ public sealed class WaveformView : FrameworkElement
         DependencyProperty.Register(nameof(DurationSec), typeof(double), typeof(WaveformView), new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
     public static readonly DependencyProperty CueFractionProperty =
         DependencyProperty.Register(nameof(CueFraction), typeof(double), typeof(WaveformView), new FrameworkPropertyMetadata(-1.0, FrameworkPropertyMetadataOptions.AffectsRender));
+    public static readonly DependencyProperty FineProperty =
+        DependencyProperty.Register(nameof(Fine), typeof(byte[]), typeof(WaveformView), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+    public static readonly DependencyProperty HotCuesProperty =
+        DependencyProperty.Register(nameof(HotCues), typeof(double[]), typeof(WaveformView), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
     public static readonly DependencyProperty AccentProperty =
         DependencyProperty.Register(nameof(Accent), typeof(Brush), typeof(WaveformView), new FrameworkPropertyMetadata(Brushes.LimeGreen, FrameworkPropertyMetadataOptions.AffectsRender));
 
-    private static readonly Brush BgBrush = new SolidColorBrush(Color.FromRgb(0x0D, 0x0D, 0x12));
+    private static readonly Brush BgBrush = new SolidColorBrush(Color.FromRgb(0x0B, 0x0B, 0x0D));
+    private static readonly Brush BassPlayed = new SolidColorBrush(Color.FromRgb(0x3B, 0x82, 0xF6));
+    private static readonly Brush HiPlayed = new SolidColorBrush(Color.FromRgb(0xE8, 0xDF, 0xC8));
+    private static readonly Brush BassDim = new SolidColorBrush(Color.FromRgb(0x24, 0x3A, 0x63));
+    private static readonly Brush HiDim = new SolidColorBrush(Color.FromRgb(0x5A, 0x59, 0x55));
     private static readonly Brush UnplayedPeak = new SolidColorBrush(Color.FromRgb(0x2E, 0x2E, 0x3C));
     private static readonly Brush UnplayedRms = new SolidColorBrush(Color.FromRgb(0x5A, 0x5A, 0x70));
     private static readonly Brush IntroBrush = new SolidColorBrush(Color.FromArgb(0x30, 0x00, 0xE5, 0xFF));
@@ -45,7 +53,7 @@ public sealed class WaveformView : FrameworkElement
 
     static WaveformView()
     {
-        BgBrush.Freeze(); UnplayedPeak.Freeze(); UnplayedRms.Freeze(); IntroBrush.Freeze(); OutroBrush.Freeze();
+        BgBrush.Freeze(); BassPlayed.Freeze(); HiPlayed.Freeze(); BassDim.Freeze(); HiDim.Freeze(); UnplayedPeak.Freeze(); UnplayedRms.Freeze(); IntroBrush.Freeze(); OutroBrush.Freeze();
         CursorPen.Freeze(); MarkerPen.Freeze(); BarPen.Freeze(); PhrasePen.Freeze(); CuePen.Freeze();
     }
 
@@ -60,6 +68,10 @@ public sealed class WaveformView : FrameworkElement
     public double DurationSec { get => (double)GetValue(DurationSecProperty); set => SetValue(DurationSecProperty, value); }
     /// <summary>Punto cue in frazione (-1 = nessuno).</summary>
     public double CueFraction { get => (double)GetValue(CueFractionProperty); set => SetValue(CueFractionProperty, value); }
+    /// <summary>Frazioni 0..1 degli hot cue (-1 = vuoto), disegnati come bandierine numerate.</summary>
+    /// <summary>Forma d'onda fine (2 byte per colonna: picco, bassi): se presente l'onda è colorata per banda.</summary>
+    public byte[]? Fine { get => (byte[]?)GetValue(FineProperty); set => SetValue(FineProperty, value); }
+    public double[]? HotCues { get => (double[]?)GetValue(HotCuesProperty); set => SetValue(HotCuesProperty, value); }
     public double LoopStart { get => (double)GetValue(LoopStartProperty); set => SetValue(LoopStartProperty, value); }
     public double LoopEnd { get => (double)GetValue(LoopEndProperty); set => SetValue(LoopEndProperty, value); }
     private static readonly Brush LoopBrush = new SolidColorBrush(Color.FromArgb(0x55, 0xFF, 0xD6, 0x0A));
@@ -69,7 +81,7 @@ public sealed class WaveformView : FrameworkElement
     {
         double w = ActualWidth, h = ActualHeight;
         if (w <= 0 || h <= 0) return;
-        dc.DrawRoundedRectangle(BgBrush, null, new Rect(0, 0, w, h), 4, 4);
+        dc.DrawRectangle(BgBrush, null, new Rect(0, 0, w, h));
 
         var data = Data;
         double prog = Math.Clamp(Progress, 0, 1);
@@ -79,7 +91,26 @@ public sealed class WaveformView : FrameworkElement
         if (intro > 0) dc.DrawRectangle(IntroBrush, null, new Rect(0, 0, w * intro, h));
         if (outro < 1) dc.DrawRectangle(OutroBrush, null, new Rect(w * outro, 0, w * (1 - outro), h));
 
-        if (data == null || data.Length < 4)
+        var fine = Fine;
+        if (fine != null && fine.Length >= 4)
+        {
+            // due bande: i bassi (blu) sopra il resto dello spettro (chiaro), simmetrici sull'asse
+            int fcols = fine.Length / 2;
+            double fmid = h / 2;
+            int fstep = Math.Max(1, (int)Math.Ceiling(fcols / w));
+            double fcolW = w / fcols;
+            for (int c = 0; c < fcols; c += fstep)
+            {
+                int peak = 0, bass = 0;
+                for (int k = c; k < Math.Min(fcols, c + fstep); k++) { peak = Math.Max(peak, fine[k * 2]); bass = Math.Max(bass, fine[k * 2 + 1]); }
+                double x = c * fcolW, bw = Math.Max(1, fcolW * fstep - 0.3);
+                double ph = Math.Max(1, peak / 255.0 * (h - 4)), bh = Math.Max(1, bass / 255.0 * (h - 4) * 0.9);
+                bool played = (x + bw / 2) / w <= prog;
+                dc.DrawRectangle(played ? HiPlayed : HiDim, null, new Rect(x, fmid - ph / 2, bw, ph));
+                dc.DrawRectangle(played ? BassPlayed : BassDim, null, new Rect(x, fmid - bh / 2, bw, bh));
+            }
+        }
+        else if (data == null || data.Length < 4)
         {
             // nessuna analisi: barra semplice
             dc.DrawRectangle(Accent, null, new Rect(0, h * 0.4, w * prog, h * 0.2));
@@ -137,6 +168,19 @@ public sealed class WaveformView : FrameworkElement
             }
         }
         if (CueFraction >= 0) dc.DrawLine(CuePen, new Point(w * CueFraction, 0), new Point(w * CueFraction, h));
+        if (HotCues is { } hcs)
+        {
+            for (int i = 0; i < hcs.Length; i++)
+            {
+                if (hcs[i] < 0) continue;
+                double x = w * Math.Clamp(hcs[i], 0, 1);
+                var brush = (Brush)new BrushConverter().ConvertFromString(ViewModels.DeckViewModel.HotCueVm.Colors[i % 8])!;
+                dc.DrawLine(new Pen(brush, 1.5), new Point(x, 0), new Point(x, h));
+                dc.DrawRectangle(brush, null, new Rect(x, 0, 11, 11));
+                var ft = new FormattedText((i + 1).ToString(), System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), 9, Brushes.Black, 1.0);
+                dc.DrawText(ft, new Point(x + 3, -1));
+            }
+        }
         if (intro > 0) dc.DrawLine(MarkerPen, new Point(w * intro, 0), new Point(w * intro, h));
         if (outro < 1) dc.DrawLine(MarkerPen, new Point(w * outro, 0), new Point(w * outro, h));
         dc.DrawLine(CursorPen, new Point(w * prog, 0), new Point(w * prog, h));

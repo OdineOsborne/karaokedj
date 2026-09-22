@@ -36,6 +36,14 @@ public partial class SettingsWindow : Window
         var devices = AudioEngine.ListOutputDevices();
         DeviceCombo.ItemsSource = devices;
         DeviceCombo.SelectedValue = devices.Any(d => d.Id == (vm.Settings.OutputDeviceId ?? "")) ? (vm.Settings.OutputDeviceId ?? "") : "";
+        var cueDevices = new List<AudioDevice> { new("", "(nessuna: niente pre-ascolto)") };
+        cueDevices.Add(new(AudioEngine.CueOnMainId, "Canali 3-4 della scheda principale (console con scheda audio integrata)"));
+        cueDevices.AddRange(devices.Skip(1));
+        CueCombo.ItemsSource = cueDevices;
+        CueCombo.SelectedValue = cueDevices.Any(d => d.Id == (vm.Settings.CueDeviceId ?? "")) ? (vm.Settings.CueDeviceId ?? "") : "";
+        var mics = MicInput.ListInputDevices();
+        MicCombo.ItemsSource = mics;
+        MicCombo.SelectedValue = mics.Any(d => d.Id == (vm.Settings.MicDeviceId ?? "")) ? (vm.Settings.MicDeviceId ?? "") : "";
 
         var screens = System.Windows.Forms.Screen.AllScreens;
         ScreenCombo.ItemsSource = screens.Select((s, i) => $"Schermo {i + 1}: {s.Bounds.Width}×{s.Bounds.Height}" + (s.Primary ? " (principale)" : "")).ToList();
@@ -61,6 +69,7 @@ public partial class SettingsWindow : Window
         foreach (var (id, label, _) in MidiActions.All)
             _midiRows.Add(new MidiRow { Id = id, Label = label, Binding = vm.Midi.KeyFor(id)?.ToString() ?? "—", KeyBinding = KeyboardService.Pretty(vm.Keys.GestureFor(id)) });
         MidiList.ItemsSource = _midiRows;
+        SupportedList.Text = "Console riconosciute da sole (plug & play): " + MainViewModel.SupportedControllers + ". Altre console: scegli la porta qui sopra e usa Impara.";
         vm.Midi.MessageReceived += OnMidiMessage;
         JamendoBox.Text = vm.Settings.JamendoClientId ?? "";
         FillPlugins();
@@ -208,12 +217,12 @@ public partial class SettingsWindow : Window
 
     private void InstallPlugin_Click(object sender, RoutedEventArgs e)
     {
-        var dlg = new Microsoft.Win32.OpenFileDialog { Title = "Plugin VOXA", Filter = "Plugin (zip o dll)|*.zip;*.dll" };
+        var dlg = new Microsoft.Win32.OpenFileDialog { Title = "Plugin Mixfonia", Filter = "Plugin (zip o dll)|*.zip;*.dll" };
         if (dlg.ShowDialog() != true) return;
         try
         {
             var dest = PluginManager.Install(dlg.FileName);
-            InfoLabel.Text = "Plugin copiato in " + dest + " — riavvia VOXA per attivarlo";
+            InfoLabel.Text = "Plugin copiato in " + dest + " — riavvia Mixfonia per attivarlo";
         }
         catch (Exception ex) { InfoLabel.Text = "Errore: " + ex.Message; }
     }
@@ -223,7 +232,7 @@ public partial class SettingsWindow : Window
         if ((sender as Button)?.Tag is not PluginRow row || row.Plugin?.Plugin?.Maintenance is not { } m) return;
         try
         {
-            await m(new Progress<VOXA.Plugins.ImportProgress>(p => InfoLabel.Text = p.Message), CancellationToken.None);
+            await m(new Progress<Mixfonia.Plugins.ImportProgress>(p => InfoLabel.Text = p.Message), CancellationToken.None);
             InfoLabel.Text = row.Name + ": fatto";
         }
         catch (Exception ex) { InfoLabel.Text = "Errore: " + ex.Message; }
@@ -244,6 +253,10 @@ public partial class SettingsWindow : Window
         var newDevice = DeviceCombo.SelectedValue as string;
         if (string.IsNullOrEmpty(newDevice)) newDevice = null;
         if (newDevice != _vm.Settings.OutputDeviceId) _vm.ApplyAudioDevice(newDevice);
+        var cueDev = CueCombo.SelectedValue as string; if (string.IsNullOrEmpty(cueDev)) cueDev = null;
+        if (cueDev != _vm.Settings.CueDeviceId) _vm.ApplyCueDevice(cueDev);
+        var micDev = MicCombo.SelectedValue as string; if (string.IsNullOrEmpty(micDev)) micDev = null;
+        if (micDev != _vm.Settings.MicDeviceId) { _vm.Settings.MicDeviceId = micDev; if (_vm.MicOn) _vm.ApplyMic(); }
 
         var midi = MidiCombo.SelectedItem as string;
         if (midi == "(nessuno)") midi = null;

@@ -1,16 +1,17 @@
-<Window x:Class="KaraokeDJ.Views.MainWindow"
+<Window x:Class="KaraokeDJ.Views.MainWindow" FontFamily="{StaticResource UiFont}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:v="clr-namespace:KaraokeDJ.Views"
         xmlns:vm="clr-namespace:KaraokeDJ.ViewModels"
         xmlns:m="clr-namespace:KaraokeDJ.Models"
-        Title="VOXA" Width="1500" Height="960" MinWidth="1100" MinHeight="760"
+        Title="Mixfonia" Width="1500" Height="960" MinWidth="1100" MinHeight="760"
         Background="{StaticResource WindowBgBrush}" WindowStartupLocation="CenterScreen"
         d:DataContext="{d:DesignInstance vm:MainViewModel}"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d">
     <Grid Margin="10">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -24,6 +25,8 @@
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,0">
                 <Button Content="{Binding UpdateStatus, StringFormat=⬆ {0} — installa e riavvia}" Style="{StaticResource AccentButton}" Command="{Binding InstallUpdateCommand}" Margin="0,0,10,0"
                         Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVis}}"/>
+                <Button Content="⬆ Rinnova aggiornamenti (10 €/anno)" Style="{StaticResource AccentButton}" Click="Renew_Click" Margin="0,0,10,0" ToolTip="{Binding UpdateStatus}"
+                        Visibility="{Binding UpdateBlocked, Converter={StaticResource BoolToVis}}"/>
                 <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisInv}}"/>
                 <Button Content="{Binding AppVersion, StringFormat=⬆ {0}}" Style="{StaticResource SmallButton}" Command="{Binding CheckUpdatesCommand}" Margin="0,0,10,0" ToolTip="Controlla se ci sono aggiornamenti su GitHub"/>
                 <ToggleButton IsChecked="{Binding BottomStripVisible}" Style="{StaticResource ToolToggle}" Content="🎛" ToolTip="Pad e importazione&#10;Mostra/nascondi la striscia in basso (jingle e importazione) per dare spazio a libreria e coda."/>
@@ -32,8 +35,7 @@
                 <ToggleButton IsChecked="{Binding IsProjectorOpen}" Style="{StaticResource ToolToggle}" Content="🖥" Margin="0" v:Shortcut.Action="projector" ToolTip="Proiettore (Ctrl+P)&#10;Apre/chiude lo schermo per il pubblico sul secondo monitor."/>
             </StackPanel>
             <WrapPanel Orientation="Horizontal">
-                <Image Source="pack://application:,,,/Assets/wordmark.png" Height="34" Margin="0,0,18,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" ToolTip="VOXA – Mix · Sing · Together">
-                    <Image.Effect><DropShadowEffect Color="{StaticResource VioletColor}" BlurRadius="18" ShadowDepth="0" Opacity="0.6"/></Image.Effect>
+                <Image Source="pack://application:,,,/Assets/wordmark.png" Height="34" Margin="0,0,18,0" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" ToolTip="Mixfonia – Mix · Sing · Together">
                 </Image>
                 <Button Content="📁" Style="{StaticResource ToolIcon}" Command="{Binding AddFolderCommand}" ToolTip="Aggiungi cartella&#10;Scegli una cartella con musica o basi karaoke da mettere in libreria."/>
                 <Button Content="🔄" Style="{StaticResource ToolIcon}" Command="{Binding RescanCommand}" IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBool}}" ToolTip="Riscansiona&#10;Rilegge le cartelle: nuovi brani, tag (anno, genere), titoli/artisti sistemati, poi analisi BPM/tonalità di ciò che manca. Di norma non serve: i file nuovi entrano da soli."/>
@@ -43,7 +45,7 @@
                 <Button Content="📋" Style="{StaticResource ToolIcon}" Click="Bordero_Click" ToolTip="Borderò SIAE&#10;Programma musicale della serata: brani riprodotti con titolo e autori, da stampare o copiare nel modulo SIAE."/>
                 <Button Content="⚙" Style="{StaticResource ToolIcon}" Click="Settings_Click" ToolTip="Impostazioni&#10;Audio, proiettore, cartelle, AI, MIDI e tastiera, plugin e fonti."/>
                 <Button Content="🎉" Style="{StaticResource ToolIcon}" Click="Animation_Click" ToolTip="Animazione&#10;Festeggiato, messaggi degli invitati, canzone con Suno, dedica sul proiettore."/>
-                <Button Content="❤" Click="Support_Click" ToolTip="{Binding SupportLabel, StringFormat=Sostieni VOXA&#10;{0} — VOXA è donationware: sostienilo o attiva la tua chiave.}">
+                <Button Content="❤" Click="Support_Click" ToolTip="{Binding SupportLabel, StringFormat=Licenza Mixfonia&#10;{0}}">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource ToolIcon}">
                             <Setter Property="Foreground" Value="{StaticResource MagentaBrush}"/>
@@ -66,7 +68,7 @@
                            BpmA="{Binding DeckA.NativeBpm}" BpmB="{Binding DeckB.NativeBpm}"
                            TempoA="{Binding DeckA.TempoFactor}" TempoB="{Binding DeckB.TempoFactor}"
                            AnchorA="{Binding DeckA.GridAnchorSec}" AnchorB="{Binding DeckB.GridAnchorSec}"
-                           AccentA="{StaticResource AccentABrush}" AccentB="{StaticResource MagentaBrush}"
+                           AccentA="{StaticResource AccentABrush}" AccentB="{StaticResource AccentBBrush}"
                            ToolTip="Onde dei due deck sovrapposte (A sopra, B sotto) centrate sull'istante attuale, con la griglia dei battiti. Rotella = zoom. Metti il CUE su un battere per allineare la griglia."/>
         </Border>
 
@@ -74,7 +76,7 @@
         <Grid Grid.Row="2" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="260"/>
+                <ColumnDefinition Width="250"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
@@ -92,44 +94,116 @@
 
                     <TextBlock Grid.Row="0" Text="MIXER" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center"/>
 
-                    <Button Grid.Row="1" Content="⏭  PROSSIMO IN CODA" v:Shortcut.Action="next" Style="{StaticResource AccentButton}" Height="56" FontSize="15"
+                    <Button Grid.Row="1" Content="⏭  PROSSIMO IN CODA" v:Shortcut.Action="next" Style="{StaticResource AccentButton}" Height="34" FontSize="12.5"
                             Command="{Binding PlayNextCommand}" ToolTip="Carica il primo in coda sull'altro deck, lo avvia e sfuma (Ctrl+N)"/>
 
                     <StackPanel Grid.Row="2" Margin="0,12,0,0">
+                        <!-- mixer: manopole all'esterno (verso il deck), fader di canale sopra il VU verticale, master al centro con VU stereo, cuffie e mic -->
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Top">
+                                <v:Knob Label="TRIM" Value="{Binding DeckA.GainDb}" Minimum="-24" Maximum="12" Diameter="24" DefaultValue="0" Accent="{StaticResource AccentABrush}" v:Shortcut.Action="a.volume" ToolTip="{Binding DeckA.GainLabel, StringFormat=Trim A: {0}}"/>
+                                <v:Knob Label="HI" Value="{Binding DeckA.EqHigh}" Minimum="-12" Maximum="12" Diameter="24" Bipolar="True" Accent="{StaticResource AccentABrush}" IsKilled="{Binding DeckA.EqHighKill}" v:Shortcut.Action="a.eqhigh" RightClick="KillHighA" ToolTip="EQ alti A · tasto destro = kill · doppio click = 0"/>
+                                <v:Knob Label="MID" Value="{Binding DeckA.EqMid}" Minimum="-12" Maximum="12" Diameter="24" Bipolar="True" Accent="{StaticResource AccentABrush}" IsKilled="{Binding DeckA.EqMidKill}" v:Shortcut.Action="a.eqmid" RightClick="KillMidA" ToolTip="EQ medi A · tasto destro = kill · doppio click = 0"/>
+                                <v:Knob Label="LOW" Value="{Binding DeckA.EqLow}" Minimum="-12" Maximum="12" Diameter="24" Bipolar="True" Accent="{StaticResource AccentABrush}" IsKilled="{Binding DeckA.EqLowKill}" v:Shortcut.Action="a.eqlow" RightClick="KillLowA" ToolTip="EQ bassi A · tasto destro = kill · doppio click = 0"/>
+                                <v:Knob Label="FILTER" Value="{Binding DeckA.FilterValue}" Minimum="-1" Maximum="1" Diameter="24" Bipolar="True" Accent="{StaticResource WarnBrush}" v:Shortcut.Action="a.filtervalue" ToolTip="Filtro A: sinistra low-pass, destra high-pass (doppio click = off)"/>
+                                <v:Knob Label="PAN" Value="{Binding DeckA.Pan}" Minimum="-1" Maximum="1" Diameter="24" Bipolar="True" Accent="{StaticResource TextBrush}" v:Shortcut.Action="a.pan" ToolTip="{Binding DeckA.PanLabel, StringFormat=Pan A: {0}}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="4,0">
+                                <ToggleButton Content="🎧" IsChecked="{Binding DeckA.CueOn}" v:Shortcut.Action="a.cuepfl" Style="{StaticResource ToolToggle}" Padding="0" Width="28" Height="20" MinWidth="0" FontSize="10" Margin="0,2,0,6" ToolTip="Pre-ascolto in cuffia del deck A"/>
+                                <Grid Height="190" Width="28">
+                                    <v:LevelMeter Left="{Binding DeckA.LevelL}" Right="{Binding DeckA.LevelR}" Vertical="True" Width="12" Height="190" HorizontalAlignment="Center" ToolTip="Livello deck A (dopo trim e fader)"/>
+                                    <Slider Minimum="0" Maximum="1" Value="{Binding DeckA.Fader}" Width="190" Height="28" Background="Transparent" v:Shortcut.Action="a.fader" Foreground="Transparent" ToolTip="Fader di canale A">
+                                        <Slider.LayoutTransform><RotateTransform Angle="-90"/></Slider.LayoutTransform>
+                                    </Slider>
+                                </Grid>
+                                <TextBlock Text="A" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center" Margin="0,4,0,0" Foreground="{StaticResource AccentABrush}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="6,0">
+                                <TextBlock Text="MASTER" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center" Margin="0,4,0,4"/>
+                                <Grid Height="146" Width="34">
+                                    <v:LevelMeter Left="{Binding MasterL}" Right="{Binding MasterR}" Vertical="True" Width="20" Height="146" HorizontalAlignment="Center" ToolTip="Uscita master: sinistra e destra"/>
+                                    <Slider Minimum="0" Maximum="1.2" Value="{Binding MasterVolume}" Width="146" Height="34" Background="Transparent" v:Shortcut.Action="master" Foreground="Transparent" ToolTip="Volume master">
+                                        <Slider.LayoutTransform><RotateTransform Angle="-90"/></Slider.LayoutTransform>
+                                    </Slider>
+                                </Grid>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
+                                    <v:Knob Label="CUE" Value="{Binding CueVolume}" Minimum="0" Maximum="1.5" DefaultValue="1" Diameter="24" Accent="{StaticResource TextBrush}" v:Shortcut.Action="cuevolume" Margin="0,0,6,0" ToolTip="Volume cuffie (pre-ascolto)"/>
+                                    <v:Knob Label="MIC" Value="{Binding MicGainDb}" Minimum="-24" Maximum="24" DefaultValue="0" Diameter="24" Accent="{StaticResource TextBrush}" v:Shortcut.Action="micvolume" ToolTip="{Binding MicGainLabel, StringFormat=Gain microfono: {0}}"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="4,0">
+                                <ToggleButton Content="🎧" IsChecked="{Binding DeckB.CueOn}" v:Shortcut.Action="b.cuepfl" Style="{StaticResource ToolToggle}" Padding="0" Width="28" Height="20" MinWidth="0" FontSize="10" Margin="0,2,0,6" ToolTip="Pre-ascolto in cuffia del deck B"/>
+                                <Grid Height="190" Width="28">
+                                    <v:LevelMeter Left="{Binding DeckB.LevelL}" Right="{Binding DeckB.LevelR}" Vertical="True" Width="12" Height="190" HorizontalAlignment="Center" ToolTip="Livello deck B (dopo trim e fader)"/>
+                                    <Slider Minimum="0" Maximum="1" Value="{Binding DeckB.Fader}" Width="190" Height="28" Background="Transparent" v:Shortcut.Action="b.fader" Foreground="Transparent" ToolTip="Fader di canale B">
+                                        <Slider.LayoutTransform><RotateTransform Angle="-90"/></Slider.LayoutTransform>
+                                    </Slider>
+                                </Grid>
+                                <TextBlock Text="B" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center" Margin="0,4,0,0" Foreground="{StaticResource AccentBBrush}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Top">
+                                <v:Knob Label="TRIM" Value="{Binding DeckB.GainDb}" Minimum="-24" Maximum="12" Diameter="24" DefaultValue="0" Accent="{StaticResource AccentBBrush}" v:Shortcut.Action="b.volume" ToolTip="{Binding DeckB.GainLabel, StringFormat=Trim B: {0}}"/>
+                                <v:Knob Label="HI" Value="{Binding DeckB.EqHigh}" Minimum="-12" Maximum="12" Diameter="24" Bipolar="True" Accent="{StaticResource AccentBBrush}" IsKilled="{Binding DeckB.EqHighKill}" v:Shortcut.Action="b.eqhigh" RightClick="KillHighB" ToolTip="EQ alti B · tasto destro = kill · doppio click = 0"/>
+                                <v:Knob Label="MID" Value="{Binding DeckB.EqMid}" Minimum="-12" Maximum="12" Diameter="24" Bipolar="True" Accent="{StaticResource AccentBBrush}" IsKilled="{Binding DeckB.EqMidKill}" v:Shortcut.Action="b.eqmid" RightClick="KillMidB" ToolTip="EQ medi B · tasto destro = kill · doppio click = 0"/>
+                                <v:Knob Label="LOW" Value="{Binding DeckB.EqLow}" Minimum="-12" Maximum="12" Diameter="24" Bipolar="True" Accent="{StaticResource AccentBBrush}" IsKilled="{Binding DeckB.EqLowKill}" v:Shortcut.Action="b.eqlow" RightClick="KillLowB" ToolTip="EQ bassi B · tasto destro = kill · doppio click = 0"/>
+                                <v:Knob Label="FILTER" Value="{Binding DeckB.FilterValue}" Minimum="-1" Maximum="1" Diameter="24" Bipolar="True" Accent="{StaticResource WarnBrush}" v:Shortcut.Action="b.filtervalue" ToolTip="Filtro B: sinistra low-pass, destra high-pass (doppio click = off)"/>
+                                <v:Knob Label="PAN" Value="{Binding DeckB.Pan}" Minimum="-1" Maximum="1" Diameter="24" Bipolar="True" Accent="{StaticResource TextBrush}" v:Shortcut.Action="b.pan" ToolTip="{Binding DeckB.PanLabel, StringFormat=Pan B: {0}}"/>
+                            </StackPanel>
+                        </Grid>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <Button Grid.Column="0" Content="A" Width="34" Height="34" Padding="0" FontWeight="Bold" Foreground="{StaticResource AccentABrush}" v:Shortcut.Action="fadeA"
+                            <Button Grid.Column="0" Content="A" Width="34" Height="34" Padding="0" FontWeight="SemiBold" Foreground="{StaticResource AccentABrush}" v:Shortcut.Action="fadeA"
                                     Command="{Binding CrossfadeToACommand}" ToolTip="Sfuma verso A"/>
                             <Slider Grid.Column="1" Minimum="-1" Maximum="1" Value="{Binding Crossfader}" VerticalAlignment="Center" Margin="6,0"/>
-                            <Button Grid.Column="2" Content="B" Width="34" Height="34" Padding="0" FontWeight="Bold" Foreground="{StaticResource AccentBBrush}" v:Shortcut.Action="fadeB"
+                            <Button Grid.Column="2" Content="B" Width="34" Height="34" Padding="0" FontWeight="SemiBold" Foreground="{StaticResource AccentBBrush}" v:Shortcut.Action="fadeB"
                                     Command="{Binding CrossfadeToBCommand}" ToolTip="Sfuma verso B"/>
                         </Grid>
                         <TextBlock Text="CROSSFADER" Style="{StaticResource Muted}" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Row="3" VerticalAlignment="Center">
-                        <!-- AUTO-MIX: le tre scelte principali sempre visibili, il resto in "Avanzate" -->
-                        <Border Background="{StaticResource InnerPanelBrush}" CornerRadius="10" Padding="10,8" Margin="0,4,0,0">
-                            <StackPanel>
-                                <TextBlock Text="AUTO-MIX" Style="{StaticResource SectionTitle}" Margin="0,0,0,4"/>
-                                <CheckBox IsChecked="{Binding AutoMix}" Content="Auto-mix dalla coda" v:Shortcut.Action="automix" Margin="0,3" ToolTip="A fine brano parte automaticamente il prossimo in coda con dissolvenza"/>
-                                <CheckBox IsChecked="{Binding AutoMixEndless}" Content="Mai fermarsi: coda vuota → suggeriti" Margin="0,3" ToolTip="Con l'auto-mix attivo, se la coda è vuota il prossimo brano viene preso dai suggeriti (compatibile, non ancora suonato stasera)"/>
-                                <CheckBox IsChecked="{Binding BpmMatch}" Content="Aggancia BPM nel passaggio" Margin="0,3" ToolTip="Il brano entrante viene portato ai BPM di quello in uscita (×1, ×2 o ×½, max ±25 %)"/>
-                                <DockPanel Margin="0,6,0,0">
-                                    <TextBlock Text="Generi serata" Width="80" VerticalAlignment="Center" Style="{StaticResource Muted}" FontSize="11" ToolTip="Quando l'automix sceglie da solo, pesca solo in questi generi (es. Dance, House). Vuoto = segue il genere del brano in corso."/>
-                                    <TextBox Text="{Binding SetGenres, UpdateSourceTrigger=LostFocus}" FontSize="12" Padding="6,3" ToolTip="Generi separati da virgola, come nei tag (es. Dance, House, Pop italiano). Vuoto = segue il genere del brano in corso. I brani senza genere: Impostazioni → Generi con AI."/>
-                                </DockPanel>
-                                <Expander Margin="0,6,0,0" IsExpanded="False" Foreground="{StaticResource MutedBrush}">
-                                    <Expander.Header><TextBlock Text="Avanzate" Style="{StaticResource Muted}" FontSize="11" FontWeight="Bold"/></Expander.Header>
+                </Grid>
+            </Border>
+
+            <v:DeckControl Grid.Column="2" DataContext="{Binding DeckB}" Accent="{StaticResource AccentBBrush}"/>
+        </Grid>
+
+        <!-- ═══════════ libreria + coda ═══════════ -->
+
+        <!-- ═══════════ barra LIVE: automix, microfono, cuffia, riempimento (sotto i deck, come i comandi di un mixer) ═══════════ -->
+        <Border Grid.Row="3" Style="{StaticResource Panel}" Padding="10,6" Margin="0,0,0,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <DockPanel>
+                        <TextBlock Text="AUTO-MIX" Style="{StaticResource SectionTitle}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <CheckBox IsChecked="{Binding AutoMix}" Content="dalla coda" v:Shortcut.Action="automix" Margin="0,0,12,0" VerticalAlignment="Center" ToolTip="A fine brano parte automaticamente il prossimo in coda con il passaggio da DJ"/>
+                        <CheckBox IsChecked="{Binding AutoMixEndless}" Content="mai fermarsi" Margin="0,0,12,0" VerticalAlignment="Center" ToolTip="Coda vuota → il prossimo brano viene preso dai suggeriti (stesso genere, non ancora suonato stasera)"/>
+                        <CheckBox IsChecked="{Binding BpmMatch}" Content="aggancia BPM" Margin="0,0,12,0" VerticalAlignment="Center" ToolTip="Il brano entrante viene portato ai BPM di quello in uscita (×1, ×2 o ×½, max ±25 %)"/>
+                        <TextBlock Text="Generi serata" Style="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,6,0" ToolTip="Quando l'automix sceglie da solo pesca solo in questi generi. Vuoto = segue il genere del brano in corso."/>
+                        <TextBox Text="{Binding SetGenres, UpdateSourceTrigger=LostFocus}" FontSize="11" Padding="6,2" Width="180" HorizontalAlignment="Left" ToolTip="Generi separati da virgola, come nei tag (es. Dance, House, Pop italiano)"/>
+                    </DockPanel>
+                    <Expander Margin="0,4,0,0" IsExpanded="False" Foreground="{StaticResource MutedBrush}">
+                                    <Expander.Header><TextBlock Text="Avanzate" Style="{StaticResource Muted}" FontSize="11" FontWeight="SemiBold"/></Expander.Header>
                                     <StackPanel Margin="0,4,0,0">
                                         <CheckBox IsChecked="{Binding AutoMixUseCues}" Content="Usa intro/uscita rilevate" Margin="0,3" ToolTip="Mixa all'inizio dell'uscita e fa partire il brano successivo dopo l'intro (serve l'analisi del brano)"/>
                                         <DockPanel Margin="0,3">
                                             <CheckBox IsChecked="{Binding BpmLock}" Content="Blocca BPM a" ToolTip="Tutti i brani caricati vengono velocizzati/rallentati a questo tempo"/>
-                                            <TextBox Text="{Binding BpmLockValue, StringFormat={}{0:0}, UpdateSourceTrigger=LostFocus}" Width="60" Margin="6,0,0,0" TextAlignment="Center" FontWeight="Bold"/>
+                                            <TextBox Text="{Binding BpmLockValue, StringFormat={}{0:0}, UpdateSourceTrigger=LostFocus}" Width="60" Margin="6,0,0,0" TextAlignment="Center" FontWeight="SemiBold"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,3">
                                             <TextBlock Text="Passaggio" Width="80" VerticalAlignment="Center" Style="{StaticResource Muted}" FontSize="11"/>
@@ -152,23 +226,41 @@
                                         </DockPanel>
                                     </StackPanel>
                                 </Expander>
-                            </StackPanel>
-                        </Border>
+                </StackPanel>
+                <!-- microfono: on, talk-over, meter; la sezione EQ/effetti si apre col tasto EQ -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Top">
+                    <TextBlock Text="MIC" Style="{StaticResource SectionTitle}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <ToggleButton Content="🎤" v:Shortcut.Action="mic" Style="{StaticResource ToolToggle}" IsChecked="{Binding MicOn}" Padding="6,0" Height="26" MinWidth="30" FontSize="12" Margin="0,0,3,0" ToolTip="Microfono on/off (ingresso in Impostazioni → Audio; il gain è la manopola MIC nel mixer)"/>
+                    <ToggleButton Content="TALK" v:Shortcut.Action="talk" Style="{StaticResource ToolToggle}" IsChecked="{Binding TalkOver}" Padding="8,0" Height="26" MinWidth="30" FontSize="10.5" FontWeight="SemiBold" Margin="0,0,3,0"
+                                  PreviewMouseLeftButtonDown="Talk_Down" PreviewMouseLeftButtonUp="Talk_Up" ToolTip="Talk-over: tieni premuto per parlare sopra la musica (i deck si abbassano)"/>
+                    <v:LevelMeter Left="{Binding MicLevel}" Right="{Binding MicLevel}" Height="6" Width="44" VerticalAlignment="Center" Margin="0,0,6,0" Visibility="{Binding MicOn, Converter={StaticResource BoolToVis}}"/>
+                    <ToggleButton Content="EQ / FX" IsChecked="{Binding MicEqVisible}" Style="{StaticResource ToolToggle}" Padding="8,0" Height="26" MinWidth="30" FontSize="10.5" Margin="0,0,3,0" ToolTip="Apre/chiude equalizzatore ed effetti del microfono"/>
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding MicEqVisible, Converter={StaticResource BoolToVis}}" Margin="4,0,0,0">
+                        <v:Knob Label="LOW" Value="{Binding MicEqLow}" Minimum="-12" Maximum="12" Bipolar="True" Diameter="24" Accent="{StaticResource TextBrush}" Margin="0,0,4,0" ToolTip="EQ bassi microfono"/>
+                        <v:Knob Label="MID" Value="{Binding MicEqMid}" Minimum="-12" Maximum="12" Bipolar="True" Diameter="24" Accent="{StaticResource TextBrush}" Margin="0,0,4,0" ToolTip="EQ medi microfono"/>
+                        <v:Knob Label="HI" Value="{Binding MicEqHigh}" Minimum="-12" Maximum="12" Bipolar="True" Diameter="24" Accent="{StaticResource TextBrush}" Margin="0,0,8,0" ToolTip="EQ alti microfono"/>
+                        <ToggleButton Content="AUTO" IsChecked="{Binding MicAutoDuck}" Style="{StaticResource ToolToggle}" Padding="5,0" Height="22" MinWidth="0" FontSize="9.5" Margin="0,0,2,0" VerticalAlignment="Top" ToolTip="{Binding MicDuckLabel, StringFormat=Talk-over automatico: quando parli i deck scendono di {0}}"/>
+                        <ToggleButton Content="ECO" IsChecked="{Binding MicEcho}" Style="{StaticResource ToolToggle}" Padding="5,0" Height="22" MinWidth="0" FontSize="9.5" Margin="0,0,2,0" VerticalAlignment="Top" ToolTip="Eco sulla voce"/>
+                        <ToggleButton Content="RVB" IsChecked="{Binding MicReverb}" Style="{StaticResource ToolToggle}" Padding="5,0" Height="22" MinWidth="0" FontSize="9.5" Margin="0" VerticalAlignment="Top" ToolTip="Riverbero sulla voce"/>
                     </StackPanel>
-
-                    <StackPanel Grid.Row="4">
-                        <TextBlock Text="MASTER" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center" Margin="0,0,0,2"/>
-                        <v:LevelMeter Left="{Binding MasterL}" Right="{Binding MasterR}" Height="14" Margin="0,0,0,6" ToolTip="Uscita master: se non si muove, non sta uscendo audio"/>
-                        <Slider Minimum="0" Maximum="1.2" Value="{Binding MasterVolume}"/>
+                </StackPanel>
+                <!-- cuffia · riempimento · rotazione -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Top">
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding CueAvailable, Converter={StaticResource BoolToVis}}" Margin="0,0,10,0">
+                        <TextBlock Text="🎧" VerticalAlignment="Center" Margin="0,0,4,0" ToolTip="Cuffia: cosa senti (CUE ↔ MASTER)"/>
+                        <Slider Minimum="0" Maximum="1" Value="{Binding CueMix}" Width="70" VerticalAlignment="Center" v:Shortcut.Action="cuemix"/>
+                        <TextBlock Text="{Binding CueMixLabel}" Width="44" Style="{StaticResource Muted}" FontSize="9.5" VerticalAlignment="Center" Margin="4,0,0,0"/>
                     </StackPanel>
-                </Grid>
-            </Border>
-
-            <v:DeckControl Grid.Column="2" DataContext="{Binding DeckB}" Accent="{StaticResource AccentBBrush}"/>
-        </Grid>
-
-        <!-- ═══════════ libreria + coda ═══════════ -->
-        <Grid Grid.Row="3" Margin="0,0,0,10">
+                    <ToggleButton Content="⏯ RIEMPIMENTO" IsChecked="{Binding FillMusicOn}" v:Shortcut.Action="fill" Style="{StaticResource ToolToggle}" Padding="8,0" Height="26" FontSize="10.5" Margin="0,0,3,0"
+                                  ToolTip="Musica di riempimento: quando una base finisce e nessuno canta parte un brano dalla playlist scelta; sfuma da solo appena avvii la prossima base"/>
+                    <ComboBox ItemsSource="{Binding Playlists}" SelectedItem="{Binding FillPlaylist}" DisplayMemberPath="Name" FontSize="10.5" MinWidth="90" Height="26" Margin="0,0,3,0"
+                              Visibility="{Binding FillMusicOn, Converter={StaticResource BoolToVis}}" ToolTip="Playlist di riempimento (vuota = tutta la musica non karaoke)"/>
+                    <ToggleButton Content="🔁 ROTAZIONE" IsChecked="{Binding RotationOn}" v:Shortcut.Action="rotation" Style="{StaticResource ToolToggle}" Padding="8,0" Height="26" FontSize="10.5" Margin="0"
+                                  ToolTip="Rotazione equa dei cantanti: la coda si riordina a giri; chi ha già cantato aspetta chi non lo ha ancora fatto"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <Grid Grid.Row="4" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="2*"/>
@@ -197,6 +289,8 @@
                             <RadioButton Style="{StaticResource Chip}" Content="🎹" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="midi" ToolTip="MIDI / KAR&#10;Basi MIDI sintetizzate con FluidSynth, testo sul proiettore. Mai nel mix automatico."/>
                             <RadioButton Style="{StaticResource Chip}" Content="🎯" GroupName="LibFilter" Command="{Binding RefreshCompatibilityCommand}"
                                          ToolTip="Compatibili&#10;Ordina per affinità (BPM ±8 %, tonalità Camelot vicina) con il brano in riproduzione o selezionato. Clicca di nuovo per aggiornare."/>
+                            <RadioButton Style="{StaticResource Chip}" Content="🎼" GroupName="LibFilter" Command="{Binding SetLibraryFilterCommand}" CommandParameter="key"
+                                         ToolTip="Tonalità compatibile&#10;Solo brani in tonalità armonicamente compatibile (ruota Camelot: stesso numero o ±1) con il deck che si sente. Con MATCH sul deck trasponi il brano entrante."/>
                             <ToggleButton Style="{StaticResource GenreChip}" IsChecked="{Binding HideCryptic}" Content="🙈" Margin="8,0,0,0" Padding="8,2" FontSize="12"
                                           ToolTip="Nascondi titoli senza senso&#10;File con nome incomprensibile (es. $RFXPGZ2 del Cestino, codici senza vocali). Acceso = nascosti."/>
                             <ToggleButton Style="{StaticResource GenreChip}" IsChecked="{Binding ShowDuplicates}" Margin="4,0,0,0" Padding="8,2" FontSize="12"
@@ -363,7 +457,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBox Grid.Column="0" x:Name="SingerBox" Text="{Binding SingerName, UpdateSourceTrigger=PropertyChanged}" FontSize="14"
-                                 ToolTip="Nome del cantante (opzionale)" KeyDown="SingerBox_KeyDown">
+                                 ToolTip="Nome del cantante (opzionale). Tasto destro: nomi già visti stasera e nelle serate passate (con la tonalità ricordata)." KeyDown="SingerBox_KeyDown" MouseRightButtonUp="SingerBox_Right">
                             <TextBox.Style>
                                 <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
                                     <Style.Resources>
@@ -383,12 +477,12 @@
                         </TextBox>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="6,0" ToolTip="Tonalità iniziale per questo cantante">
                             <Button Content="−" Width="28" Padding="0" Click="QueueKeyDown_Click"/>
-                            <TextBlock Text="{Binding QueueKeyLabel}" Width="30" TextAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" Foreground="{StaticResource WarnBrush}"/>
+                            <TextBlock Text="{Binding QueueKeyLabel}" Width="30" TextAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{StaticResource WarnBrush}"/>
                             <Button Content="+" Width="28" Padding="0" Click="QueueKeyUp_Click"/>
                         </StackPanel>
                         <Button Grid.Column="2" Content="＋ Coda" Style="{StaticResource AccentButton}" Command="{Binding AddToQueueCommand}" v:Shortcut.Action="addqueue" Margin="0,0,6,0" ToolTip="Ctrl+Invio. Tasto destro sul brano: in cima alla coda / mixa ora"/>
-                        <Button Grid.Column="3" Content="→ A" Command="{Binding LoadSelectedToACommand}" Foreground="{StaticResource AccentABrush}" FontWeight="Bold" Margin="0,0,6,0"/>
-                        <Button Grid.Column="4" Content="→ B" Command="{Binding LoadSelectedToBCommand}" Foreground="{StaticResource AccentBBrush}" FontWeight="Bold"/>
+                        <Button Grid.Column="3" Content="→ A" Command="{Binding LoadSelectedToACommand}" Foreground="{StaticResource AccentABrush}" FontWeight="SemiBold" Margin="0,0,6,0"/>
+                        <Button Grid.Column="4" Content="→ B" Command="{Binding LoadSelectedToBCommand}" Foreground="{StaticResource AccentBBrush}" FontWeight="SemiBold"/>
                     </Grid>
                 </Grid>
             </Border>
@@ -402,11 +496,29 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                    <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                    <DockPanel>
                         <TextBlock Text="CODA CANTANTI" Style="{StaticResource SectionTitle}" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding Queue.Count, StringFormat={} ({0})}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="4,0,0,6"/>
                         <Button DockPanel.Dock="Right" Content="Svuota" Style="{StaticResource SmallButton}" Command="{Binding ClearQueueCommand}" HorizontalAlignment="Right"/>
+                        <Button DockPanel.Dock="Right" Content="📲" Style="{StaticResource ToolIcon}" Command="{Binding ShowPublicQrCommand}" Margin="0,0,6,0"
+                                ToolTip="Prenotazioni dal pubblico&#10;Mostra sul proiettore il QR della pagina dove il pubblico cerca un brano e si prenota (nome + dedica). Le richieste arrivano qui sopra la coda: accetti o scarti."/>
                     </DockPanel>
+                    <ItemsControl ItemsSource="{Binding Requests}" Visibility="{Binding HasRequests, Converter={StaticResource BoolToVis}}" Margin="0,4,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#3300E5FF" CornerRadius="3" Padding="6,3" Margin="0,0,0,3">
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Content="✕" Style="{StaticResource SmallButton}" Padding="6,0" Command="{Binding DataContext.RejectRequestCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" ToolTip="Scarta"/>
+                                        <Button DockPanel.Dock="Right" Content="✓ In coda" Style="{StaticResource SmallButton}" Padding="6,0" Margin="0,0,4,0" Command="{Binding DataContext.AcceptRequestCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" ToolTip="Accetta: va in coda col nome del cantante (e la dedica sul proiettore)"/>
+                                        <TextBlock Text="{Binding When}" Style="{StaticResource Muted}" FontSize="10" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding Display}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    </StackPanel>
 
                     <ListBox Grid.Row="1" x:Name="QueueList" ItemsSource="{Binding Queue}" SelectedItem="{Binding SelectedQueueEntry}"
                              HorizontalContentAlignment="Stretch" MouseDoubleClick="QueueList_MouseDoubleClick" AllowDrop="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -422,21 +534,21 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="{Binding Track.KindLabel}" Style="{StaticResource Muted}" Width="40" VerticalAlignment="Center"/>
                                     <StackPanel Grid.Column="1">
-                                        <TextBlock Text="{Binding Singer}" FontWeight="Bold" Foreground="{StaticResource WarnBrush}"
+                                        <TextBlock Text="{Binding Singer}" FontWeight="SemiBold" Foreground="{StaticResource WarnBrush}"
                                                    Visibility="{Binding Singer, Converter={StaticResource NullToVis}}"/>
                                         <TextBlock Text="{Binding Track.Display}" TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="{Binding Note}" Style="{StaticResource Muted}" FontSize="10" TextTrimming="CharacterEllipsis"
                                                    Visibility="{Binding Note, Converter={StaticResource NullToVis}}"/>
                                     </StackPanel>
-                                    <TextBlock Grid.Column="2" Text="{Binding KeyLabel}" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" Margin="6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding KeyLabel}" FontWeight="SemiBold" Foreground="{StaticResource WarnBrush}" Margin="6,0" VerticalAlignment="Center"/>
                                     <StackPanel Grid.Column="3" Orientation="Horizontal">
-                                        <Button Content="⚡" Style="{StaticResource SmallButton}" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" ToolTip="Mixa ora"
+                                        <Button Content="⚡" Style="{StaticResource SmallButton}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" ToolTip="Mixa ora"
                                                 Command="{Binding DataContext.QueueEntryMixNowCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="2,0"/>
                                         <Button Content="⤒" Style="{StaticResource SmallButton}" ToolTip="In cima alla coda"
                                                 Command="{Binding DataContext.QueueEntryToTopCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="2,0"/>
-                                        <Button Content="A" Style="{StaticResource SmallButton}" Foreground="{StaticResource AccentABrush}" FontWeight="Bold"
+                                        <Button Content="A" Style="{StaticResource SmallButton}" Foreground="{StaticResource AccentABrush}" FontWeight="SemiBold"
                                                 Command="{Binding DataContext.QueueEntryToACommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="2,0"/>
-                                        <Button Content="B" Style="{StaticResource SmallButton}" Foreground="{StaticResource AccentBBrush}" FontWeight="Bold"
+                                        <Button Content="B" Style="{StaticResource SmallButton}" Foreground="{StaticResource AccentBBrush}" FontWeight="SemiBold"
                                                 Command="{Binding DataContext.QueueEntryToBCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="2,0"/>
                                         <Button Content="✕" Style="{StaticResource SmallButton}"
                                                 Command="{Binding DataContext.RemoveFromQueueCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Margin="2,0"/>
@@ -453,7 +565,7 @@
                     </StackPanel>
 
                     <!-- suggeritore prossimo brano -->
-                    <Border Grid.Row="3" Background="{StaticResource InnerPanelBrush}" CornerRadius="8" Padding="8,6" Margin="0,8,0,0" MaxHeight="290">
+                    <Border Grid.Row="3" Background="{StaticResource InnerPanelBrush}" CornerRadius="3" Padding="8,6" Margin="0,8,0,0" MaxHeight="290">
                         <DockPanel>
                             <!-- fuori libreria: proposte AI da scaricare e mettere in coda -->
                             <DockPanel DockPanel.Dock="Bottom" Margin="0,6,0,0" Visibility="{Binding ExternalSuggestionsLabel, Converter={StaticResource NullToVis}}">
@@ -501,7 +613,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type m:Track}">
                                         <DockPanel Margin="0,1">
-                                            <TextBlock Text="{Binding MatchLabel}" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" Width="38" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding MatchLabel}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" Width="38" VerticalAlignment="Center"/>
                                             <Button DockPanel.Dock="Right" Content="→ deck" Style="{StaticResource SmallButton}" Padding="6,1" FontSize="11" Margin="2,0"
                                                     Command="{Binding DataContext.SuggestionToFreeDeckCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                             <Button DockPanel.Dock="Right" Content="👎" Style="{StaticResource SmallButton}" Padding="5,1" FontSize="11" Margin="2,0" ToolTip="Non c'entra: lo tolgo dai suggeriti di stasera e il suggeritore impara (soprattutto dopo questo brano)"
@@ -527,7 +639,7 @@
         </Grid>
 
         <!-- ═══════════ pad + download ═══════════ -->
-        <Grid Grid.Row="4" Margin="0,0,0,8" Visibility="{Binding BottomStripVisible, Converter={StaticResource BoolToVis}}">
+        <Grid Grid.Row="5" Margin="0,0,0,8" Visibility="{Binding BottomStripVisible, Converter={StaticResource BoolToVis}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="2*"/>
@@ -580,7 +692,7 @@
                                     </Button.Tag>
                                     <StackPanel>
                                         <TextBlock Text="{Binding Hotkey}" Style="{StaticResource Muted}" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="120"/>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="120"/>
                                     </StackPanel>
                                 </Button>
                             </DataTemplate>
@@ -626,7 +738,7 @@
         </Grid>
 
         <!-- ═══════════ stato ═══════════ -->
-        <DockPanel Grid.Row="5">
+        <DockPanel Grid.Row="6">
             <ProgressBar DockPanel.Dock="Right" Width="160" Height="8" Minimum="0" Maximum="100" Value="{Binding ScanPercent}"
                          Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}" Margin="10,0,0,0"/>
             <TextBlock Text="{Binding NowSinging, StringFormat=🎤 {0}}" DockPanel.Dock="Right" Foreground="{StaticResource WarnBrush}" Margin="10,0,0,0"

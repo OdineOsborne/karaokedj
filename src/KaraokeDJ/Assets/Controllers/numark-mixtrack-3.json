@@ -1,0 +1,288 @@
+{
+ "id": "numark-mixtrack-3",
+ "name": "Numark Mixtrack 3 / Pro 3 / Platinum",
+ "match": [
+  "Mixtrack 3",
+  "Mixtrack Pro 3",
+  "Mixtrack Platinum"
+ ],
+ "source": "Mixxx mapping \"Numark-Mixtrack-3\" (Stéphane Morin), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 7,
+   "action": "crossfader"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 5,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 5,
+   "action": "b.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 10,
+   "action": "master"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 9,
+   "action": "cuemix"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 8,
+   "action": "cuevolume"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 23,
+   "action": "browse"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 16,
+   "action": "loadA"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 17,
+   "action": "loadB"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 14,
+   "action": "a.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 15,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 1,
+   "action": "a.play"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 1,
+   "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 3,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 3,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 2,
+   "action": "a.sync"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 2,
+   "action": "b.sync"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 4,
+   "action": "a.filtervalue"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 4,
+   "action": "b.filtervalue"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 21,
+   "action": "a.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 21,
+   "action": "b.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 22,
+   "action": "a.loophalf"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 22,
+   "action": "b.loophalf"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 27,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 27,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 28,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 28,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 29,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 29,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 30,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 30,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 17,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 17,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 12,
+   "action": "a.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 12,
+   "action": "b.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 6,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 6,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 24,
+   "action": "a.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 24,
+   "action": "b.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 56,
+   "action": "a.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 56,
+   "action": "b.tempo"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 5,
+   "action": "a.nudgeup"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 5,
+   "action": "b.nudgeup"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 4,
+   "action": "a.nudgedown"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 4,
+   "action": "b.nudgedown"
+  }
+ ]
+}

@@ -1,0 +1,348 @@
+{
+ "id": "reloop-beatmix-mk2",
+ "name": "Reloop Beatmix 2/4 MK2",
+ "match": [
+  "Beatmix 2 MK2",
+  "Beatmix 4 MK2",
+  "Beatmix"
+ ],
+ "source": "Mixxx mapping \"Reloop-Beatmix-2-4-MK2\" (Sébastien Blaisot &lt;sebastien@blaisot.org&gt;), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 33,
+   "action": "a.sync"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 34,
+   "action": "a.playcue"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 35,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 99,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 36,
+   "action": "a.play"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 0,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 1,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 2,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 3,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 4,
+   "action": "a.loop1"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 5,
+   "action": "a.loop2"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 13,
+   "action": "a.loophalf"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 6,
+   "action": "a.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 14,
+   "action": "a.loopdouble"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 7,
+   "action": "a.loop8"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 15,
+   "action": "a.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 80,
+   "action": "loadA"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 82,
+   "action": "a.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 63,
+   "action": "a.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 16,
+   "action": "a.volume"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 17,
+   "action": "a.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 18,
+   "action": "a.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 19,
+   "action": "a.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 20,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 96,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 112,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 33,
+   "action": "b.sync"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 34,
+   "action": "b.playcue"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 35,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 99,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 36,
+   "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 0,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 1,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 2,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 3,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 4,
+   "action": "b.loop1"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 5,
+   "action": "b.loop2"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 13,
+   "action": "b.loophalf"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 6,
+   "action": "b.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 14,
+   "action": "b.loopdouble"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 7,
+   "action": "b.loop8"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 15,
+   "action": "b.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 80,
+   "action": "loadB"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 82,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 63,
+   "action": "b.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 16,
+   "action": "b.volume"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 17,
+   "action": "b.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 18,
+   "action": "b.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 19,
+   "action": "b.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 20,
+   "action": "b.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 96,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 112,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 6,
+   "number": 47,
+   "action": "crossfader"
+  },
+  {
+   "type": "cc",
+   "channel": 6,
+   "number": 0,
+   "action": "master"
+  },
+  {
+   "type": "cc",
+   "channel": 6,
+   "number": 2,
+   "action": "cuemix"
+  }
+ ]
+}

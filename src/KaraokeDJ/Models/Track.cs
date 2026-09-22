@@ -9,6 +9,7 @@ public enum TrackKind
     CdgZip,   // .zip contenente mp3 + cdg
     Video,    // mp4 / mkv / avi con testo integrato
     Midi,     // .mid / .kar: reso in audio con FluidSynth, testo dagli eventi lyric
+    Lrc,      // audio + testo sincronizzato .lrc (o .txt con [mm:ss]) accanto al file
 }
 
 public sealed class Track
@@ -16,6 +17,8 @@ public sealed class Track
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
     public string FilePath { get; set; } = "";
     public string? CdgPath { get; set; }
+    /// <summary>File .lrc/.txt sincronizzato accanto al brano (Kind = Lrc).</summary>
+    public string? LyricsPath { get; set; }
     public string Title { get; set; } = "";
     public string Artist { get; set; } = "";
     public double DurationSec { get; set; }
@@ -59,6 +62,11 @@ public sealed class Track
     public bool CuesManual { get; set; }
     /// <summary>Punto cue (s), -1 = non impostato.</summary>
     public double CueSec { get; set; } = -1;
+    /// <summary>Hot cue 1–8 in secondi (-1 = vuoto).</summary>
+    public double[] HotCues { get; set; } = EmptyHotCues();
+    public static double[] EmptyHotCues() => new[] { -1.0, -1, -1, -1, -1, -1, -1, -1 };
+    public double HotCue(int i) => HotCues != null && i >= 0 && i < HotCues.Length ? HotCues[i] : -1;
+    public void SetHotCue(int i, double sec) { if (HotCues == null || HotCues.Length < 8) HotCues = EmptyHotCues(); if (i >= 0 && i < 8) HotCues[i] = sec; }
     /// <summary>Fase della griglia dei battiti: secondi del primo "1" (-1 = non ancora stimata).</summary>
     public double BeatOffsetSec { get; set; } = -1;
     /// <summary>Griglia corretta a mano: la stima automatica non la sovrascrive.</summary>
@@ -86,6 +94,7 @@ public sealed class Track
     [JsonIgnore] public bool IsKaraoke => Kind != TrackKind.Audio;
     [JsonIgnore] public bool IsVideo => Kind == TrackKind.Video;
     [JsonIgnore] public bool IsMidi => Kind == TrackKind.Midi;
+    [JsonIgnore] public bool IsLrc => Kind == TrackKind.Lrc;
     [JsonIgnore] public bool IsCdg => Kind is TrackKind.Cdg or TrackKind.CdgZip;
 
     [JsonIgnore]
@@ -94,6 +103,7 @@ public sealed class Track
         TrackKind.Audio => "Audio",
         TrackKind.Video => "Video",
         TrackKind.Midi => "MIDI",
+        TrackKind.Lrc => "LRC",
         _ => "CDG",
     };
 

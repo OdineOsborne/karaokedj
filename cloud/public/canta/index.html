@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prenota la tua canzone</title>
+<link rel="icon" href="/brand/icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0B0B0F; --panel:#15151d; --text:#F4F4F8; --muted:#9a9ab0; --violet:#8A2BFF; --cyan:#00E5FF; --pink:#FF2D6D; --ok:#3DFFA0 }
+  * { box-sizing:border-box }
+  body { margin:0; background:radial-gradient(900px 500px at 30% 0%, #2A1560 0%, var(--bg) 60%), var(--bg); color:var(--text); font-family:Montserrat, system-ui, sans-serif; padding:14px; max-width:560px; margin:0 auto }
+  h1 { margin:6px 0 2px; font-size:26px; font-weight:900; letter-spacing:1px; background:linear-gradient(90deg,var(--violet),var(--cyan),var(--pink)); -webkit-background-clip:text; background-clip:text; color:transparent }
+  .tag { color:var(--muted); font-size:11px; letter-spacing:3px; font-weight:600; margin-bottom:12px }
+  .now { background:var(--panel); border-radius:12px; padding:10px 12px; margin-bottom:12px; font-size:13px; line-height:1.5 }
+  .now b { color:var(--cyan) }
+  input, textarea { width:100%; background:#0D0D12; color:var(--text); border:1px solid #2A2A38; border-radius:10px; padding:12px; font:inherit; font-size:16px }
+  input:focus, textarea:focus { outline:none; border-color:var(--violet) }
+  .list { margin-top:8px }
+  .row { display:flex; align-items:center; gap:10px; background:var(--panel); border-radius:10px; padding:10px 12px; margin-bottom:6px }
+  .row .t { flex:1; min-width:0 } .row b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis } .row small { color:var(--muted) }
+  .k { font-size:10px; font-weight:800; color:var(--bg); background:var(--cyan); border-radius:6px; padding:2px 6px }
+  .btn { background:linear-gradient(135deg,var(--violet),var(--cyan)); color:#fff; border:0; border-radius:10px; padding:10px 14px; font:inherit; font-weight:800; cursor:pointer; white-space:nowrap }
+  .btn.ghost { background:#1B1B24; border:1px solid #2A2A38; color:var(--text) }
+  .btn:disabled { opacity:.5 }
+  .muted { color:var(--muted); font-size:12px }
+  .sheet { position:fixed; inset:0; background:#000c; display:none; align-items:flex-end; justify-content:center; padding:12px }
+  .sheet.on { display:flex }
+  .card { width:100%; max-width:520px; background:var(--panel); border-radius:16px; padding:16px }
+  .card h3 { margin:0 0 10px; font-size:16px }
+  .card label { display:block; margin:10px 0 4px; font-size:12px; color:var(--muted) }
+  .ok { color:var(--ok); font-weight:800; text-align:center; padding:20px 10px; font-size:18px }
+  .err { color:var(--pink); font-weight:600; min-height:1em; margin-top:8px }
+</style>
+</head>
+<body>
+  <img src="/brand/wordmark.png" alt="Mixfonia" style="height:34px;display:block;margin:6px 0 4px"><h1>PRENOTA LA TUA CANZONE</h1>
+  <div class="tag">MIXFONIA · KARAOKE</div>
+  <div class="now" id="now">…</div>
+  <input id="q" placeholder="Cerca titolo o artista…" autocomplete="off">
+  <div class="muted" id="hint" style="margin-top:6px"></div>
+  <div class="list" id="list"></div>
+  <div class="err" id="err"></div>
+
+  <div class="sheet" id="sheet">
+    <div class="card">
+      <h3 id="pick">—</h3>
+      <label>Il tuo nome (come vuoi essere chiamato)</label>
+      <input id="name" maxlength="40" placeholder="es. Marco">
+      <label>Dedica o messaggio (facoltativo, va sul proiettore)</label>
+      <textarea id="note" rows="2" maxlength="140" placeholder="es. Per Giulia, buon compleanno!"></textarea>
+      <div style="display:flex; gap:8px; margin-top:14px">
+        <button class="btn ghost" onclick="closeSheet()" style="flex:1">Annulla</button>
+        <button class="btn" id="send" onclick="send()" style="flex:2">🎤 Prenota</button>
+      </div>
+      <div class="err" id="err2"></div>
+    </div>
+  </div>
+<script>
+  const session = new URLSearchParams(location.search).get("s") || "";
+  const $ = s => document.querySelector(s);
+  const err = m => $("#err").textContent = m || "";
+  let lib = [], chosen = null;
+  try { $("#name").value = localStorage.getItem("mixfonia.singer") || ""; } catch {}
+
+  const norm = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  function search() {
+    const q = norm($("#q").value.trim());
+    const words = q.split(/\s+/).filter(Boolean);
+    const res = q.length < 2 ? [] : lib.filter(t => { const h = norm(t.a + " " + t.t); return words.every(w => h.includes(w)); }).slice(0, 40);
+    $("#hint").textContent = q.length < 2 ? `${lib.length} brani disponibili: scrivi almeno 2 lettere` : (res.length ? `${res.length} risultati` : "Nessun brano: chiedi al DJ");
+    $("#list").innerHTML = res.map((t, i) => `<div class="row"><div class="t"><b>${esc(t.t)}</b><small>${esc(t.a || "")}</small></div>${t.k ? '<span class="k">KARAOKE</span>' : ""}<button class="btn" onclick="choose(${i})">Prenota</button></div>`).join("");
+    window._res = res;
+  }
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  function choose(i) { chosen = window._res[i]; $("#pick").textContent = chosen.t + (chosen.a ? " · " + chosen.a : ""); $("#err2").textContent = ""; $("#sheet").classList.add("on"); $("#name").focus(); }
+  function closeSheet() { $("#sheet").classList.remove("on"); }
+  async function send() {
+    if (!chosen) return;
+    const name = $("#name").value.trim();
+    if (!name) { $("#err2").textContent = "Scrivi il tuo nome."; return; }
+    try { localStorage.setItem("mixfonia.singer", name); } catch {}
+    $("#send").disabled = true;
+    try {
+      const r = await fetch(`/api/setlist?op=preq&s=${encodeURIComponent(session)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: chosen.id, title: chosen.t, singer: name, note: $("#note").value.trim() }) });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error || r.status);
+      $("#sheet").querySelector(".card").innerHTML = `<div class="ok">✓ Prenotato!<br><small style="font-weight:600;color:var(--muted)">${esc(name)}, il DJ ti chiama quando tocca a te.</small></div><button class="btn" onclick="location.reload()" style="width:100%">Prenota un'altra</button>`;
+    } catch (e) { $("#err2").textContent = "Non inviato: " + e.message; $("#send").disabled = false; }
+  }
+  async function state() {
+    try {
+      const s = await (await fetch(`/api/setlist?op=pstate&s=${encodeURIComponent(session)}`)).json();
+      if (s.error) { $("#now").textContent = s.error; return; }
+      $("#now").innerHTML = (s.now.length ? `Ora: <b>${esc(s.now.join(" · "))}</b>` : "Ora: <b>pausa</b>") + (s.next.length ? `<br>Prossimi: ${esc(s.next.join(" · "))}` : "");
+    } catch {}
+  }
+  async function load() {
+    if (!session) { err("Link non valido: inquadra il QR mostrato da Mixfonia."); return; }
+    try {
+      const j = await (await fetch(`/api/setlist?op=plib&s=${encodeURIComponent(session)}`)).json();
+      if (j.error) { err(j.error); return; }
+      lib = j.tracks || [];
+      lib.sort((a, b) => (b.k ? 1 : 0) - (a.k ? 1 : 0)); // prima le basi karaoke
+      search();
+    } catch { err("Servizio non raggiungibile."); }
+    state(); setInterval(state, 8000);
+  }
+  $("#q").oninput = search;
+  load();
+</script>
+</body>
+</html>

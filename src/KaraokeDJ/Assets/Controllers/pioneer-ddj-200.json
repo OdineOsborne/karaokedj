@@ -1,0 +1,264 @@
+{
+ "id": "pioneer-ddj-200",
+ "name": "Pioneer DDJ-200",
+ "match": [
+  "DDJ-200"
+ ],
+ "source": "Mixxx mapping \"Pioneer DDJ-200\" (Dan Giddins, Frank.Breitling at gmx.de), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "cc",
+   "channel": 7,
+   "number": 31,
+   "action": "crossfader"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 99,
+   "action": "cuemix"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 84,
+   "action": "a.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 84,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 19,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 19,
+   "action": "b.fader"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 11,
+   "action": "a.play"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 11,
+   "action": "b.play"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 33,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 33,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 0,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 1,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 2,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 3,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 4,
+   "action": "a.hotcue5"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 5,
+   "action": "a.hotcue6"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 6,
+   "action": "a.hotcue7"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 7,
+   "action": "a.hotcue8"
+  },
+  {
+   "type": "note",
+   "channel": 10,
+   "number": 0,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 10,
+   "number": 1,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 10,
+   "number": 2,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 10,
+   "number": 3,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 10,
+   "number": 4,
+   "action": "b.hotcue5"
+  },
+  {
+   "type": "note",
+   "channel": 10,
+   "number": 5,
+   "action": "b.hotcue6"
+  },
+  {
+   "type": "note",
+   "channel": 10,
+   "number": 6,
+   "action": "b.hotcue7"
+  },
+  {
+   "type": "note",
+   "channel": 10,
+   "number": 7,
+   "action": "b.hotcue8"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 0,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 1,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 2,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 3,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 4,
+   "action": "a.hotcue5"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 5,
+   "action": "a.hotcue6"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 6,
+   "action": "a.hotcue7"
+  },
+  {
+   "type": "note",
+   "channel": 9,
+   "number": 7,
+   "action": "a.hotcue8"
+  },
+  {
+   "type": "note",
+   "channel": 11,
+   "number": 0,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 11,
+   "number": 1,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 11,
+   "number": 2,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 11,
+   "number": 3,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 11,
+   "number": 4,
+   "action": "b.hotcue5"
+  },
+  {
+   "type": "note",
+   "channel": 11,
+   "number": 5,
+   "action": "b.hotcue6"
+  },
+  {
+   "type": "note",
+   "channel": 11,
+   "number": 6,
+   "action": "b.hotcue7"
+  },
+  {
+   "type": "note",
+   "channel": 11,
+   "number": 7,
+   "action": "b.hotcue8"
+  }
+ ]
+}

@@ -11,8 +11,16 @@ function db() {
   return redis;
 }
 
-export async function saveLicense(machine, record) { await db().set(`lic:${machine}`, record); await db().lpush("lic:log", JSON.stringify({ ...record, machine, at: Date.now() })); }
+// ---- licenze: una voce per macchina (lic:<ID>) e una per account (acc:<email>) ----
+// acc = { email, name, customerId, subscriptionId, updatesUntil:"AAAA-MM-GG", token, seats:[{machine,key,issued,note}], history:[...] }
+// lic = { key, name, account, revoked?, via }   (le voci PayPal storiche non hanno account)
+export async function saveLicense(machine, record) { await db().set(`lic:${machine}`, record); await db().lpush("lic:log", JSON.stringify({ ...record, key: undefined, machine, at: Date.now() })); }
 export async function getLicense(machine) { return db().get(`lic:${machine}`); }
+export async function getAccount(email) { return db().get(`acc:${email}`); }
+export async function saveAccount(acc) { await db().set(`acc:${acc.email}`, acc); }
+/** Idempotenza degli eventi Stripe: true se è la prima volta che lo vediamo. */
+export async function claimEvent(id) { return (await db().set(`evt:${id}`, 1, { nx: true, ex: 60 * 60 * 24 * 40 })) === "OK"; }
+
 export async function saveMessage(event, msg) { await db().rpush(`msg:${event}`, JSON.stringify(msg)); }
 export async function getMessages(event) { return (await db().lrange(`msg:${event}`, 0, -1)).map(s => (typeof s === "string" ? JSON.parse(s) : s)); }
 

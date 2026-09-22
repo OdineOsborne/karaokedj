@@ -53,7 +53,7 @@ public partial class ProjectorWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show("Impossibile avviare il player video: " + ex.Message, "VOXA", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Impossibile avviare il player video: " + ex.Message, "Mixfonia", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         _sync.Start();
         UpdateLayers();
@@ -84,7 +84,7 @@ public partial class ProjectorWindow : Window
     public void ShowAsMonitor()
     {
         IsMonitor = true;
-        Title = "VOXA – Monitor proiettore";
+        Title = "Mixfonia – Monitor proiettore";
         WindowStyle = WindowStyle.SingleBorderWindow;
         ResizeMode = ResizeMode.CanResize;
         ShowInTaskbar = false;

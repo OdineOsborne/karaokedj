@@ -1,4 +1,4 @@
-# VOXA cloud
+# Mixfonia cloud
 
 Servizio su Vercel: donazioni PayPal → licenza istantanea (e, in futuro, pagina QR richieste canzoni).
 

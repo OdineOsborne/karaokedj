@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace VOXA.Plugin.YtDlp;
+namespace Mixfonia.Plugin.YtDlp;
 
 /// <summary>Percorsi usati dal plugin (impostati dal plugin all'avvio tramite l'host).</summary>
 internal static class AppPaths

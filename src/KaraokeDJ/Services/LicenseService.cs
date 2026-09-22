@@ -5,15 +5,29 @@ using System.Text.Json;
 namespace KaraokeDJ.Services;
 
 /// <summary>
-/// Donationware legato alla macchina (stile Voicemeeter): l'app è sempre completa; la chiave, firmata con
-/// ECDSA P-256 dalla chiave privata dell'autore, vale solo per l'ID macchina per cui è stata emessa.
+/// Licenza Mixfonia: perpetua e legata alla macchina, con aggiornamenti inclusi fino a una data (1 anno dall'acquisto,
+/// rinnovabile). Un account (email) può avere fino a 3 macchine e un solo abbonamento agli aggiornamenti:
+/// il rinnovo produce un "token aggiornamenti" firmato per l'account, valido su tutte le sue macchine.
+/// Tutto è firmato ECDSA P-256 dalla chiave privata dell'autore (che sta nel cloud e nella cartella privata).
+/// Formati (base64 di JSON):
+///   chiave v1 (donationware): {n,m,i,note,s}            payload "n\nm\ni\nnote"
+///   chiave v2:                {n,m,i,note,a,u,s}        payload "n\nm\ni\nnote\na\nu"
+///   token aggiornamenti:      {t:"upd",a,u,i,s}         payload "upd\na\nu\ni"
 /// </summary>
 public static class LicenseService
 {
     /// <summary>Chiave pubblica (SubjectPublicKeyInfo, base64). La privata sta solo dall'autore.</summary>
     public const string PublicKeyBase64 = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE8vOu6hQHzUJaxRLDOq/QzfDDmQQHD5EOKJnN0Xc5NKBX5kEstla7zVK0PjVji8zfX4OrOSlFDXO/pFslXG0yxA==";
 
-    public sealed record LicenseInfo(string Name, string Machine, DateTime Issued, string? Note);
+    public const int MaxSeats = 3;
+
+    /// <summary>Account = email (minuscola). UpdatesUntil = ultimo giorno in cui le release pubblicate sono installabili.</summary>
+    public sealed record LicenseInfo(string Name, string Machine, DateTime Issued, string? Note, string Account, DateTime UpdatesUntil)
+    {
+        public bool IsLegacy => Account.Length == 0;
+    }
+
+    public sealed record UpdatesToken(string Account, DateTime Until, DateTime Issued);
 
     private static string? _machineId;
 
@@ -62,38 +76,88 @@ public static class LicenseService
         return sb.ToString();
     }
 
-    /// <summary>Verifica una chiave (base64 di JSON {n,m,i,note,s}) per questa macchina. Ritorna null se non valida.</summary>
-    public static LicenseInfo? Verify(string? code) => Verify(code, MachineId);
+    public static string NormalizeAccount(string? email) => (email ?? "").Trim().ToLowerInvariant();
 
-    public static LicenseInfo? Verify(string? code, string machineId)
+    private static JsonElement? Decode(string? code)
     {
         if (string.IsNullOrWhiteSpace(code) || PublicKeyBase64.StartsWith("__")) return null;
         try
         {
             var json = Encoding.UTF8.GetString(Convert.FromBase64String(code.Trim().Replace("\n", "").Replace("\r", "").Replace(" ", "")));
-            using var doc = JsonDocument.Parse(json);
-            var r = doc.RootElement;
-            string n = r.GetProperty("n").GetString() ?? "", m = r.GetProperty("m").GetString() ?? "", i = r.GetProperty("i").GetString() ?? "";
-            string? note = r.TryGetProperty("note", out var no) ? no.GetString() : null;
-            var sig = Convert.FromBase64String(r.GetProperty("s").GetString() ?? "");
-            if (!string.Equals(m, machineId, StringComparison.OrdinalIgnoreCase)) return null;
-            using var ecdsa = ECDsa.Create();
-            ecdsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(PublicKeyBase64), out _);
-            var payload = Encoding.UTF8.GetBytes(Payload(n, m, i, note));
-            if (!ecdsa.VerifyData(payload, sig, HashAlgorithmName.SHA256)) return null;
-            return new LicenseInfo(n, m, DateTime.TryParse(i, out var d) ? d : DateTime.MinValue, note);
+            return JsonDocument.Parse(json).RootElement.Clone();
         }
         catch { return null; }
     }
 
-    public static string Payload(string name, string machine, string issued, string? note) => $"{name}\n{machine}\n{issued}\n{note ?? ""}";
+    private static string Str(JsonElement r, string name) => r.TryGetProperty(name, out var p) && p.ValueKind == JsonValueKind.String ? p.GetString() ?? "" : "";
 
-    /// <summary>Usato dal tool dell'autore: firma e produce il codice licenza.</summary>
-    public static string Issue(ECDsa privateKey, string name, string machine, string? note = null)
+    private static bool CheckSig(string payload, string sigB64)
+    {
+        try
+        {
+            using var ecdsa = ECDsa.Create();
+            ecdsa.ImportSubjectPublicKeyInfo(Convert.FromBase64String(PublicKeyBase64), out _);
+            return ecdsa.VerifyData(Encoding.UTF8.GetBytes(payload), Convert.FromBase64String(sigB64), HashAlgorithmName.SHA256);
+        }
+        catch { return false; }
+    }
+
+    private static DateTime ParseDay(string s) => DateTime.TryParse(s, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal, out var d) ? d.Date : DateTime.MinValue;
+
+    /// <summary>Verifica una chiave (v1 o v2) per questa macchina. Ritorna null se non valida.</summary>
+    public static LicenseInfo? Verify(string? code) => Verify(code, MachineId);
+
+    public static LicenseInfo? Verify(string? code, string machineId)
+    {
+        var r0 = Decode(code);
+        if (r0 == null) return null;
+        var r = r0.Value;
+        if (Str(r, "t").Length > 0) return null; // è un token, non una chiave
+        string n = Str(r, "n"), m = Str(r, "m"), i = Str(r, "i"), a = NormalizeAccount(Str(r, "a")), u = Str(r, "u");
+        string? note = r.TryGetProperty("note", out var no) && no.ValueKind == JsonValueKind.String ? no.GetString() : null;
+        if (!string.Equals(m, machineId, StringComparison.OrdinalIgnoreCase)) return null;
+        bool v2 = r.TryGetProperty("a", out _);
+        var payload = v2 ? Payload(n, m, i, note, a, u) : PayloadV1(n, m, i, note);
+        if (!CheckSig(payload, Str(r, "s"))) return null;
+        var issued = ParseDay(i);
+        // v1 (donationware): trattata come acquisto con 1 anno di aggiornamenti dalla data di emissione
+        var until = v2 ? ParseDay(u) : issued.AddYears(1);
+        return new LicenseInfo(n, m, issued, note, a, until);
+    }
+
+    /// <summary>Verifica un token aggiornamenti (rinnovo annuale dell'account). Ritorna null se non valido.</summary>
+    public static UpdatesToken? VerifyToken(string? code)
+    {
+        var r0 = Decode(code);
+        if (r0 == null) return null;
+        var r = r0.Value;
+        if (Str(r, "t") != "upd") return null;
+        string a = NormalizeAccount(Str(r, "a")), u = Str(r, "u"), i = Str(r, "i");
+        if (!CheckSig(TokenPayload(a, u, i), Str(r, "s"))) return null;
+        return new UpdatesToken(a, ParseDay(u), ParseDay(i));
+    }
+
+    public static string PayloadV1(string name, string machine, string issued, string? note) => $"{name}\n{machine}\n{issued}\n{note ?? ""}";
+    public static string Payload(string name, string machine, string issued, string? note, string account, string until) => $"{name}\n{machine}\n{issued}\n{note ?? ""}\n{account}\n{until}";
+    public static string TokenPayload(string account, string until, string issued) => $"upd\n{account}\n{until}\n{issued}";
+
+    /// <summary>Usato dal tool dell'autore: firma e produce la chiave v2.</summary>
+    public static string Issue(ECDsa privateKey, string name, string machine, string account, DateTime updatesUntil, string? note = null)
     {
         var issued = DateTime.UtcNow.ToString("yyyy-MM-dd");
-        var sig = privateKey.SignData(Encoding.UTF8.GetBytes(Payload(name, machine, issued, note)), HashAlgorithmName.SHA256);
-        var json = JsonSerializer.Serialize(new { n = name, m = machine, i = issued, note, s = Convert.ToBase64String(sig) });
+        var a = NormalizeAccount(account); var u = updatesUntil.ToString("yyyy-MM-dd");
+        var sig = privateKey.SignData(Encoding.UTF8.GetBytes(Payload(name, machine, issued, note, a, u)), HashAlgorithmName.SHA256);
+        var json = JsonSerializer.Serialize(new { n = name, m = machine, i = issued, note, a, u, s = Convert.ToBase64String(sig) });
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+    }
+
+    /// <summary>Usato dal tool dell'autore: token aggiornamenti per un account.</summary>
+    public static string IssueToken(ECDsa privateKey, string account, DateTime until)
+    {
+        var issued = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        var a = NormalizeAccount(account); var u = until.ToString("yyyy-MM-dd");
+        var sig = privateKey.SignData(Encoding.UTF8.GetBytes(TokenPayload(a, u, issued)), HashAlgorithmName.SHA256);
+        var json = JsonSerializer.Serialize(new { t = "upd", a, u, i = issued, s = Convert.ToBase64String(sig) });
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
     }
 }

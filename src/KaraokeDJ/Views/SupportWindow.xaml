@@ -1,39 +1,47 @@
-<Window x:Class="KaraokeDJ.Views.SupportWindow"
+<Window x:Class="KaraokeDJ.Views.SupportWindow" FontFamily="{StaticResource UiFont}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Sostieni VOXA" Width="620" SizeToContent="Height" WindowStartupLocation="CenterOwner"
+        Title="Licenza Mixfonia" Width="640" SizeToContent="Height" WindowStartupLocation="CenterOwner"
         Background="{StaticResource WindowBgBrush}" ResizeMode="NoResize">
     <StackPanel Margin="22">
         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-            <TextBlock Text="VOXA" Style="{StaticResource Wordmark}" FontSize="34" Foreground="{StaticResource AccentBrush}">
-                <TextBlock.Effect><DropShadowEffect Color="{StaticResource AccentColor}" BlurRadius="18" ShadowDepth="0" Opacity="0.8"/></TextBlock.Effect>
+            <TextBlock Text="MIXFONIA" Style="{StaticResource Wordmark}" FontSize="34" Foreground="{StaticResource AccentBrush}">
             </TextBlock>
-            <TextBlock Text=" è donationware" Style="{StaticResource Wordmark}" FontSize="26" VerticalAlignment="Bottom" Margin="6,0,0,4"/>
+            <TextBlock x:Name="Headline" Text=" licenza" Style="{StaticResource Wordmark}" FontSize="26" VerticalAlignment="Bottom" Margin="6,0,0,4"/>
         </StackPanel>
         <TextBlock TextWrapping="Wrap" FontSize="14" LineHeight="22"
-                   Text="Tutte le funzioni sono libere e complete, senza limiti. Se VOXA ti serve per lavoro o ti fa divertire, sostienilo con una donazione: riceverai una chiave personale legata a questa macchina che toglie il promemoria all'avvio e ti mette nei ringraziamenti."/>
-        <Border Background="{StaticResource InnerPanelBrush}" CornerRadius="10" Padding="14" Margin="0,16,0,12">
+                   Text="Licenza perpetua 20 € con un anno di aggiornamenti, poi 10 €/anno solo se vuoi continuare ad aggiornare: la tua versione resta tua per sempre. Fino a 3 PC per account (10 € l'uno), un solo abbonamento per tutti. Cambio PC: 1 € + commissioni."/>
+        <Border x:Name="StatusBox" Background="{StaticResource InnerPanelBrush}" CornerRadius="3" Padding="14" Margin="0,14,0,12">
             <StackPanel>
-                <TextBlock Text="ID DI QUESTA MACCHINA" Style="{StaticResource SectionTitle}"/>
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="📋 Copia" Style="{StaticResource SmallButton}" Click="CopyId_Click" Margin="8,0,0,0"/>
-                    <TextBox x:Name="MachineBox" IsReadOnly="True" FontFamily="Consolas" FontSize="20" FontWeight="Bold" Foreground="{StaticResource WarnBrush}"/>
-                </DockPanel>
-                <TextBlock Style="{StaticResource Muted}" Margin="0,6,0,0" TextWrapping="Wrap" Text="Indica questo ID nella donazione: la chiave viene emessa per questa macchina."/>
+                <TextBlock x:Name="StatusLabel" FontWeight="SemiBold" FontSize="15" TextWrapping="Wrap"/>
+                <TextBlock x:Name="StatusDetail" Style="{StaticResource Muted}" Margin="0,4,0,0" TextWrapping="Wrap"/>
             </StackPanel>
         </Border>
-        <DockPanel Margin="0,0,0,12">
-            <Button DockPanel.Dock="Left" x:Name="DonateBtn" Content="❤  DONA E SOSTIENI VOXA" Style="{StaticResource AccentButton}" Padding="18,10" FontSize="14" Click="Donate_Click"/>
-            <TextBlock x:Name="DonateInfo" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap"/>
-        </DockPanel>
-        <TextBlock Text="HAI GIÀ UNA CHIAVE?" Style="{StaticResource SectionTitle}"/>
+        <Border Background="{StaticResource InnerPanelBrush}" CornerRadius="3" Padding="14" Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="ID DI QUESTO PC" Style="{StaticResource SectionTitle}"/>
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="📋 Copia" Style="{StaticResource SmallButton}" Click="CopyId_Click" Margin="8,0,0,0"/>
+                    <TextBox x:Name="MachineBox" IsReadOnly="True" FontFamily="Consolas" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource WarnBrush}"/>
+                </DockPanel>
+                <TextBlock Style="{StaticResource Muted}" Margin="0,6,0,0" TextWrapping="Wrap" Text="La licenza è legata a questo ID. Per spostarla su un altro PC ti serve questo ID per intero (trasferimento dalla pagina di acquisto)."/>
+            </StackPanel>
+        </Border>
+        <WrapPanel Margin="0,0,0,12">
+            <Button x:Name="BuyBtn" Content="🛒  ACQUISTA LA LICENZA (20 €)" Style="{StaticResource AccentButton}" Padding="18,10" FontSize="14" Click="Buy_Click" Margin="0,0,8,6"/>
+            <Button x:Name="RenewBtn" Content="⬆  RINNOVA AGGIORNAMENTI (10 €/anno)" Style="{StaticResource AccentButton}" Padding="18,10" FontSize="14" Click="Buy_Click" Margin="0,0,8,6"/>
+            <Button x:Name="ManageBtn" Content="Account, altri PC, fatture" Style="{StaticResource SmallButton}" Padding="12,8" Click="Buy_Click" Margin="0,0,8,6"/>
+            <Button x:Name="RefreshBtn" Content="⟳ Controlla" Style="{StaticResource SmallButton}" Padding="12,8" Click="Refresh_Click" Margin="0,0,0,6" ToolTip="Chiede al cloud se ci sono chiave o rinnovo per questo PC"/>
+        </WrapPanel>
+        <TextBlock x:Name="WaitLabel" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+        <TextBlock Text="HAI UNA CHIAVE O UN TOKEN?" Style="{StaticResource SectionTitle}"/>
         <DockPanel>
             <Button DockPanel.Dock="Right" Content="Attiva" Style="{StaticResource SmallButton}" Click="Activate_Click" Margin="8,0,0,0" Padding="12,6"/>
-            <TextBox x:Name="CodeBox" AcceptsReturn="True" Height="60" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="11" ToolTip="Incolla qui il codice ricevuto"/>
+            <TextBox x:Name="CodeBox" AcceptsReturn="True" Height="60" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="11" ToolTip="Incolla qui la chiave della licenza o il token aggiornamenti"/>
         </DockPanel>
-        <TextBlock x:Name="StatusLabel" Margin="0,10,0,0" FontWeight="Bold" TextWrapping="Wrap"/>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-            <Button Content="Più tardi" IsCancel="True"/>
+        <TextBlock x:Name="ActivateLabel" Margin="0,8,0,0" FontWeight="SemiBold" TextWrapping="Wrap"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Chiudi" IsCancel="True"/>
         </StackPanel>
     </StackPanel>
 </Window>

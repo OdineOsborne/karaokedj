@@ -1,6 +1,6 @@
 import { setSession, getSession, setState, getState, setLibrary, getLibrary, pushCommand, popCommands } from "../lib/store.js";
 
-// Scaletta remota: l'app VOXA pubblica stato e libreria (con il token segreto), il telefono legge lo stato
+// Scaletta remota: l'app Mixfonia pubblica stato e libreria (con il token segreto), il telefono legge lo stato
 // e manda comandi (con il PIN mostrato nell'app). Tutto passa da qui: ?op=push|lib|state|library|cmd|poll
 function body(req) { return typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {}); }
 const ok = s => typeof s === "string" && /^[A-Za-z0-9]{6,32}$/.test(s);
@@ -32,10 +32,28 @@ export default async function handler(req, res) {
       return res.json({ commands: await popCommands(b.session) });
     }
     const session = req.query?.s;
+    // ---- pagina pubblica /canta: senza PIN, solo lettura + prenotazioni (la sessione stessa è il segreto) ----
+    if (op === "plib" || op === "pstate" || op === "preq") {
+      if (!ok(session)) return res.status(400).json({ error: "sessione" });
+      const meta = await getSession(session);
+      if (!meta) return res.status(404).json({ error: "Serata non attiva" });
+      if (op === "plib") return res.json({ tracks: (await getLibrary(session)) || [] });
+      if (op === "pstate") {
+        const st = (await getState(session)) || {};
+        const now = [st.decks?.a, st.decks?.b].filter(d => d && d.playing && d.title).map(d => (d.singer ? d.singer + " — " : "") + d.title + (d.artist ? " · " + d.artist : ""));
+        const next = (st.queue || []).slice(0, 5).map(q => (q.singer ? q.singer + " — " : "") + q.title + (q.artist ? " · " + q.artist : ""));
+        return res.json({ now, next });
+      }
+      const b = body(req);
+      const singer = String(b.singer || "").trim().slice(0, 40), note = String(b.note || "").trim().slice(0, 140), title = String(b.title || "").trim().slice(0, 120);
+      if (!b.id && !title) return res.status(400).json({ error: "brano" });
+      await pushCommand(session, { cmd: "request", id: b.id || null, title, singer, note, at: Date.now() });
+      return res.json({ ok: true });
+    }
     const pin = String(req.query?.pin || (req.method === "POST" ? body(req).pin : "") || "");
     if (!ok(session)) return res.status(400).json({ error: "sessione" });
     const meta = await getSession(session);
-    if (!meta) return res.status(404).json({ error: "Serata non attiva: riapri la finestra Scaletta remota in VOXA" });
+    if (!meta) return res.status(404).json({ error: "Serata non attiva: riapri la finestra Scaletta remota in Mixfonia" });
     if (meta.pin !== pin) return res.status(403).json({ error: "PIN errato" });
     if (op === "state") return res.json((await getState(session)) || {});
     if (op === "library") return res.json({ tracks: (await getLibrary(session)) || [] });

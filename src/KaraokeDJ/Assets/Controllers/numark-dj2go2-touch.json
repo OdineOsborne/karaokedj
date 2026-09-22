@@ -1,0 +1,308 @@
+{
+ "id": "numark-dj2go2-touch",
+ "name": "Numark DJ2GO2 Touch",
+ "match": [
+  "DJ2GO2"
+ ],
+ "source": "Mixxx mapping \"Numark_DJ2GO2_Touch\" (tandy1000), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "note",
+   "channel": 16,
+   "number": 2,
+   "action": "loadA"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 6,
+   "action": "a.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 6,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 1,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 1,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 2,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 3,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 4,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 9,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 10,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 11,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 12,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 36,
+   "action": "a.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 27,
+   "action": "a.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 0,
+   "action": "a.play"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 9,
+   "action": "a.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 22,
+   "action": "a.volume"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 2,
+   "action": "a.sync"
+  },
+  {
+   "type": "note",
+   "channel": 16,
+   "number": 3,
+   "action": "loadB"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 6,
+   "action": "b.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 6,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 1,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 1,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 2,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 3,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 4,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 9,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 10,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 11,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 12,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 36,
+   "action": "b.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 27,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 0,
+   "action": "b.play"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 9,
+   "action": "b.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 22,
+   "action": "b.volume"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 2,
+   "action": "b.sync"
+  },
+  {
+   "type": "cc",
+   "channel": 16,
+   "number": 0,
+   "action": "browse"
+  },
+  {
+   "type": "note",
+   "channel": 16,
+   "number": 6,
+   "action": "browse"
+  },
+  {
+   "type": "cc",
+   "channel": 16,
+   "number": 8,
+   "action": "crossfader"
+  },
+  {
+   "type": "cc",
+   "channel": 16,
+   "number": 10,
+   "action": "master"
+  },
+  {
+   "type": "cc",
+   "channel": 16,
+   "number": 12,
+   "action": "cuevolume"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 49,
+   "action": "pad1"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 50,
+   "action": "pad2"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 51,
+   "action": "pad3"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 52,
+   "action": "pad4"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 49,
+   "action": "pad1"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 50,
+   "action": "pad2"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 51,
+   "action": "pad3"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 52,
+   "action": "pad4"
+  }
+ ]
+}

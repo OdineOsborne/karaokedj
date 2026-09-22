@@ -145,12 +145,16 @@ public sealed class LibraryService
         return SourceFactory.AudioExtensions.Contains(ext) || SourceFactory.VideoExtensions.Contains(ext);
     }
 
+    /// <summary>Lega al brano il .cdg o il .lrc/.txt sincronizzato che gli sta accanto (il CDG vince).</summary>
     private static void RefreshCdgLink(Track t)
     {
         if (t.Kind is TrackKind.Video or TrackKind.CdgZip or TrackKind.Midi) return;
         var cdg = Path.ChangeExtension(t.FilePath, ".cdg");
-        if (File.Exists(cdg)) { t.CdgPath = cdg; t.Kind = TrackKind.Cdg; }
-        else { t.CdgPath = null; t.Kind = TrackKind.Audio; }
+        if (File.Exists(cdg)) { t.CdgPath = cdg; t.LyricsPath = null; t.Kind = TrackKind.Cdg; return; }
+        t.CdgPath = null;
+        var lrc = LrcParser.FindSidecar(t.FilePath);
+        if (lrc != null) { t.LyricsPath = lrc; t.Kind = TrackKind.Lrc; }
+        else { t.LyricsPath = null; t.Kind = TrackKind.Audio; }
     }
 
     private static Track? BuildTrack(string path)

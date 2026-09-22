@@ -1,7 +1,7 @@
 using System.IO.Compression;
 using System.Reflection;
 using System.Runtime.Loader;
-using VOXA.Plugins;
+using Mixfonia.Plugins;
 
 namespace KaraokeDJ.Services;
 
@@ -9,7 +9,7 @@ namespace KaraokeDJ.Services;
 public sealed class LoadedPlugin
 {
     public string Folder { get; init; } = "";
-    public IVoxaPlugin? Plugin { get; init; }
+    public IMixfoniaPlugin? Plugin { get; init; }
     public string? Error { get; init; }
     public string Name => Plugin?.Name ?? Path.GetFileName(Folder);
     public string Version => Plugin?.Version ?? "";
@@ -18,7 +18,7 @@ public sealed class LoadedPlugin
 }
 
 /// <summary>
-/// Carica i plugin da %AppData%\KaraokeDJ\plugins\&lt;cartella&gt;\*.dll (classi che implementano IVoxaPlugin)
+/// Carica i plugin da %AppData%\KaraokeDJ\plugins\&lt;cartella&gt;\*.dll (classi che implementano IMixfoniaPlugin)
 /// e raccoglie le sorgenti di importazione: quelle integrate (lecite e gratuite) più quelle dei plugin.
 /// </summary>
 public sealed class PluginManager
@@ -43,7 +43,7 @@ public sealed class PluginManager
         protected override Assembly? Load(AssemblyName name)
         {
             // il contratto (e tutto ciò che l'app ha già) resta condiviso con l'app; le altre dipendenze vengono dalla cartella del plugin
-            if (name.Name == "VOXA.Plugins") return null;
+            if (name.Name == "Mixfonia.Plugins") return null;
             var already = Default.Assemblies.FirstOrDefault(a => a.GetName().Name == name.Name);
             if (already != null) return already;
             var path = _resolver.ResolveAssemblyToPath(name);
@@ -59,15 +59,15 @@ public sealed class PluginManager
         try { Directory.CreateDirectory(PluginsDir); } catch { }
         foreach (var dir in Directory.Exists(PluginsDir) ? Directory.EnumerateDirectories(PluginsDir) : Array.Empty<string>())
         {
-            var dll = Directory.EnumerateFiles(dir, "VOXA.Plugin.*.dll").FirstOrDefault() ?? Directory.EnumerateFiles(dir, "*.dll").FirstOrDefault();
+            var dll = Directory.EnumerateFiles(dir, "Mixfonia.Plugin.*.dll").FirstOrDefault() ?? Directory.EnumerateFiles(dir, "*.dll").FirstOrDefault();
             if (dll == null) continue;
             try
             {
                 var ctx = new PluginLoadContext(dll);
                 var asm = ctx.LoadFromAssemblyPath(dll);
-                var type = asm.GetTypes().FirstOrDefault(t => typeof(IVoxaPlugin).IsAssignableFrom(t) && !t.IsAbstract);
-                if (type == null) { Plugins.Add(new LoadedPlugin { Folder = dir, Error = "nessuna classe IVoxaPlugin" }); continue; }
-                var plugin = (IVoxaPlugin)Activator.CreateInstance(type)!;
+                var type = asm.GetTypes().FirstOrDefault(t => typeof(IMixfoniaPlugin).IsAssignableFrom(t) && !t.IsAbstract);
+                if (type == null) { Plugins.Add(new LoadedPlugin { Folder = dir, Error = "nessuna classe IMixfoniaPlugin" }); continue; }
+                var plugin = (IMixfoniaPlugin)Activator.CreateInstance(type)!;
                 var data = Path.Combine(PluginsDir, "data", plugin.Id);
                 Directory.CreateDirectory(data);
                 plugin.Initialize(new Host { DataDir = data, TrackExists = trackExists, Status = status });

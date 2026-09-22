@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0B0B0F">
-<title>VOXA · Scaletta</title>
+<title>Mixfonia · Scaletta</title>
+<link rel="icon" href="/brand/icon.png">
 <style>
   :root { --bg:#0B0B0F; --panel:#15151d; --text:#F4F4F8; --muted:#9a9ab0; --violet:#8A2BFF; --cyan:#00E5FF; --pink:#FF2D6D; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -46,13 +47,13 @@
 </style>
 </head>
 <body>
-<header><h1>VOXA <span>·</span> SCALETTA</h1></header>
+<header><h1>Mixfonia <span>·</span> SCALETTA</h1></header>
 <div id="app"></div>
 <div class="toast" id="toast"></div>
 <script>
 const qs = new URLSearchParams(location.search);
 const session = qs.get("s") || "";
-let pin = localStorage.getItem("voxa.pin." + session) || "";
+let pin = localStorage.getItem("mixfonia.pin." + session) || "";
 let state = null, lib = [], q = "", results = [], dragFrom = null;
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -65,9 +66,9 @@ async function api(op, extra) {
 async function cmd(c) { try { await api("cmd", { method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({ pin, ...c }) }); toast("Fatto ✓"); setTimeout(refresh, 600); } catch (e) { toast(e.message); } }
 
 function askPin(err) {
-  $("#app").innerHTML = `<div class="pin"><p>Inserisci il <b>PIN</b> mostrato nella finestra <i>Scaletta remota</i> di VOXA</p>
+  $("#app").innerHTML = `<div class="pin"><p>Inserisci il <b>PIN</b> mostrato nella finestra <i>Scaletta remota</i> di Mixfonia</p>
     <input id="pinbox" inputmode="numeric" maxlength="6" autofocus><br><button id="go">Entra</button><div class="err">${esc(err || "")}</div></div>`;
-  $("#go").onclick = () => { pin = $("#pinbox").value.trim(); localStorage.setItem("voxa.pin." + session, pin); start(); };
+  $("#go").onclick = () => { pin = $("#pinbox").value.trim(); localStorage.setItem("mixfonia.pin." + session, pin); start(); };
   $("#pinbox").onkeydown = e => { if (e.key === "Enter") $("#go").click(); };
 }
 
@@ -133,7 +134,7 @@ async function refresh() {
   timer = setTimeout(refresh, 3000);
 }
 async function loadLib(v) { try { const j = await api("library"); lib = j.tracks || []; lib.version = v; render(); } catch {} }
-async function start() { if (!session) { $("#app").innerHTML = `<div class="pin">Link non valido: inquadra il QR mostrato da VOXA.</div>`; return; } if (!pin) { askPin(); return; } $("#app").innerHTML = `<div class="pin muted">Collegamento…</div>`; refresh(); }
+async function start() { if (!session) { $("#app").innerHTML = `<div class="pin">Link non valido: inquadra il QR mostrato da Mixfonia.</div>`; return; } if (!pin) { askPin(); return; } $("#app").innerHTML = `<div class="pin muted">Collegamento…</div>`; refresh(); }
 start();
 </script>
 </body>

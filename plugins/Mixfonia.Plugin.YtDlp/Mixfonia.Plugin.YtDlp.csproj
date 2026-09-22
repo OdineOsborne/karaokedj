@@ -3,17 +3,17 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>VOXA.Plugin.YtDlp</RootNamespace>
-    <AssemblyName>VOXA.Plugin.YtDlp</AssemblyName>
+    <RootNamespace>Mixfonia.Plugin.YtDlp</RootNamespace>
+    <AssemblyName>Mixfonia.Plugin.YtDlp</AssemblyName>
     <Version>1.0.0</Version>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <!-- TagLibSharp è già nell'app: non lo copiamo nel plugin -->
-    <Description>Plugin VOXA: importazione con yt-dlp (YouTube) e risoluzione link Spotify. Non distribuito con l'app.</Description>
+    <Description>Plugin Mixfonia: importazione con yt-dlp (YouTube) e risoluzione link Spotify. Non distribuito con l'app.</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="TagLibSharp" Version="2.3.0" ExcludeAssets="runtime" />
     <!-- il contratto è fornito dall'app: non va copiato nella cartella del plugin -->
-    <ProjectReference Include="..\..\src\VOXA.Plugins\VOXA.Plugins.csproj">
+    <ProjectReference Include="..\..\src\Mixfonia.Plugins\Mixfonia.Plugins.csproj">
       <Private>false</Private>
       <ExcludeAssets>runtime</ExcludeAssets>
     </ProjectReference>

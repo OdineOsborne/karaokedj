@@ -1,0 +1,340 @@
+{
+ "id": "numark-ns4fx",
+ "name": "Numark NS4FX",
+ "match": [
+  "NS4FX"
+ ],
+ "source": "Mixxx mapping \"Numark NS4FX\" (Tomáš Bažant, Erik Puschendorf, Matthew Nicholson), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "cc",
+   "channel": 16,
+   "number": 0,
+   "action": "browse"
+  },
+  {
+   "type": "cc",
+   "channel": 16,
+   "number": 1,
+   "action": "browse"
+  },
+  {
+   "type": "note",
+   "channel": 16,
+   "number": 2,
+   "action": "loadA"
+  },
+  {
+   "type": "note",
+   "channel": 16,
+   "number": 3,
+   "action": "loadB"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 6,
+   "action": "a.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 6,
+   "action": "b.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 6,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 6,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 7,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 7,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 16,
+   "number": 8,
+   "action": "crossfader"
+  },
+  {
+   "type": "cc",
+   "channel": 16,
+   "number": 10,
+   "action": "master"
+  },
+  {
+   "type": "cc",
+   "channel": 16,
+   "number": 12,
+   "action": "cuevolume"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 13,
+   "action": "a.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 13,
+   "action": "b.loop4"
+  },
+  {
+   "type": "cc",
+   "channel": 16,
+   "number": 13,
+   "action": "cuemix"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 20,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 20,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 21,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 21,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 22,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 22,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 23,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 23,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 23,
+   "action": "a.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 23,
+   "action": "b.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 24,
+   "action": "a.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 24,
+   "action": "b.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 25,
+   "action": "a.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 25,
+   "action": "b.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 26,
+   "action": "a.filtervalue"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 26,
+   "action": "b.filtervalue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 27,
+   "action": "a.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 27,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 28,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 28,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 28,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 28,
+   "action": "b.fader"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 29,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 29,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 30,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 30,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 31,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 31,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 32,
+   "action": "a.hotcue5"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 32,
+   "action": "b.hotcue5"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 33,
+   "action": "a.hotcue6"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 33,
+   "action": "b.hotcue6"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 34,
+   "action": "a.hotcue7"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 34,
+   "action": "b.hotcue7"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 35,
+   "action": "a.hotcue8"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 35,
+   "action": "b.hotcue8"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 65,
+   "action": "a.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 65,
+   "action": "b.loopexit"
+  }
+ ]
+}
