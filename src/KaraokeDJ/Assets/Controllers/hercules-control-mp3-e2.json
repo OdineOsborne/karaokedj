@@ -1,0 +1,153 @@
+{
+ "id": "hercules-control-mp3-e2",
+ "name": "Hercules DJ Control MP3 e2 / MP3 LE / Glow",
+ "match": [
+  "DJ Control MP3 e2",
+  "DJ Control MP3 LE",
+  "DJControl Glow",
+  "DJ Control Glow"
+ ],
+ "source": "Mixxx mapping \"Hercules DJ Control MP3 e2\" (Gianfe, Taucher and SBlaisot), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 14,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 15,
+   "action": "a.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 16,
+   "action": "a.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 17,
+   "action": "loadA"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 18,
+   "action": "a.sync"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 34,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 35,
+   "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 36,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 37,
+   "action": "loadB"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 38,
+   "action": "b.sync"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 48,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 49,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 50,
+   "action": "a.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 51,
+   "action": "b.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 52,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 53,
+   "action": "a.filtervalue"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 54,
+   "action": "a.filtervalue"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 55,
+   "action": "a.filtervalue"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 56,
+   "action": "crossfader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 57,
+   "action": "b.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 58,
+   "action": "b.filtervalue"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 59,
+   "action": "b.filtervalue"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 60,
+   "action": "b.filtervalue"
+  }
+ ]
+}

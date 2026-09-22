@@ -1,0 +1,466 @@
+{
+ "id": "hercules-inpulse-200-mk2",
+ "name": "Hercules DJControl Inpulse 200 MK2",
+ "match": [
+  "Inpulse 200 MK2",
+  "Inpulse 200 Mk2"
+ ],
+ "source": "mappatura djay \"DJControl Inpulse 200 Mk2\" (th3StonedApe, forum Algoriddim) — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 0,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 0,
+   "action": "b.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 5,
+   "action": "a.volume"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 0,
+   "action": "crossfader"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 8,
+   "action": "a.tempo",
+   "invert": true
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 8,
+   "action": "b.tempo",
+   "invert": true
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 7,
+   "action": "a.play"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 6,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 5,
+   "action": "a.sync"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 7,
+   "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 6,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 5,
+   "action": "b.sync"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 12,
+   "action": "a.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 12,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 13,
+   "action": "loadA"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 13,
+   "action": "loadB"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 2,
+   "action": "cuemix"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 3,
+   "action": "master"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 4,
+   "action": "cuevolume"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 1,
+   "action": "browse",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 5,
+   "action": "b.volume"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 4,
+   "action": "a.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 4,
+   "action": "b.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 2,
+   "action": "a.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 2,
+   "action": "b.eqlow"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 8,
+   "action": "a.keylock"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 9,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 10,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 9,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 8,
+   "action": "b.keylock"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 10,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 5,
+   "number": 9,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 6,
+   "number": 9,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 1,
+   "action": "a.filtervalue"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 1,
+   "action": "b.filtervalue"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 0,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 1,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 2,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 9,
+   "action": "b.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 3,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 0,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 1,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 2,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 3,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 9,
+   "action": "a.loophalf"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 10,
+   "action": "a.loopdouble"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 9,
+   "action": "a.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 10,
+   "action": "a.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 9,
+   "action": "b.loophalf"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 10,
+   "action": "b.loopdouble"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 10,
+   "action": "b.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 3,
+   "action": "a.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 3,
+   "action": "b.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 32,
+   "action": "a.echo"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 32,
+   "action": "b.echo"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 42,
+   "action": "b.jumpback4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 43,
+   "action": "b.jumpfwd4"
+  },
+  {
+   "type": "cc",
+   "channel": 6,
+   "number": 10,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 5,
+   "number": 10,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 42,
+   "action": "a.jumpback4"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 43,
+   "action": "a.jumpfwd4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 1,
+   "action": "automix"
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 3,
+   "action": "a.quantize"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 3,
+   "action": "b.quantize"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 33,
+   "action": "a.rev"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 33,
+   "action": "b.rev"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 48,
+   "action": "pad3"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 48,
+   "action": "pad1"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 49,
+   "action": "pad2"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 49,
+   "action": "pad4"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 50,
+   "action": "pad5"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 51,
+   "action": "pad6"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 50,
+   "action": "pad7"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 51,
+   "action": "pad8"
+  }
+ ]
+}

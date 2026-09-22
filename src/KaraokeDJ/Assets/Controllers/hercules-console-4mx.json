@@ -1,0 +1,215 @@
+{
+ "id": "hercules-console-4mx",
+ "name": "Hercules DJ Console 4-Mx",
+ "match": [
+  "4-Mx",
+  "4Mx"
+ ],
+ "source": "Mixxx mapping \"Hercules DJ Console 4-Mx\" (josepma), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 58,
+   "action": "b.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 57,
+   "action": "b.killlow"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 56,
+   "action": "b.killmid"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 55,
+   "action": "b.killhigh"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 53,
+   "action": "b.keyreset"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 49,
+   "action": "b.sync"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 47,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 46,
+   "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 45,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 26,
+   "action": "a.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 25,
+   "action": "a.killlow"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 24,
+   "action": "a.killmid"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 23,
+   "action": "a.killhigh"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 21,
+   "action": "a.keyreset"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 17,
+   "action": "a.sync"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 15,
+   "action": "a.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 14,
+   "action": "a.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 13,
+   "action": "a.cue"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 37,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 36,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 35,
+   "action": "cuemix"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 34,
+   "action": "crossfader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 33,
+   "action": "master"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 16,
+   "action": "b.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 14,
+   "action": "b.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 13,
+   "action": "b.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 11,
+   "action": "b.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 9,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 8,
+   "action": "a.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 6,
+   "action": "a.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 5,
+   "action": "a.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 3,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 1,
+   "action": "a.jog",
+   "relative": true
+  }
+ ]
+}

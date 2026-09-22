@@ -247,6 +247,42 @@
    "action": "loadB"
   },
   {
+   "type": "cc",
+   "channel": 1,
+   "number": 7,
+   "action": "a.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 7,
+   "action": "b.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 11,
+   "action": "a.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 11,
+   "action": "b.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 15,
+   "action": "a.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 15,
+   "action": "b.eqlow"
+  },
+  {
    "type": "note",
    "channel": 1,
    "number": 84,
@@ -524,9 +560,21 @@
   },
   {
    "type": "note",
+   "channel": 1,
+   "number": 105,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
    "channel": 2,
    "number": 27,
    "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 105,
+   "action": "b.cue"
   },
   {
    "type": "note",

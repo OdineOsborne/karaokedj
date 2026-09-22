@@ -1,0 +1,255 @@
+{
+ "id": "hercules-control-air",
+ "name": "Hercules DJ Control AIR",
+ "match": [
+  "DJ Control AIR",
+  "DJControl AIR"
+ ],
+ "source": "Mixxx mapping \"Hercules DJ Control AIR\" (rojaro), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 57,
+   "action": "cuemix"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 48,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 49,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 50,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 51,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 52,
+   "action": "a.tempo"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 3,
+   "action": "a.quantize"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 53,
+   "action": "b.tempo"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 4,
+   "action": "a.keylock"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 54,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 55,
+   "action": "a.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 56,
+   "action": "a.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 57,
+   "action": "a.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 58,
+   "action": "crossfader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 59,
+   "action": "b.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 60,
+   "action": "b.eqhigh"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 11,
+   "action": "a.loopdouble"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 61,
+   "action": "b.eqmid"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 12,
+   "action": "a.loopexit"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 62,
+   "action": "b.eqlow"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 15,
+   "action": "a.back"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 16,
+   "action": "a.fwd"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 17,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 18,
+   "action": "a.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 19,
+   "action": "a.sync"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 20,
+   "action": "a.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 21,
+   "action": "loadA"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 25,
+   "action": "b.quantize"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 26,
+   "action": "b.keylock"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 33,
+   "action": "b.loopdouble"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 34,
+   "action": "b.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 37,
+   "action": "b.back"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 38,
+   "action": "b.fwd"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 39,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 40,
+   "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 41,
+   "action": "b.sync"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 42,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 43,
+   "action": "loadB"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 51,
+   "action": "browseup"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 52,
+   "action": "browsedown"
+  }
+ ]
+}

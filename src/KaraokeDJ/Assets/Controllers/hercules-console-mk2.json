@@ -1,0 +1,150 @@
+{
+ "id": "hercules-console-mk2",
+ "name": "Hercules DJ Console Mk2",
+ "match": [
+  "DJ Console Mk2"
+ ],
+ "source": "Mixxx mapping \"Hercules DJ Console Mk2\" (Garth Dahlstrom), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 49,
+   "action": "crossfader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 8,
+   "action": "a.play"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 9,
+   "action": "a.cue"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 50,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 52,
+   "action": "a.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 54,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 33,
+   "action": "a.cuepfl"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 46,
+   "action": "a.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 47,
+   "action": "a.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 48,
+   "action": "a.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 10,
+   "action": "a.sync"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 2,
+   "action": "b.play"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 3,
+   "action": "b.cue"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 51,
+   "action": "b.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 53,
+   "action": "b.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 55,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 34,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 43,
+   "action": "b.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 44,
+   "action": "b.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 45,
+   "action": "b.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 4,
+   "action": "b.sync"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 22,
+   "action": "a.keylock"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 26,
+   "action": "b.keylock"
+  }
+ ]
+}

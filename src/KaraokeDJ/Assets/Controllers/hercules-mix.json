@@ -1,17 +1,11 @@
 {
- "id": "hercules-inpulse-200",
- "name": "Hercules DJControl Inpulse 200",
+ "id": "hercules-mix",
+ "name": "Hercules DJControl MIX",
  "match": [
-  "Inpulse 200"
+  "DJControl MIX"
  ],
- "source": "Mixxx mapping \"Hercules_DJControl_Inpulse_200\" (DJ Phatso for Hercules Technical Support), GPL — usati solo i numeri MIDI",
+ "source": "Mixxx mapping \"Hercules DJControl MIX\" (DJ Phatso for Hercules Technical Support, contributions by Kerrick Staley), GPL — usati solo i numeri MIDI",
  "mappings": [
-  {
-   "type": "note",
-   "channel": 1,
-   "number": 3,
-   "action": "automix"
-  },
   {
    "type": "note",
    "channel": 2,
@@ -39,27 +33,9 @@
   {
    "type": "note",
    "channel": 2,
-   "number": 13,
-   "action": "loadA"
-  },
-  {
-   "type": "note",
-   "channel": 2,
    "number": 8,
    "action": "a.jogtouch",
    "relative": true
-  },
-  {
-   "type": "note",
-   "channel": 2,
-   "number": 9,
-   "action": "a.loop4"
-  },
-  {
-   "type": "note",
-   "channel": 2,
-   "number": 10,
-   "action": "a.loopexit"
   },
   {
    "type": "note",
@@ -88,51 +64,15 @@
   {
    "type": "note",
    "channel": 3,
-   "number": 13,
-   "action": "loadB"
-  },
-  {
-   "type": "note",
-   "channel": 3,
    "number": 8,
    "action": "b.jogtouch",
    "relative": true
   },
   {
    "type": "note",
-   "channel": 3,
-   "number": 9,
-   "action": "b.loop4"
-  },
-  {
-   "type": "note",
-   "channel": 3,
-   "number": 10,
-   "action": "b.loopexit"
-  },
-  {
-   "type": "note",
-   "channel": 5,
-   "number": 9,
-   "action": "a.loophalf"
-  },
-  {
-   "type": "note",
-   "channel": 5,
-   "number": 10,
-   "action": "a.loopdouble"
-  },
-  {
-   "type": "note",
    "channel": 6,
-   "number": 9,
-   "action": "b.loophalf"
-  },
-  {
-   "type": "note",
-   "channel": 6,
-   "number": 10,
-   "action": "b.loopdouble"
+   "number": 12,
+   "action": "cuemix"
   },
   {
    "type": "note",
@@ -162,24 +102,48 @@
    "type": "note",
    "channel": 7,
    "number": 48,
-   "action": "pad1"
+   "action": "a.loop1"
   },
   {
    "type": "note",
    "channel": 7,
    "number": 49,
-   "action": "pad2"
+   "action": "a.loop2"
   },
   {
    "type": "note",
    "channel": 7,
    "number": 50,
-   "action": "pad3"
+   "action": "a.loop4"
   },
   {
    "type": "note",
    "channel": 7,
    "number": 51,
+   "action": "a.loop8"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 16,
+   "action": "pad1"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 17,
+   "action": "pad2"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 18,
+   "action": "pad3"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 19,
    "action": "pad4"
   },
   {
@@ -210,24 +174,48 @@
    "type": "note",
    "channel": 8,
    "number": 48,
-   "action": "pad5"
+   "action": "b.loop1"
   },
   {
    "type": "note",
    "channel": 8,
    "number": 49,
-   "action": "pad6"
+   "action": "b.loop2"
   },
   {
    "type": "note",
    "channel": 8,
    "number": 50,
-   "action": "pad7"
+   "action": "b.loop4"
   },
   {
    "type": "note",
    "channel": 8,
    "number": 51,
+   "action": "b.loop8"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 16,
+   "action": "pad5"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 17,
+   "action": "pad6"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 18,
+   "action": "pad7"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 19,
    "action": "pad8"
   },
   {
@@ -239,9 +227,14 @@
   {
    "type": "cc",
    "channel": 1,
-   "number": 1,
-   "action": "browse",
-   "relative": true
+   "number": 3,
+   "action": "master"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 4,
+   "action": "cuevolume"
   },
   {
    "type": "cc",
@@ -254,18 +247,6 @@
    "channel": 2,
    "number": 2,
    "action": "a.eqlow"
-  },
-  {
-   "type": "cc",
-   "channel": 2,
-   "number": 4,
-   "action": "a.eqhigh"
-  },
-  {
-   "type": "cc",
-   "channel": 2,
-   "number": 5,
-   "action": "a.volume"
   },
   {
    "type": "cc",
@@ -308,18 +289,6 @@
   {
    "type": "cc",
    "channel": 3,
-   "number": 4,
-   "action": "b.eqhigh"
-  },
-  {
-   "type": "cc",
-   "channel": 3,
-   "number": 5,
-   "action": "b.volume"
-  },
-  {
-   "type": "cc",
-   "channel": 3,
    "number": 1,
    "action": "b.filtervalue"
   },
@@ -340,20 +309,6 @@
    "type": "cc",
    "channel": 3,
    "number": 9,
-   "action": "b.jog",
-   "relative": true
-  },
-  {
-   "type": "cc",
-   "channel": 5,
-   "number": 10,
-   "action": "a.jog",
-   "relative": true
-  },
-  {
-   "type": "cc",
-   "channel": 6,
-   "number": 10,
    "action": "b.jog",
    "relative": true
   }

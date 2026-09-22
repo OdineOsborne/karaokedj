@@ -1,10 +1,10 @@
 {
- "id": "hercules-inpulse-200",
- "name": "Hercules DJControl Inpulse 200",
+ "id": "hercules-inpulse-200-mk3",
+ "name": "Hercules DJControl Inpulse 200 MK3",
  "match": [
-  "Inpulse 200"
+  "Inpulse 200 MK3"
  ],
- "source": "Mixxx mapping \"Hercules_DJControl_Inpulse_200\" (DJ Phatso for Hercules Technical Support), GPL — usati solo i numeri MIDI",
+ "source": "Mixxx mapping \"Hercules_DJControl_Inpulse_200mk3\" (Adapted from MK2 mapping by DJ Phatso), GPL — usati solo i numeri MIDI; mappatura comunitaria (DukeBox, forum Mixxx, aprile 2026)",
  "mappings": [
   {
    "type": "note",
@@ -45,21 +45,27 @@
   {
    "type": "note",
    "channel": 2,
-   "number": 8,
-   "action": "a.jogtouch",
-   "relative": true
-  },
-  {
-   "type": "note",
-   "channel": 2,
-   "number": 9,
+   "number": 3,
    "action": "a.loop4"
   },
   {
    "type": "note",
    "channel": 2,
+   "number": 9,
+   "action": "a.loophalf"
+  },
+  {
+   "type": "note",
+   "channel": 2,
    "number": 10,
-   "action": "a.loopexit"
+   "action": "a.loopdouble"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 8,
+   "action": "a.jogtouch",
+   "relative": true
   },
   {
    "type": "note",
@@ -94,45 +100,51 @@
   {
    "type": "note",
    "channel": 3,
+   "number": 3,
+   "action": "b.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 9,
+   "action": "b.loophalf"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 10,
+   "action": "b.loopdouble"
+  },
+  {
+   "type": "note",
+   "channel": 3,
    "number": 8,
    "action": "b.jogtouch",
    "relative": true
   },
   {
    "type": "note",
-   "channel": 3,
-   "number": 9,
-   "action": "b.loop4"
+   "channel": 5,
+   "number": 5,
+   "action": "a.sync"
   },
   {
    "type": "note",
-   "channel": 3,
+   "channel": 5,
+   "number": 10,
+   "action": "a.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 5,
+   "action": "b.sync"
+  },
+  {
+   "type": "note",
+   "channel": 6,
    "number": 10,
    "action": "b.loopexit"
-  },
-  {
-   "type": "note",
-   "channel": 5,
-   "number": 9,
-   "action": "a.loophalf"
-  },
-  {
-   "type": "note",
-   "channel": 5,
-   "number": 10,
-   "action": "a.loopdouble"
-  },
-  {
-   "type": "note",
-   "channel": 6,
-   "number": 9,
-   "action": "b.loophalf"
-  },
-  {
-   "type": "note",
-   "channel": 6,
-   "number": 10,
-   "action": "b.loopdouble"
   },
   {
    "type": "note",
@@ -259,6 +271,12 @@
    "type": "cc",
    "channel": 2,
    "number": 4,
+   "action": "a.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 5,
+   "number": 5,
    "action": "a.eqhigh"
   },
   {
@@ -309,6 +327,12 @@
    "type": "cc",
    "channel": 3,
    "number": 4,
+   "action": "b.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 6,
+   "number": 5,
    "action": "b.eqhigh"
   },
   {

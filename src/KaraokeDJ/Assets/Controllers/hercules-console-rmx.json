@@ -1,0 +1,258 @@
+{
+ "id": "hercules-console-rmx",
+ "name": "Hercules DJ Console RMX",
+ "match": [
+  "DJ Console RMX"
+ ],
+ "source": "Mixxx mapping \"Hercules DJ Console RMX\" (Anders Gunnarsson), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 58,
+   "action": "cuemix"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 47,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 48,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 12,
+   "action": "a.cue"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 36,
+   "action": "b.cue"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 11,
+   "action": "a.play"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 35,
+   "action": "b.play"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 18,
+   "action": "loadA"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 22,
+   "action": "loadB"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 13,
+   "action": "a.stop"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 37,
+   "action": "b.stop"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 57,
+   "action": "crossfader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 50,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 49,
+   "action": "a.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 56,
+   "action": "master"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 54,
+   "action": "a.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 53,
+   "action": "a.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 52,
+   "action": "a.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 16,
+   "action": "a.killlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 15,
+   "action": "a.killmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 14,
+   "action": "a.killhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 60,
+   "action": "b.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 59,
+   "action": "b.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 64,
+   "action": "b.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 63,
+   "action": "b.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 62,
+   "action": "b.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 40,
+   "action": "b.killlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 39,
+   "action": "b.killmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 38,
+   "action": "b.killhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 51,
+   "action": "a.volume"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 61,
+   "action": "b.volume"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 7,
+   "action": "a.sync"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 31,
+   "action": "b.sync"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 17,
+   "action": "a.temporeset"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 32,
+   "action": "b.temporeset"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 8,
+   "action": "a.keylock"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 21,
+   "action": "b.keylock"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 42,
+   "action": "browseup"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 43,
+   "action": "browsedown"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 4,
+   "action": "a.rev"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 28,
+   "action": "b.rev"
+  }
+ ]
+}

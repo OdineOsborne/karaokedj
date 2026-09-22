@@ -1,0 +1,330 @@
+{
+ "id": "hercules-control-steel",
+ "name": "Hercules DJ Control Steel",
+ "match": [
+  "DJ Control Steel"
+ ],
+ "source": "Mixxx mapping \"Hercules DJ Control Steel\" (Stephane List, from the work of Anders Gunnarsson), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 58,
+   "action": "cuemix"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 47,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 48,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 12,
+   "action": "a.cue"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 36,
+   "action": "b.cue"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 11,
+   "action": "a.play"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 35,
+   "action": "b.play"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 18,
+   "action": "loadA"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 22,
+   "action": "loadB"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 13,
+   "action": "a.stop"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 37,
+   "action": "b.stop"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 1,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 2,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 3,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 4,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 5,
+   "action": "a.hotcue5"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 6,
+   "action": "a.hotcue6"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 100,
+   "action": "a.hotcue7"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 101,
+   "action": "a.hotcue8"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 25,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 26,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 27,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 28,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 29,
+   "action": "b.hotcue5"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 30,
+   "action": "b.hotcue6"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 106,
+   "action": "b.hotcue7"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 107,
+   "action": "b.hotcue8"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 57,
+   "action": "crossfader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 50,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 49,
+   "action": "a.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 56,
+   "action": "master"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 54,
+   "action": "a.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 53,
+   "action": "a.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 52,
+   "action": "a.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 16,
+   "action": "a.killlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 15,
+   "action": "a.killmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 14,
+   "action": "a.killhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 60,
+   "action": "b.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 59,
+   "action": "b.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 64,
+   "action": "b.eqlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 63,
+   "action": "b.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 62,
+   "action": "b.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 40,
+   "action": "b.killlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 39,
+   "action": "b.killmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 38,
+   "action": "b.killhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 51,
+   "action": "a.volume"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 61,
+   "action": "b.volume"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 7,
+   "action": "a.sync"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 31,
+   "action": "b.sync"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 17,
+   "action": "a.temporeset"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 32,
+   "action": "b.temporeset"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 42,
+   "action": "browseup"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 43,
+   "action": "browsedown"
+  }
+ ]
+}

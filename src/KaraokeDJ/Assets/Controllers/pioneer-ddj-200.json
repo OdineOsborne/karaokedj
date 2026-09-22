@@ -31,6 +31,12 @@
    "action": "b.cuepfl"
   },
   {
+   "type": "note",
+   "channel": 7,
+   "number": 89,
+   "action": "automix"
+  },
+  {
    "type": "cc",
    "channel": 1,
    "number": 19,
@@ -53,6 +59,30 @@
    "channel": 2,
    "number": 11,
    "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 12,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 12,
+   "action": "b.cue"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 0,
+   "action": "a.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 0,
+   "action": "b.tempo"
   },
   {
    "type": "cc",

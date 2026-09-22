@@ -1,10 +1,10 @@
 {
- "id": "hercules-inpulse-500",
- "name": "Hercules DJControl Inpulse 500",
+ "id": "hercules-inpulse-t7",
+ "name": "Hercules DJControl Inpulse T7 (derivata dalla 500, da verificare)",
  "match": [
-  "Inpulse 500"
+  "Inpulse T7"
  ],
- "source": "Mixxx mapping \"Hercules_DJControl_Inpulse_500\" (DJ Phatso, Event1ne and Reset Reboot), GPL — usati solo i numeri MIDI",
+ "source": "derivata dal preset Inpulse 500 (stessa famiglia): piatti motorizzati non gestiti, controlli da verificare",
  "mappings": [
   {
    "type": "note",

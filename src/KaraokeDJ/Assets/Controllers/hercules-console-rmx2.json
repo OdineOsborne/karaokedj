@@ -1,0 +1,384 @@
+{
+ "id": "hercules-console-rmx2",
+ "name": "Hercules DJ Console RMX 2",
+ "match": [
+  "DJ Console RMX 2",
+  "DJConsole RMX2",
+  "RMX2"
+ ],
+ "source": "Mixxx mapping \"Hercules DJ Console RMX 2\" (Circuitfry), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 68,
+   "action": "master"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 70,
+   "action": "cuemix"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 72,
+   "action": "crossfader"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 69,
+   "action": "browseup"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 70,
+   "action": "browsedown"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 36,
+   "action": "loadA"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 53,
+   "action": "loadB"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 33,
+   "action": "a.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 50,
+   "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 46,
+   "action": "a.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 63,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 34,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 51,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 35,
+   "action": "a.sync"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 52,
+   "action": "b.sync"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 54,
+   "action": "a.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 56,
+   "action": "b.tempo"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 58,
+   "action": "a.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 74,
+   "action": "b.fader"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 66,
+   "action": "a.volume"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 82,
+   "action": "b.volume"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 38,
+   "action": "a.back"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 55,
+   "action": "b.back"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 39,
+   "action": "a.fwd"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 56,
+   "action": "b.fwd"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 47,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 64,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 48,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 49,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 50,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 51,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 60,
+   "action": "a.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 62,
+   "action": "a.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 64,
+   "action": "a.eqlow"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 40,
+   "action": "a.killhigh"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 41,
+   "action": "a.killmid"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 42,
+   "action": "a.killlow"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 76,
+   "action": "b.eqhigh"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 78,
+   "action": "b.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 80,
+   "action": "b.eqlow"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 57,
+   "action": "b.killhigh"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 58,
+   "action": "b.killmid"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 59,
+   "action": "b.killlow"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 5,
+   "action": "pad1"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 6,
+   "action": "pad2"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 7,
+   "action": "pad3"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 8,
+   "action": "pad4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 9,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 10,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 11,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 12,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 25,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 26,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 27,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 28,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 29,
+   "action": "b.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 30,
+   "action": "b.loop2"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 31,
+   "action": "b.loop1"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 13,
+   "action": "a.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 14,
+   "action": "a.loop2"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 15,
+   "action": "a.loop1"
+  }
+ ]
+}

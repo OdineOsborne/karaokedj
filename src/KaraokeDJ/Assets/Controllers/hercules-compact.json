@@ -1,0 +1,276 @@
+{
+ "id": "hercules-compact",
+ "name": "Hercules DJControl Compact",
+ "match": [
+  "DJControl Compact"
+ ],
+ "source": "Mixxx mapping \"Hercules DJControl Compact\" (Owen Williams), GPL — usati solo i numeri MIDI",
+ "mappings": [
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 59,
+   "action": "a.eqmid"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 63,
+   "action": "b.eqmid"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 51,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 48,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 34,
+   "action": "a.cue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 73,
+   "action": "b.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 46,
+   "action": "automix"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 17,
+   "action": "pad1"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 28,
+   "action": "a.loopdouble"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 67,
+   "action": "pad7"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 64,
+   "action": "b.eqlow"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 50,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 33,
+   "action": "a.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 36,
+   "action": "a.stop"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 84,
+   "action": "b.stop"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 83,
+   "action": "b.sync"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 27,
+   "action": "a.loophalf"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 66,
+   "action": "pad6"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 49,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 57,
+   "action": "a.volume"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 4,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 82,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 26,
+   "action": "a.loop8"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 65,
+   "action": "pad5"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 76,
+   "action": "b.loopdouble"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 20,
+   "action": "pad4"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 56,
+   "action": "b.tempo"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 3,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 81,
+   "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 25,
+   "action": "a.loopexit"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 61,
+   "action": "b.volume"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 75,
+   "action": "b.loophalf"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 19,
+   "action": "pad3"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 55,
+   "action": "a.tempo"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 2,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 52,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 49,
+   "action": "b.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 35,
+   "action": "a.sync"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 60,
+   "action": "a.eqlow"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 74,
+   "action": "b.loop8"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 18,
+   "action": "pad2"
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 54,
+   "action": "crossfader"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 1,
+   "action": "a.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 68,
+   "action": "pad8"
+  }
+ ]
+}
