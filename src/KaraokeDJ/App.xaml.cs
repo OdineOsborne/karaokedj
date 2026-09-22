@@ -64,6 +64,9 @@ public partial class App : Application
         if (e.Args.Contains("--audiotest")) RunAudioTest();
         // --layouttest: prova il layout alle misure dei portatili (vedi Services/LayoutTest)
         if (e.Args.Contains("--layouttest")) RunLayoutTest(win);
+        // --suggesttest "<pezzo del titolo>": cosa verrebbe proposto dopo quel brano, e perché
+        int sugIdx = Array.IndexOf(e.Args, "--suggesttest");
+        if (sugIdx >= 0 && sugIdx + 1 < e.Args.Length) RunSuggestTest(e.Args[sugIdx + 1]);
         // --soak <minuti>: prova di resistenza sulla libreria vera (vedi Services/SoakTest)
         if (soakIdx >= 0) _ = KaraokeDJ.Services.SoakTest.RunAsync(Vm, soakIdx + 1 < e.Args.Length && int.TryParse(e.Args[soakIdx + 1], out var m) ? m : 30);
         if (recovered) Vm.StatusText = "Ripristinato dopo un errore imprevisto: coda e impostazioni conservate (dettagli in crash.log)";
@@ -174,6 +177,17 @@ public partial class App : Application
             foreach (var q in queueBackup) vm.Queue.Add(q);
         }
         return "\ndrop: " + (errors.Count == 0 ? "OK (deck da libreria, deck da file, coda nel punto giusto)" : "ERRORI → " + string.Join("; ", errors));
+    }
+
+    private async void RunSuggestTest(string query)
+    {
+        await System.Threading.Tasks.Task.Delay(2500);
+        string res;
+        try { res = await KaraokeDJ.Services.SuggestTest.RunAsync(Vm!, query); }
+        catch (Exception ex) { res = "suggest: FAIL " + ex.Message; }
+        Console.Error.WriteLine(res);
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-suggest.log"), res); } catch { }
+        Shutdown(0);
     }
 
     /// <summary>--audiotest: prova che i comandi cambino davvero il suono (vedi Services/AudioTest).</summary>

@@ -1,0 +1,42 @@
+<Window x:Class="KaraokeDJ.Views.UsageConsentWindow" FontFamily="{StaticResource UiFont}"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Aiutare a migliorare i suggerimenti" Width="620" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
+        Background="{StaticResource WindowBgBrush}" Foreground="{StaticResource TextBrush}">
+    <StackPanel Margin="20">
+        <TextBlock Text="Vuoi aiutare Mixfonia a capire cosa funziona in serata?" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,10"/>
+        <TextBlock TextWrapping="Wrap" Margin="0,0,0,12" Foreground="{StaticResource MutedBrush}">
+            Mixfonia può imparare dai passaggi veri delle serate (questo brano dopo quello, accettato o scartato)
+            e usarli per proporre brani più sensati a te e agli altri DJ. È facoltativo e puoi cambiare idea quando vuoi.
+        </TextBlock>
+
+        <Border Background="{StaticResource InnerPanelBrush}" CornerRadius="3" Padding="12" Margin="0,0,0,10">
+            <StackPanel>
+                <TextBlock Text="Cosa viene mandato" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}">
+                    · artista e titolo dei due brani del passaggio<LineBreak/>
+                    · BPM e tonalità, se il brano è arrivato in fondo, il giorno<LineBreak/>
+                    · la versione dell'app e un codice casuale creato su questo PC
+                </TextBlock>
+                <TextBlock Text="Cosa NON esce mai da qui" FontWeight="SemiBold" Margin="0,10,0,4"/>
+                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}">
+                    · nomi dei cantanti, dediche, prenotazioni del pubblico<LineBreak/>
+                    · percorsi dei file, elenco della tua libreria, email, dati della licenza<LineBreak/>
+                    · posizione, nome del locale, niente che identifichi te o i tuoi clienti
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <TextBlock TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,0,0,14">
+            I dati vengono usati solo in forma aggregata. Puoi vedere in qualsiasi momento cosa sta per partire
+            (Impostazioni → Generale → Statistiche d'uso), cancellarlo o spegnere tutto.
+        </TextBlock>
+
+        <DockPanel>
+            <Button DockPanel.Dock="Right" Content="Sì, aiuto volentieri" Style="{StaticResource AccentButton}" MinWidth="150" Click="Yes_Click" IsDefault="True"/>
+            <Button DockPanel.Dock="Right" Content="No, grazie" MinWidth="110" Margin="0,0,8,0" Click="No_Click" IsCancel="True"/>
+            <TextBlock Text="Nessuna delle due scelte cambia il funzionamento dell'app." Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+        </DockPanel>
+    </StackPanel>
+</Window>

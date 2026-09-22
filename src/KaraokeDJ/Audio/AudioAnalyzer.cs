@@ -3,7 +3,8 @@ using NAudio.Dsp;
 namespace KaraokeDJ.Audio;
 
 /// <param name="Waveform">Per colonna: [picco 0..255, RMS 0..255], <see cref="AudioAnalyzer.WaveColumns"/> colonne.</param>
-public sealed record AnalysisResult(double Bpm, string Key, string Camelot, double KeyConfidence, double IntroEndSec, double OutroStartSec, byte[] Waveform);
+public sealed record AnalysisResult(double Bpm, string Key, string Camelot, double KeyConfidence, double IntroEndSec, double OutroStartSec, byte[] Waveform,
+    double Energy = 0, double Brightness = 0);
 
 /// <summary>
 /// Stima BPM (flusso spettrale + autocorrelazione) e tonalità (chroma + profili di Krumhansl)
@@ -145,6 +146,7 @@ public static class AudioAnalyzer
         if (frames < 50) throw new InvalidOperationException("Brano troppo corto per l'analisi.");
 
         var flux = new double[frames];
+        double centroidSum = 0; int centroidN = 0;
         var prevMag = new double[Fft / 2];
         var window = new double[Fft];
         for (int i = 0; i < Fft; i++) window[i] = FastFourierTransform.HannWindow(i, Fft);
@@ -162,15 +164,17 @@ public static class AudioAnalyzer
             }
             FastFourierTransform.FFT(true, m, cplx);
 
-            double fl = 0;
+            double fl = 0, magSum = 0, magFreq = 0;
             for (int k = 1; k < Fft / 2; k++)
             {
                 double mag = Math.Sqrt(cplx[k].X * cplx[k].X + cplx[k].Y * cplx[k].Y);
                 double d = mag - prevMag[k];
                 if (d > 0) fl += d;
                 prevMag[k] = mag;
+                magSum += mag; magFreq += mag * ((double)k * fs / Fft);   // per il centro di gravità dello spettro
             }
             flux[fr] = fl;
+            if (magSum > 1e-9) { centroidSum += magFreq / magSum; centroidN++; }
         }
 
         double bpm = EstimateBpm(flux, fs);
@@ -181,7 +185,15 @@ public static class AudioAnalyzer
             double mx = g.Max(); Console.Error.WriteLine("chroma: " + string.Join(" ", NoteNames.Select((n, i) => $"{n}={g[i] / mx:0.00}")));
         }
         var (key, camelot, conf) = EstimateKeyVoting(segs);
-        return new AnalysisResult(bpm, key, camelot, conf, 0, 0, Array.Empty<byte>());
+        // carattere del suono: quanto spinge (livello medio) e quanto è brillante (centro di gravità dello spettro)
+        double sq = 0; float peak = 0;
+        for (int i = 0; i < len; i++) { sq += (double)x[i] * x[i]; float ab = Math.Abs(x[i]); if (ab > peak) peak = ab; }
+        double rms = Math.Sqrt(sq / Math.Max(1, len));
+        double rmsDb = 20 * Math.Log10(Math.Max(rms, 1e-6));
+        double energy = Math.Clamp((rmsDb + 26) / 16, 0.02, 1);
+        double centroid = centroidN > 0 ? centroidSum / centroidN : 0;
+        double brightness = Math.Clamp((centroid - 700) / 2800, 0.02, 1);
+        return new AnalysisResult(bpm, key, camelot, conf, 0, 0, Array.Empty<byte>(), energy, brightness);
     }
 
     /// <summary>Chroma a 12 classi con FFT lunga (risoluzione 5 Hz) così anche le note basse cadono nel bin giusto.</summary>

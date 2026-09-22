@@ -30,6 +30,10 @@ public sealed class Track
     /// <summary>Tonalità tipo "Am", "F#". Vuota = sconosciuta.</summary>
     public string Key { get; set; } = "";
     public bool Analyzed { get; set; }
+    /// <summary>Quanto "spinge" il brano (0…1, dall'analisi): serve a non mettere una ballata dopo un pezzo rock.</summary>
+    public double Energy { get; set; }
+    /// <summary>Brillantezza del suono (0…1): chitarre distorte e piatti in alto, voci e archi in basso.</summary>
+    public double Brightness { get; set; }
     /// <summary>Anno dal tag (0 = sconosciuto).</summary>
     public int Year { get; set; }
     /// <summary>Genere dal tag ("" = sconosciuto).</summary>
@@ -113,6 +117,8 @@ public sealed class Track
     [JsonIgnore] public string DurationLabel => DurationSec <= 0 ? "--:--" : TimeSpan.FromSeconds(DurationSec).ToString(@"m\:ss");
 
     [JsonIgnore] public string MatchLabel { get; set; } = "";
+    /// <summary>Perché è stato suggerito ("stesso artista", "stessa epoca, energia simile"): mostrato al passaggio del mouse.</summary>
+    [JsonIgnore] public string MatchWhy { get; set; } = "";
     /// <summary>Se non null, questo brano è una copia doppia di un altro e viene nascosto in libreria (il file resta).</summary>
     [JsonIgnore] public Track? HiddenDuplicateOf { get; set; }
     /// <summary>File non raggiungibile in questo momento (disco scollegato): nascosto, non cancellato.</summary>

@@ -28,6 +28,7 @@
     <Resource Include="Assets/logo-v.png" />
     <Resource Include="Assets/icon-256.png" />
     <Content Include="Assets/Controllers/*.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets/artist-genres.json" CopyToOutputDirectory="PreserveNewest" />
     <Resource Include="Assets/Fonts/*.ttf" />
   </ItemGroup>
 

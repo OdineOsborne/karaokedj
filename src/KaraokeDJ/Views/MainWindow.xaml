@@ -606,6 +606,9 @@
                             <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
                                 <TextBlock Text="🎯 SUGGERITI" Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center"/>
                                 <Button DockPanel.Dock="Right" Content="↻" Style="{StaticResource SmallButton}" Padding="6,1" Command="{Binding RefreshSuggestionsCommand}" ToolTip="Aggiorna"/>
+                                <Button DockPanel.Dock="Right" Content="{Binding FlowIntentLabel}" Style="{StaticResource SmallButton}" Padding="8,1" Margin="0,0,6,0" MinWidth="64"
+                                        Command="{Binding CycleFlowIntentCommand}"
+                                        ToolTip="Dove vuoi portare la serata col prossimo brano: auto → ▲ alza → = tieni → ▼ calma.&#10;I suggeriti seguono l'energia e l'umore di conseguenza."/>
                                 <Button DockPanel.Dock="Right" Content="🌐 Fuori libreria" Style="{StaticResource SmallButton}" Padding="6,1" Margin="0,0,6,0" Command="{Binding SuggestExternalCommand}"
                                         IsEnabled="{Binding IsSuggestingExternal, Converter={StaticResource InverseBool}}"
                                         ToolTip="Chiede all'AI brani NON in libreria adatti a seguire quello in corso: con un click li scarichi (YouTube) e li metti in coda. Serve la chiave API Anthropic."/>
@@ -621,7 +624,8 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type m:Track}">
                                         <DockPanel Margin="0,1">
-                                            <TextBlock Text="{Binding MatchLabel}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" Width="38" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding MatchLabel}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" Width="38" VerticalAlignment="Center"
+                                                       ToolTip="{Binding MatchWhy}"/>
                                             <Button DockPanel.Dock="Right" Content="→ deck" Style="{StaticResource SmallButton}" Padding="6,1" FontSize="11" Margin="2,0"
                                                     Command="{Binding DataContext.SuggestionToFreeDeckCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
                                             <Button DockPanel.Dock="Right" Content="👎" Style="{StaticResource SmallButton}" Padding="5,1" FontSize="11" Margin="2,0" ToolTip="Non c'entra: lo tolgo dai suggeriti di stasera e il suggeritore impara (soprattutto dopo questo brano)"

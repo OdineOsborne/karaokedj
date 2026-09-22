@@ -90,6 +90,13 @@ public sealed class AppSettings
     public List<Services.MidiMapping> MidiMappings { get; set; } = new();
     /// <summary>Scorciatoie da tastiera (vuoto = predefinite).</summary>
     public List<Services.KeyMapping> KeyMappings { get; set; } = new();
+    /// <summary>Statistiche d'uso anonime per migliorare i suggerimenti (chieste una volta, sempre disattivabili).</summary>
+    public bool UsageStatsOptIn { get; set; }
+    /// <summary>true quando la domanda è già stata fatta (così non si ripete).</summary>
+    public bool UsageStatsAsked { get; set; }
+    /// <summary>Codice casuale dell'installazione per le statistiche: non è la licenza né l'ID macchina.</summary>
+    public string UsageAnonId { get; set; } = "";
+
     /// <summary>Dimensione dell'interfaccia: 0 = automatica (si adatta alla finestra), altrimenti 0,6…1,5.</summary>
     public double UiScale { get; set; }
     public double WindowWidth { get; set; } = 1500;

@@ -193,6 +193,12 @@ public sealed partial class MainViewModel : ObservableObject
         LoadLicense();
         Keys.Load(Settings.KeyMappings, useDefaultsIfEmpty: true);
         StartControllerWatch();
+        UsageStats.Load();
+        if (Settings.UsageStatsOptIn)
+        {
+            _ = UsageStats.SendAsync(Settings);
+            _ = UsageStats.FetchModelAsync();
+        }
         _timer.Start();
         StatusText = $"Uscita: {Engine.OutputDescription} · {Tracks.Count} brani";
         if (Settings.LibraryFolders.Count > 0) StartFolderWatchers();
@@ -227,6 +233,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void Shutdown()
     {
+        // statistiche: quello che non è partito resta sul PC e si riproverà la prossima volta
+        UsageStats.Save();
+        if (Settings.UsageStatsOptIn) { try { UsageStats.SendAsync(Settings, force: true).Wait(TimeSpan.FromSeconds(4)); } catch { } }
         _timer.Stop();
         _scanCts?.Cancel();
         _downloadCts?.Cancel();
@@ -905,6 +914,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void OnDeckEnded(DeckViewModel d)
     {
+        if (d.Track != null) _endedByItself = d.Track.Id;   // il brano è arrivato in fondo: per le statistiche vale come "funziona"
         if (_autoMixTriggeredFor == d) _autoMixTriggeredFor = null;
         d.Tick();
         // Con automix attivo e coda piena, se per qualche motivo la dissolvenza non è partita
@@ -1198,6 +1208,7 @@ public sealed partial class MainViewModel : ObservableObject
             track.Bpm = r.Bpm;
             track.Key = r.Key;
             if (!track.CuesManual) { track.IntroEndSec = r.IntroEndSec; track.OutroStartSec = r.OutroStartSec; }
+            track.Energy = r.Energy; track.Brightness = r.Brightness;   // carattere del suono, per i suggerimenti
             track.Analyzed = true;
             if (r.Waveform.Length > 0) WaveformStore.Save(track.Id, r.Waveform);
         }
@@ -1236,7 +1247,8 @@ public sealed partial class MainViewModel : ObservableObject
     private async Task AnalyzeMissingAsync()
     {
         if (IsAnalyzing) { _analyzeCts?.Cancel(); return; }
-        var todo = Tracks.Where(t => !t.Analyzed).ToList();
+        // anche i brani analizzati prima della 1.6 vanno rifatti: non hanno energia/brillantezza (servono ai suggerimenti)
+        var todo = Tracks.Where(t => !t.Analyzed || t.Energy <= 0).ToList();
         if (todo.Count == 0) { StatusText = "Tutti i brani sono già analizzati"; return; }
         _analyzeCts = new CancellationTokenSource();
         IsAnalyzing = true;
@@ -1411,8 +1423,14 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _suggestionsLabel = "";
     private readonly HashSet<string> _playedThisSession = new();
 
+    private Track? _previousPlayed;
+    private string? _endedByItself;
+
     private void OnTrackPlayed(DeckViewModel deck, Track track)
     {
+        // statistiche d'uso (solo se l'utente ha acconsentito: vedi UsageStats)
+        UsageStats.Record(Settings, _previousPlayed, track, "played", _previousPlayed != null && _endedByItself == _previousPlayed.Id);
+        _previousPlayed = track;
         track.PlayCount++;
         track.LastPlayedUtc = DateTime.UtcNow;
         track.PlayedThisSession = true;
@@ -1425,23 +1443,26 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Prossimi brani consigliati: compatibili col brano in riproduzione, non ancora suonati stasera, non in coda.</summary>
-    public void UpdateSuggestions()
+    public void UpdateSuggestions() => UpdateSuggestionsFor(CompatReference());
+
+    /// <summary>Suggeriti dopo un brano preciso (usato anche da --suggesttest).</summary>
+    public void UpdateSuggestionsFor(Track? r)
     {
         Suggestions.Clear();
-        var r = CompatReference();
         if (r == null) { SuggestionsLabel = ""; return; }
         var queued = new HashSet<string>(Queue.Select(q => q.Track.Id));
         var scored = Tracks
             .Where(t => t.Id != r.Id && !queued.Contains(t.Id) && !t.PlayedThisSession && !t.IsKaraoke)
-            .Select(t => (t, s: SuggestScore(r, t) * (t.Analyzed ? 1.0 : 0.6)))
-            .Where(x => x.s > 0.3)
+            .Select(t => { var (s, why) = SuggestScoreWhy(r, t); return (t, s: s * (t.Analyzed ? 1.0 : 0.6), why); })
+            .Where(x => x.s > 0.5)               // sotto questa soglia sono accostamenti che nessun DJ farebbe
             .OrderByDescending(x => x.s)
             .ThenBy(x => x.t.PlayCount)
             .Take(6)
             .ToList();
-        foreach (var (t, s) in scored) { t.MatchLabel = (s * 100).ToString("0") + "%"; Suggestions.Add(t); }
-        var genreInfo = string.IsNullOrWhiteSpace(r.Genre) ? " · ⚠ senza genere (Impostazioni → Generi con AI)" : $" · {r.Genre}";
-        SuggestionsLabel = (scored.Count == 0 ? $"Nessun suggerimento per {r.Display}" : $"dopo: {r.Display}") + genreInfo;
+        foreach (var (t, s, why) in scored) { t.MatchLabel = (s * 100).ToString("0") + "%"; t.MatchWhy = why; Suggestions.Add(t); }
+        var health = MusicTaste.LibraryGenreHealth(Tracks);
+        var genreInfo = MusicTaste.UsefulGenres(r).Count > 0 ? " · " + string.Join(", ", MusicTaste.UsefulGenres(r)) : (health.Length > 0 ? " · " + health : "");
+        SuggestionsLabel = (scored.Count == 0 ? $"Nessun suggerimento sensato dopo {r.Display}" : $"dopo: {r.Display}") + genreInfo;
     }
 
     [RelayCommand] private void RefreshSuggestions() => UpdateSuggestions();
@@ -1452,6 +1473,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (t == null) return;
         var r = CompatReference();
+        if (r != null) UsageStats.Record(Settings, r, t, "rejected");
         Feedback.Rate(r, t, -1);
         Suggestions.Remove(t);
         StatusText = $"Segnato: \"{t.Display}\" non c'entra" + (r != null ? $" dopo \"{r.Display}\"" : "") + " — il suggeritore ne terrà conto";
@@ -1504,19 +1526,56 @@ public sealed partial class MainViewModel : ObservableObject
     public SuggestionFeedback Feedback { get; } = new();
 
     /// <summary>Compatibilità BPM/tonalità pesata con la coerenza decade/genere richiesta e con i giudizi del DJ.</summary>
-    private double SuggestScore(Track r, Track t)
+    private double SuggestScore(Track r, Track t) => SuggestScoreWhy(r, t).Score;
+
+    /// <summary>
+    /// Punteggio e motivo. Parte dalla compatibilità BPM/tonalità (mixabilità) e la pesa con l'affinità musicale
+    /// (artista, genere vero, epoca, carattere del suono): senza questo pezzo uscivano accostamenti senza senso,
+    /// tipo Battisti dopo gli AC/DC, perché i file scaricati hanno tutti genere "Music".
+    /// </summary>
+    private (double Score, string Why) SuggestScoreWhy(Track r, Track t)
     {
-        double s = SearchUtil.Compatibility(r, t);
-        if (s <= 0) return s;
-        if (Feedback.IsRejectedNow(t)) return 0;
+        if (Feedback.IsRejectedNow(t)) return (0, "");
+        var (s, why) = SetFlow.Rank(t, FlowContextNow(r));
+        if (s <= 0) return (0, why);
         s *= Feedback.Factor(r, t);
-        double aff = SuggestBy switch
+        // il filtro scelto dal DJ stringe ulteriormente
+        if (SuggestBy == "decade") s *= DecadeAffinity(r, t);
+        else if (SuggestBy == "genre") s *= GenreAffinity(r, t);
+        return (s, why);
+    }
+
+    /// <summary>Come vogliamo che vada la serata adesso: il brano di riferimento, l'intenzione del DJ e cosa è già suonato.</summary>
+    private FlowContext FlowContextNow(Track r) =>
+        new(r, FlowIntentNow, PlayLogTonight(), RotationOn || Queue.Any(q => !string.IsNullOrWhiteSpace(q.Singer)));
+
+    /// <summary>Brani già suonati stasera, in ordine.</summary>
+    private List<Track> PlayLogTonight() =>
+        Tracks.Where(t => t.PlayedThisSession && t.LastPlayedUtc != null).OrderBy(t => t.LastPlayedUtc).ToList();
+
+    /// <summary>Intenzione per il prossimo brano: tieni l'energia, alzala, calma la sala (barra dei suggeriti).</summary>
+    [ObservableProperty] private FlowIntent _flowIntentNow = FlowIntent.Auto;
+    partial void OnFlowIntentNowChanged(FlowIntent value) => UpdateSuggestions();
+    public string FlowIntentLabel => FlowIntentNow switch
+    {
+        FlowIntent.Up => "▲ alza",
+        FlowIntent.Down => "▼ calma",
+        FlowIntent.Keep => "= tieni",
+        _ => "auto",
+    };
+
+    [RelayCommand]
+    private void CycleFlowIntent()
+    {
+        FlowIntentNow = FlowIntentNow switch
         {
-            "decade" => DecadeAffinity(r, t),
-            "genre" => GenreAffinity(r, t),
-            _ => 1.0,
+            FlowIntent.Auto => FlowIntent.Up,
+            FlowIntent.Up => FlowIntent.Keep,
+            FlowIntent.Keep => FlowIntent.Down,
+            _ => FlowIntent.Auto,
         };
-        return s * aff;
+        OnPropertyChanged(nameof(FlowIntentLabel));
+        StatusText = "Suggerimenti: " + FlowIntentLabel;
     }
 
     private static double DecadeAffinity(Track r, Track t)
@@ -1529,7 +1588,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Affinità di genere fra due brani (tag multipli): 1 = un tag in comune, 0.8 = parole in comune ("Pop Rock"/"Rock"), 0.5 = ignoto, 0.2 = diversi.</summary>
     private static double GenreAffinity(Track r, Track t)
     {
-        var ga = r.Genres.ToList(); var gb = t.Genres.ToList();
+        var ga = MusicTaste.UsefulGenres(r); var gb = MusicTaste.UsefulGenres(t);
         if (ga.Count == 0 || gb.Count == 0) return 0.5;
         if (ga.Any(x => gb.Any(y => string.Equals(x, y, StringComparison.OrdinalIgnoreCase)))) return 1.0;
         var a = SearchUtil.Words(r.Genre); var b = SearchUtil.Words(t.Genre);
@@ -1540,6 +1599,7 @@ public sealed partial class MainViewModel : ObservableObject
     private void SuggestionToQueue(Track? t)
     {
         if (t == null) return;
+        if (CompatReference() is { } refT) UsageStats.Record(Settings, refT, t, "accepted");
         Queue.Add(new QueueEntry { Track = t });
         Suggestions.Remove(t);
         StatusText = "In coda: " + t.Display;
@@ -1549,6 +1609,7 @@ public sealed partial class MainViewModel : ObservableObject
     private void SuggestionToFreeDeck(Track? t)
     {
         if (t == null) return;
+        if (CompatReference() is { } refT) UsageStats.Record(Settings, refT, t, "accepted");
         var deck = FreeDeck();
         if (LoadToDeck(deck, t)) MatchIncomingTempo(deck, deck == DeckA ? DeckB : DeckA);
     }

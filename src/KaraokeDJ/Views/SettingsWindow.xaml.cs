@@ -47,7 +47,8 @@ public partial class SettingsWindow : Window
         cueDevices.AddRange(devices.Skip(1));
         CueCombo.ItemsSource = cueDevices;
         CueCombo.SelectedValue = cueDevices.Any(d => d.Id == (vm.Settings.CueDeviceId ?? "")) ? (vm.Settings.CueDeviceId ?? "") : "";
-        ScaleCombo.ItemsSource = ScaleOptions;
+        UsageBox.IsChecked = vm.Settings.UsageStatsOptIn;
+                ScaleCombo.ItemsSource = ScaleOptions;
         ScaleCombo.SelectedItem = ScaleOptions.FirstOrDefault(o => Math.Abs(o.Value - vm.Settings.UiScale) < 0.001) ?? ScaleOptions[0];
         ScaleNow.Text = vm.UiScaleLabel;
                 var mics = MicInput.ListInputDevices();
@@ -98,6 +99,33 @@ public partial class SettingsWindow : Window
         _vm.Settings.UiScale = o.Value;
         if (Owner is MainWindow mw) { mw.ApplyUiScale(); ScaleNow.Text = _vm.UiScaleLabel; }
         else if (Application.Current?.MainWindow is MainWindow mw2) { mw2.ApplyUiScale(); ScaleNow.Text = _vm.UiScaleLabel; }
+    }
+
+    private void UsageBox_Click(object sender, RoutedEventArgs e)
+    {
+        _vm.Settings.UsageStatsOptIn = UsageBox.IsChecked == true;
+        _vm.Settings.UsageStatsAsked = true;
+        _vm.SaveSettings();
+        if (!_vm.Settings.UsageStatsOptIn) UsageStats.Clear();
+    }
+
+    /// <summary>Trasparenza: mostra esattamente le righe che partiranno.</summary>
+    private void UsageShow_Click(object sender, RoutedEventArgs e)
+    {
+        var rows = UsageStats.Peek();
+        var text = rows.Count == 0
+            ? "Non c'è niente in attesa."
+            : string.Join("\n", rows.TakeLast(40).Select(r => $"{r.Day}  {r.FromArtist} - {r.FromTitle}  →  {r.ToArtist} - {r.ToTitle}  ({r.Kind}{(r.Completed ? ", fino in fondo" : "")})"));
+        MessageBox.Show(this,
+            (rows.Count > 40 ? $"(ultimi 40 di {rows.Count})\n\n" : "") + text +
+            "\n\nOltre a queste righe parte solo: versione dell'app e un codice casuale di questa installazione.",
+            "Dati in attesa di invio", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void UsageClear_Click(object sender, RoutedEventArgs e)
+    {
+        UsageStats.Clear();
+        MessageBox.Show(this, "Dati in attesa cancellati.", "Statistiche d'uso", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void OnMidiMessage(MidiKey key, int value)

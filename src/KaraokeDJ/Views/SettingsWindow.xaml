@@ -80,6 +80,12 @@
                             <TextBox x:Name="IdleSubtitleBox"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,8">
+                            <TextBlock Text="Statistiche d'uso" Width="140" VerticalAlignment="Center" ToolTip="Facoltative: aiutano a capire quali passaggi funzionano in serata. Nessun dato personale."/>
+                            <Button DockPanel.Dock="Right" Content="Cancella" Style="{StaticResource SmallButton}" Click="UsageClear_Click" Margin="6,0,0,0" ToolTip="Butta via i dati in attesa su questo PC"/>
+                            <Button DockPanel.Dock="Right" Content="Guarda cosa mando" Style="{StaticResource SmallButton}" Click="UsageShow_Click" Margin="6,0,0,0"/>
+                            <CheckBox x:Name="UsageBox" Content="Condividi i passaggi della serata (anonimi) per migliorare i suggerimenti" VerticalAlignment="Center" Click="UsageBox_Click"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,8">
                             <TextBlock Text="Dimensione interfaccia" Width="140" VerticalAlignment="Center" ToolTip="Su schermi piccoli l'interfaccia si rimpicciolisce da sola: qui puoi fissarla. Anche con Ctrl + / Ctrl − / Ctrl 0."/>
                             <TextBlock x:Name="ScaleNow" DockPanel.Dock="Right" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="10,0,0,0"/>
                             <ComboBox x:Name="ScaleCombo" SelectionChanged="ScaleCombo_Changed" MaxWidth="220" HorizontalAlignment="Left"/>

@@ -37,7 +37,11 @@ public partial class MainWindow : Window
         Loaded += async (_, _) =>
         {
             await Task.Delay(4000);
-            if (IsLoaded && Vm.ShouldShowSupportReminder()) new SupportWindow(Vm) { Owner = this }.ShowDialog();
+            if (!IsLoaded) return;
+            if (Vm.ShouldShowSupportReminder()) new SupportWindow(Vm) { Owner = this }.ShowDialog();
+            // consenso alle statistiche: una volta sola, e mai durante le prove automatiche
+            if (!Vm.Settings.UsageStatsAsked && Environment.GetCommandLineArgs().All(x => !x.StartsWith("--")))
+                new UsageConsentWindow(Vm) { Owner = this }.ShowDialog();
         };
     }
 
