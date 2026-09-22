@@ -37,6 +37,8 @@ public sealed class Knob : FrameworkElement
     public double Diameter { get => (double)GetValue(DiameterProperty); set => SetValue(DiameterProperty, value); }
 
     public event Action? RightClick;
+    /// <summary>true se la manopola ha una sua azione col tasto destro (kill EQ): ha la precedenza sul menù scorciatoie.</summary>
+    public bool HasRightAction => RightClick != null;
 
     private static readonly Brush Body = new SolidColorBrush(Color.FromRgb(0x2A, 0x2B, 0x31));
     private static readonly Pen BodyPen = new(new SolidColorBrush(Color.FromRgb(0x44, 0x46, 0x4E)), 1);

@@ -28,7 +28,8 @@ public static class Shortcut
         {
             el.PreviewMouseRightButtonUp += OnRight;
             var tip = el.ToolTip as string;
-            if (tip != null && !tip.Contains("Tasto destro")) el.ToolTip = tip + "\nTasto destro: scorciatoia tastiera / MIDI";
+            if (tip != null && !tip.Contains("tasto destro", StringComparison.OrdinalIgnoreCase))
+                el.ToolTip = tip + (el is Knob ? "\nCtrl+tasto destro: scorciatoia tastiera / MIDI" : "\nTasto destro: scorciatoia tastiera / MIDI");
         }
     }
 
@@ -51,6 +52,8 @@ public static class Shortcut
     private static void OnRight(object sender, MouseButtonEventArgs e)
     {
         if (sender is not FrameworkElement el) return;
+        // sulle manopole col kill (EQ) il tasto destro spegne la banda: il menù scorciatoie si apre con Ctrl+destro
+        if (el is Knob k && k.HasRightAction && (Keyboard.Modifiers & ModifierKeys.Control) == 0) return;
         var id = ResolveAction(el);
         if (id == null || App.Vm == null) return;
         e.Handled = true;

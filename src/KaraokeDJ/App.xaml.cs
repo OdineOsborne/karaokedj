@@ -110,7 +110,7 @@ public partial class App : Application
             var sources = string.Join(", ", Vm.ImportSources.Select(s => s.Id));
             Console.Error.WriteLine("SELFTEST OK");
             try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-selftest.log"), "OK\nplugins: " + plugins + "\nsources: " + sources + "\ncontrollers: " + KaraokeDJ.Services.ControllerPresets.All.Count + " preset, midi: " + (Vm.Midi.DeviceName ?? "nessuno")
-                + "\nmappings: " + KaraokeDJ.Services.ControllerPresets.All.Sum(p => p.Mappings.Count) + ", sample: " + string.Join(",", KaraokeDJ.Services.ControllerPresets.All.Take(2).Select(p => p.Id + "=" + p.Mappings[0].Action)) + ImportTest()); } catch { }
+                + "\nmappings: " + KaraokeDJ.Services.ControllerPresets.All.Sum(p => p.Mappings.Count) + ", sample: " + string.Join(",", KaraokeDJ.Services.ControllerPresets.All.Take(2).Select(p => p.Id + "=" + p.Mappings[0].Action)) + ImportTest() + MidiRangeTest()); } catch { }
             Shutdown(0);
         }
         catch (Exception ex)
@@ -119,6 +119,35 @@ public partial class App : Application
             try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-selftest.log"), ex.ToString()); } catch { }
             Environment.Exit(2);
         }
+    }
+
+    /// <summary>
+    /// Selftest: fader e manopole devono coprire TUTTA la corsa MIDI (0…127), non solo la metà alta.
+    /// (Regressione del 22/9: i valori sotto 64 venivano scambiati per il rilascio di un tasto e scartati.)
+    /// </summary>
+    private static string MidiRangeTest()
+    {
+        var vm = Vm!;
+        var errors = new List<string>();
+        void Check(string what, string action, int midi, double expected, Func<double> read)
+        {
+            vm.SimulateMidi(action, midi);
+            double got = read();
+            if (Math.Abs(got - expected) > 0.01) errors.Add($"{what}@{midi}={got:0.##} (atteso {expected:0.##})");
+        }
+        Check("fader A", "a.fader", 0, 0, () => vm.DeckA.Fader);
+        Check("fader A", "a.fader", 127, 1, () => vm.DeckA.Fader);
+        Check("EQ bassi A", "a.eqlow", 0, -12, () => vm.DeckA.EqLow);
+        Check("EQ bassi A", "a.eqlow", 127, 12, () => vm.DeckA.EqLow);
+        Check("trim A", "a.volume", 0, -12, () => vm.DeckA.GainDb);
+        Check("filtro A", "a.filtervalue", 0, -1, () => vm.DeckA.FilterValue);
+        Check("master", "master", 0, 0, () => vm.MasterVolume);
+        Check("crossfader", "crossfader", 0, -1, () => vm.Crossfader);
+        Check("volume cuffia", "cuevolume", 0, 0, () => vm.CueVolume);
+        // rimettiamo tutto a posto (il selftest non deve lasciare l'app con i fader a zero)
+        vm.SimulateMidi("a.fader", 127); vm.SimulateMidi("a.eqlow", 64); vm.SimulateMidi("a.volume", 64);
+        vm.SimulateMidi("a.filtervalue", 64); vm.SimulateMidi("master", 106); vm.SimulateMidi("crossfader", 64); vm.SimulateMidi("cuevolume", 85);
+        return "\nmidi range: " + (errors.Count == 0 ? "OK (0…127 su fader, EQ, trim, filtro, master, crossfader, cuffia)" : "ERRORI → " + string.Join("; ", errors));
     }
 
     /// <summary>Selftest: se MIXFONIA_IMPORT_TEST punta a un file (Mixxx XML / djay / JSON), prova l'importazione e riporta il risultato.</summary>

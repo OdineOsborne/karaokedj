@@ -2156,10 +2156,15 @@ public sealed partial class MainViewModel : ObservableObject
     private void HandleMidiAction(string action, int value, bool continuous)
     {
         double norm = value / 127.0;
-        // pulsanti su CC: pressione = valore alto; note: rilascio = velocity 0
-        bool pressed = continuous ? value >= 64 : value > 0;
+        // fader e manopole: un valore basso è una posizione (fader giù, EQ in taglio), non il rilascio di un tasto.
+        // Solo per i pulsanti mandati su CC "premuto" vuol dire valore alto; sulle note il rilascio è velocity 0.
+        bool isKnob = AppActions.Find(action)?.IsContinuous == true;
+        bool pressed = isKnob || (continuous ? value >= 64 : value > 0);
         ExecuteAction(action, pressed, norm, continuous);
     }
+
+    /// <summary>Solo per diagnostica (--selftest): simula un messaggio MIDI già mappato su un'azione.</summary>
+    public void SimulateMidi(string action, int value, bool continuous = true) => HandleMidiAction(action, value, continuous);
 
     /// <summary>
     /// Esegue un'azione del catalogo <see cref="AppActions"/>. <paramref name="pressed"/> false = rilascio (solo per le azioni "tieni premuto").
