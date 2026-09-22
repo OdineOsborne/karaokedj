@@ -84,3 +84,16 @@ Serve la stessa configurazione della serata: PC, scheda audio/mixer, cuffia sull
 ## Cosa NON provare in serata
 Niente funzioni nuove usate per la prima volta sul palco: stems in tempo reale sul primo brano, effetti che non hai provato, console appena comprata.
 Le usi solo se le hai passate al punto 2 o 3.
+
+## Cosa vede il pubblico (beta 16)
+
+- **Striscia messaggi**: Impostazioni → Proiettore → «Striscia messaggi». Un messaggio per riga; scorrono in basso
+  sopra a testi, CDG e video, a velocità costante (un messaggio lungo impiega di più, non corre di più).
+- **Applausometro**: tasto 👏 nella barra LIVE (o azione `applause` su console/tastiera). Sette secondi di ascolto
+  dal microfono, punteggio grande sul proiettore, poi sparisce da solo. Se il microfono è spento lo accende per la
+  misura e lo rimette com'era. Non tocca mai la musica.
+
+```bash
+KaraokeDJ.exe --showtest schermo.png
+```
+Fotografa il proiettore con striscia e applausometro (due file: `schermo-striscia.png` e `schermo.png`).

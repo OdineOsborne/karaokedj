@@ -1,5 +1,6 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using KaraokeDJ.ViewModels;
@@ -37,6 +38,7 @@ public partial class ProjectorWindow : Window
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         UpdateLayers();
+        Dispatcher.BeginInvoke(new Action(StartTicker), DispatcherPriority.Loaded);
         // LibVLC impiega qualche secondo a caricare i plugin: lo facciamo fuori dal thread UI
         try
         {
@@ -162,6 +164,39 @@ public partial class ProjectorWindow : Window
         {
             UpdateLayers();
         }
+        else if (e.PropertyName == nameof(MainViewModel.ApplauseValue))
+        {
+            double v = Math.Clamp(Vm?.ApplauseValue ?? 0, 0, 100);
+            ApplauseBarGrid.ColumnDefinitions[0].Width = new GridLength(v, GridUnitType.Star);
+            ApplauseBarGrid.ColumnDefinitions[1].Width = new GridLength(100 - v, GridUnitType.Star);
+        }
+        else if (e.PropertyName is nameof(MainViewModel.TickerLine) or nameof(MainViewModel.TickerVisible))
+        {
+            // il testo è cambiato: il giro va rifatto sulla larghezza nuova
+            Dispatcher.BeginInvoke(new Action(StartTicker), DispatcherPriority.Loaded);
+        }
+    }
+
+    // ------------------------------------------------------------ striscia messaggi
+
+    /// <summary>
+    /// Fa scorrere la striscia da destra a sinistra a velocità costante (px al secondo), qualunque sia
+    /// la lunghezza del messaggio: un messaggio lungo impiega di più, non corre di più.
+    /// </summary>
+    private void StartTicker()
+    {
+        TickerLabel.BeginAnimation(Canvas.LeftProperty, null);
+        if (Vm is not { TickerVisible: true }) return;
+        TickerLabel.UpdateLayout();
+        double w = TickerLabel.ActualWidth;
+        double screen = ActualWidth > 0 ? ActualWidth : SystemParameters.PrimaryScreenWidth;
+        if (w < 1 || screen < 1) return;
+        const double PixelsPerSecond = 120;
+        var anim = new System.Windows.Media.Animation.DoubleAnimation(screen, -w, TimeSpan.FromSeconds((screen + w) / PixelsPerSecond))
+        {
+            RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever
+        };
+        TickerLabel.BeginAnimation(Canvas.LeftProperty, anim);
     }
 
     private void BindDeck(DeckViewModel? deck)

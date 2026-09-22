@@ -278,6 +278,9 @@
                                   PreviewMouseLeftButtonDown="Talk_Down" PreviewMouseLeftButtonUp="Talk_Up" ToolTip="Talk-over: tieni premuto per parlare sopra la musica (i deck si abbassano)"/>
                     <v:LevelMeter Left="{Binding MicLevel}" Right="{Binding MicLevel}" Height="6" Width="44" VerticalAlignment="Center" Margin="0,0,6,0" Visibility="{Binding MicOn, Converter={StaticResource BoolToVis}}"/>
                     <ToggleButton Content="EQ / FX" IsChecked="{Binding MicEqVisible}" Style="{StaticResource ToolToggle}" Padding="8,0" Height="26" MinWidth="30" FontSize="10.5" Margin="0,0,3,0" ToolTip="Apre/chiude equalizzatore ed effetti del microfono"/>
+                    <!-- applausometro: ascolta dal microfono e mette il punteggio sul proiettore -->
+                    <Button Content="👏" Command="{Binding StartApplauseCommand}" v:Shortcut.Action="applause" Style="{StaticResource SmallButton}" Padding="8,0" Height="26" MinWidth="30" FontSize="13" Margin="0,0,3,0"
+                            ToolTip="Applausometro: sette secondi di applausi misurati dal microfono, con punteggio grande sul proiettore. Ripremi per toglierlo."/>
                     <StackPanel Orientation="Horizontal" Visibility="{Binding MicEqVisible, Converter={StaticResource BoolToVis}}" Margin="4,0,0,0">
                         <v:Knob Label="LOW" Value="{Binding MicEqLow}" Minimum="-12" Maximum="12" Bipolar="True" Diameter="24" Accent="{StaticResource TextBrush}" Margin="0,0,4,0" ToolTip="EQ bassi microfono"/>
                         <v:Knob Label="MID" Value="{Binding MicEqMid}" Minimum="-12" Maximum="12" Bipolar="True" Diameter="24" Accent="{StaticResource TextBrush}" Margin="0,0,4,0" ToolTip="EQ medi microfono"/>

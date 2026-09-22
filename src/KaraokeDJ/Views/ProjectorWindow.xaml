@@ -1,4 +1,4 @@
-<Window x:Class="KaraokeDJ.Views.ProjectorWindow" FontFamily="{StaticResource BrandFont}"
+﻿<Window x:Class="KaraokeDJ.Views.ProjectorWindow" FontFamily="{StaticResource BrandFont}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
@@ -103,6 +103,51 @@
                 <ContentPresenter ContentTemplate="{StaticResource NextBanner}" Content="{Binding}"/>
             </Grid>
         </vlc:VideoView>
+
+        <!-- ═══ STRISCIA MESSAGGI: scorre in basso sopra ogni schermata (testi, CDG, video) ═══ -->
+        <Border x:Name="TickerBar" VerticalAlignment="Bottom" Height="74" Background="#B3000000" ClipToBounds="True" IsHitTestVisible="False"
+                Visibility="{Binding TickerVisible, Converter={StaticResource BoolToVis}}">
+            <Canvas x:Name="TickerCanvas" ClipToBounds="True">
+                <TextBlock x:Name="TickerLabel" Text="{Binding TickerLine}" FontSize="44" FontWeight="Bold" Foreground="White" Canvas.Top="10" Canvas.Left="2000">
+                    <TextBlock.Effect><DropShadowEffect BlurRadius="14" ShadowDepth="0" Color="#FF00E5FF" Opacity="0.7"/></TextBlock.Effect>
+                </TextBlock>
+            </Canvas>
+        </Border>
+
+        <!-- ═══ APPLAUSOMETRO: sopra tutto, sparisce da solo ═══ -->
+        <Grid x:Name="ApplauseLayer" Visibility="{Binding ApplauseVisible, Converter={StaticResource BoolToVis}}">
+            <Grid.Background>
+                <RadialGradientBrush Center="0.5,0.45" RadiusX="0.9" RadiusY="0.9">
+                    <GradientStop Color="#FF2B0A3D" Offset="0"/>
+                    <GradientStop Color="#FF05060C" Offset="1"/>
+                </RadialGradientBrush>
+            </Grid.Background>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MinWidth="1200">
+                <TextBlock Text="APPLAUSOMETRO" FontSize="56" FontWeight="Black" Foreground="#FF00E5FF" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                <TextBlock Text="{Binding ApplauseScore}" FontSize="240" FontWeight="Black" Foreground="White" HorizontalAlignment="Center" Margin="0,-30,0,-20">
+                    <TextBlock.Effect><DropShadowEffect BlurRadius="46" ShadowDepth="0" Color="#FFFF2D95" Opacity="0.9"/></TextBlock.Effect>
+                </TextBlock>
+                <Border Height="56" CornerRadius="28" Background="#22FFFFFF" Margin="60,10,60,0" Padding="6">
+                    <!-- le colonne di un Grid non ereditano il DataContext: le larghezze le imposta il code-behind -->
+                    <Grid x:Name="ApplauseBarGrid" HorizontalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="0*"/>
+                            <ColumnDefinition Width="100*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" CornerRadius="22">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#FF00E5FF" Offset="0"/>
+                                    <GradientStop Color="#FFFFD60A" Offset="0.6"/>
+                                    <GradientStop Color="#FFFF2D95" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                    </Grid>
+                </Border>
+                <TextBlock Text="{Binding ApplauseCaption}" FontSize="72" FontWeight="Black" Foreground="#FFFFD60A" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,26,0,0"/>
+            </StackPanel>
+        </Grid>
 
         <!-- ═══ Senza licenza (prova finita): scritta discreta in basso ═══ -->
         <Border VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,28,18" Background="#66000000" CornerRadius="10" Padding="14,6" IsHitTestVisible="False"

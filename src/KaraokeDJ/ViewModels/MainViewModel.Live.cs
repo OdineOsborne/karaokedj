@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -66,6 +66,7 @@ public partial class MainViewModel
         // un brano senza che nessuno abbia premuto play), il volume invece si ricorda
         FillMusicOn = false; FillVolume = Settings.FillVolume;
         RotationOn = Settings.RotationOn; PublicRequestsOn = Settings.PublicRequestsOn;
+        TickerOn = Settings.TickerOn; TickerText = Settings.TickerText ?? "";
         Engine.Mic.DuckThreshold = (float)Math.Pow(10, Settings.MicDuckThresholdDb / 20);
         _singers = JsonStore.Load<Dictionary<string, SingerInfo>>(Path.Combine(AppPaths.Root, "singers.json")) ?? new();
         RefreshKnownSingers();

@@ -79,6 +79,13 @@
                             <TextBlock Text="Sottotitolo" Width="140" VerticalAlignment="Center"/>
                             <TextBox x:Name="IdleSubtitleBox"/>
                         </DockPanel>
+                        <DockPanel Margin="0,0,0,8" VerticalAlignment="Top">
+                            <TextBlock Text="Striscia messaggi" Width="140" VerticalAlignment="Top" Margin="0,4,0,0"
+                                       ToolTip="Scorre in basso sul proiettore, sopra a testi, CDG e video. Un messaggio per riga."/>
+                            <CheckBox x:Name="TickerBox" DockPanel.Dock="Top" Content="Mostrala sul proiettore" Margin="0,0,0,4"/>
+                            <TextBox x:Name="TickerTextBox" AcceptsReturn="True" TextWrapping="Wrap" Height="62" VerticalScrollBarVisibility="Auto"
+                                     ToolTip="Un messaggio per riga: auguri, offerte del locale, «prenota la tua canzone al DJ»…"/>
+                        </DockPanel>
                         <DockPanel Margin="0,0,0,8">
                             <TextBlock Text="Statistiche d'uso" Width="140" VerticalAlignment="Center" ToolTip="Facoltative: aiutano a capire quali passaggi funzionano in serata. Nessun dato personale."/>
                             <Button DockPanel.Dock="Right" Content="Cancella" Style="{StaticResource SmallButton}" Click="UsageClear_Click" Margin="6,0,0,0" ToolTip="Butta via i dati in attesa su questo PC"/>

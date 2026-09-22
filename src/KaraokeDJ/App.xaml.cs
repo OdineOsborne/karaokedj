@@ -78,6 +78,9 @@ public partial class App : Application
         // --midiwatch <secondi>: ascolta la console senza eseguire niente e scrive che cosa manda (per capire i comandi impazziti)
         int watchIdx = Array.IndexOf(e.Args, "--midiwatch");
         if (watchIdx >= 0) RunMidiWatch(watchIdx + 1 < e.Args.Length && int.TryParse(e.Args[watchIdx + 1], out var ws) ? ws : 10);
+        // --showtest <file.png>: fotografa il proiettore con striscia messaggi e applausometro
+        int showIdx = Array.IndexOf(e.Args, "--showtest");
+        if (showIdx >= 0 && showIdx + 1 < e.Args.Length) RunShowTest(e.Args[showIdx + 1]);
         // --shot <file.png>: rende la finestra principale su file (software rendering) ed esce: per verifiche automatiche
         int shotIdx = Array.IndexOf(e.Args, "--shot");
         if (shotIdx >= 0 && shotIdx + 1 < e.Args.Length) RunShot(win, e.Args[shotIdx + 1]);
@@ -311,6 +314,43 @@ public partial class App : Application
         Console.Error.WriteLine(res);
         try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-midiwatch.log"), res); } catch { }
         Shutdown(0);
+    }
+
+    /// <summary>--showtest &lt;file.png&gt;: mette a schermo quello che vede il pubblico (striscia messaggi + applausometro) e lo fotografa.</summary>
+    private async void RunShowTest(string path)
+    {
+        var vm = Vm!;
+        try
+        {
+            vm.TickerText = "Benvenuti alla serata karaoke!\nPrenota la tua canzone al DJ\nStasera pizza e birra 10 €";
+            vm.TickerOn = true;
+            vm.IsProjectorOpen = true;
+            await System.Threading.Tasks.Task.Delay(3500);
+            ShotOf(Windows.OfType<Views.ProjectorWindow>().FirstOrDefault(), path.Replace(".png", "-striscia.png"));
+            vm.StartApplause();
+            await System.Threading.Tasks.Task.Delay(1200);
+            // valori finti solo per la foto: dal vivo li porta il microfono
+            vm.ApplauseValue = 78; vm.ApplauseScore = 91; vm.ApplauseCaption = "DA PELLE D'OCA!";
+            await System.Threading.Tasks.Task.Delay(150);
+            if (!ShotOf(Windows.OfType<Views.ProjectorWindow>().FirstOrDefault(), path)) { Shutdown(2); return; }
+            Console.Error.WriteLine($"showtest: OK {path} (striscia \"{vm.TickerLine.Trim()}\", applausometro {vm.ApplauseScore})");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("showtest: FAIL " + ex.Message); Shutdown(2); return; }
+        Shutdown(0);
+    }
+
+    /// <summary>Fotografa una finestra su PNG (per le verifiche visive).</summary>
+    private static bool ShotOf(Window? w, string path)
+    {
+        if (w == null) { Console.Error.WriteLine("showtest: finestra non aperta"); return false; }
+        w.UpdateLayout();
+        var rtb = new System.Windows.Media.Imaging.RenderTargetBitmap((int)w.ActualWidth, (int)w.ActualHeight, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+        rtb.Render(w);
+        var enc = new System.Windows.Media.Imaging.PngBitmapEncoder();
+        enc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(rtb));
+        using var fs = File.Create(path);
+        enc.Save(fs);
+        return true;
     }
 
     /// <summary>--audiotest: prova che i comandi cambino davvero il suono (vedi Services/AudioTest).</summary>

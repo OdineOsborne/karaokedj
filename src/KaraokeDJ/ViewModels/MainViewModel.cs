@@ -327,6 +327,7 @@ public sealed partial class MainViewModel : ObservableObject
         if ((now - _lastAutosave).TotalSeconds > 60) { _lastAutosave = now; try { SaveSettings(); SaveQueue(); } catch (Exception ex) { CrashLog.Write("autosave: " + ex.Message); } }
         if (AutoMix) CheckAutoMix();
         CheckFillMusic();
+        TickApplause();
         TickControllerJog();
         UpdateActiveKaraokeDeck();
         UpdateDedication();
@@ -2554,6 +2555,8 @@ public sealed partial class MainViewModel : ObservableObject
             case "rhythm.volume": if (continuous) Rhythm.Volume = (float)(norm * 1.2); break;
             case "padstop": StopAllPadsCommand.Execute(null); break;
             case "panic": Panic(); break;
+            case "applause": StartApplause(); break;
+            case "ticker": ToggleTicker(); break;
             case "midimute": MidiMuted = !MidiMuted; break;
             case "mic": MicOn = !MicOn; break;
             case "talk": TalkOver = pressed; break;

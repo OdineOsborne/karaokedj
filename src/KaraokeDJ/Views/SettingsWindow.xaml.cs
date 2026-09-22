@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -63,6 +63,8 @@ public partial class SettingsWindow : Window
 
         IdleTitleBox.Text = vm.IdleTitle;
         IdleSubtitleBox.Text = vm.IdleSubtitle;
+        TickerBox.IsChecked = vm.TickerOn;
+        TickerTextBox.Text = vm.TickerText;
         OffsetSlider.Value = vm.Settings.CdgOffsetMs;
         GlassBox.IsChecked = vm.Settings.GlassEffect;
         OffsetLabel.Text = vm.Settings.CdgOffsetMs + " ms";
@@ -366,6 +368,8 @@ public partial class SettingsWindow : Window
         _vm.Settings.ProjectorScreenIndex = Math.Max(0, ScreenCombo.SelectedIndex);
         _vm.IdleTitle = IdleTitleBox.Text;
         _vm.IdleSubtitle = IdleSubtitleBox.Text;
+        _vm.TickerOn = TickerBox.IsChecked == true;
+        _vm.TickerText = TickerTextBox.Text;
         _vm.ApplyCdgOffset((int)OffsetSlider.Value);
         _vm.Settings.GlassEffect = GlassBox.IsChecked == true;
 

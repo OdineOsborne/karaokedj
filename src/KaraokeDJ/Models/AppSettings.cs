@@ -1,4 +1,4 @@
-namespace KaraokeDJ.Models;
+﻿namespace KaraokeDJ.Models;
 
 public sealed class AppSettings
 {
@@ -24,6 +24,9 @@ public sealed class AppSettings
     public bool Quantize { get; set; } = true;
     /// <summary>Musica di riempimento fra un cantante e l'altro: playlist (id) e volume.</summary>
     public bool FillMusicOn { get; set; }
+    /// <summary>Striscia messaggi sul proiettore (un messaggio per riga).</summary>
+    public bool TickerOn { get; set; }
+    public string TickerText { get; set; } = "";
     public string? FillPlaylistId { get; set; }
     public double FillVolume { get; set; } = 0.7;
     /// <summary>Rotazione equa dei cantanti nella coda.</summary>
