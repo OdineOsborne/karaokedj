@@ -19,11 +19,29 @@ public partial class MainViewModel
 
     private void StartControllerWatch()
     {
+        Midi.MessageReceived += OnMidiMessageForHints;
         _midiDisabledByUser = Settings.MidiDeviceName == "-";
         CheckControllers(announce: true);
         _controllerTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
         _controllerTimer.Tick += (_, _) => CheckControllers(announce: true);
         _controllerTimer.Start();
+    }
+
+    private readonly HashSet<string> _unmappedSeen = new();
+    private DateTime _lastUnmappedHint;
+
+    /// <summary>
+    /// Se la console manda un comando che nessun preset conosce, lo dice invece di ignorarlo in silenzio.
+    /// Il MIDI non ha modo di presentarsi: la console manda numeri e basta, e nessun documento e mai
+    /// completo per tutti i modelli. Cosi i buchi si scoprono usando la console, senza leggere log.
+    /// </summary>
+    private void OnMidiMessageForHints(MidiKey key, int value)
+    {
+        if (value == 0 || Midi.ActionFor(key) != null) return;
+        if (!_unmappedSeen.Add(key.ToString())) return;                       // una volta sola per controllo
+        if ((DateTime.UtcNow - _lastUnmappedHint).TotalSeconds < 6) return;   // e senza inondare la barra
+        _lastUnmappedHint = DateTime.UtcNow;
+        StatusText = $"La console manda un comando che non conosco ({key}): assegnalo in Impostazioni → MIDI e tastiera";
     }
 
     private void CheckControllers(bool announce)
