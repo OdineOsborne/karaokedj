@@ -79,7 +79,7 @@ public partial class SettingsWindow : Window
         MidiCombo.ItemsSource = midiDevices;
         MidiCombo.SelectedItem = midiDevices.Contains(vm.Settings.MidiDeviceName ?? "") ? vm.Settings.MidiDeviceName : "(nessuno)";
         foreach (var (id, label, cont) in MidiActions.All)
-            _midiRows.Add(new MidiRow { Id = id, Label = label, IsContinuous = cont, Binding = vm.Midi.KeyFor(id)?.ToString() ?? "—", Invert = vm.Midi.IsInverted(id), Relative = vm.Midi.IsRelative(id), KeyBinding = KeyboardService.Pretty(vm.Keys.GestureFor(id)) });
+            _midiRows.Add(new MidiRow { Id = id, Label = label, IsContinuous = cont, Binding = BindingLabel(vm, id), Invert = vm.Midi.IsInverted(id), Relative = vm.Midi.IsRelative(id), KeyBinding = KeyboardService.Pretty(vm.Keys.GestureFor(id)) });
         MidiList.ItemsSource = _midiRows;
         SupportedList.Text = "Console riconosciute da sole (plug & play): " + MainViewModel.SupportedControllers + ". Altre console: scegli la porta qui sopra e usa Impara.";
         vm.Midi.MessageReceived += OnMidiMessage;
@@ -197,7 +197,7 @@ public partial class SettingsWindow : Window
 
     private void RefreshMidiRows()
     {
-        foreach (var r in _midiRows) { r.Binding = _vm.Midi.KeyFor(r.Id)?.ToString() ?? "—"; r.Invert = _vm.Midi.IsInverted(r.Id); r.Relative = _vm.Midi.IsRelative(r.Id); }
+        foreach (var r in _midiRows) { r.Binding = BindingLabel(_vm, r.Id); r.Invert = _vm.Midi.IsInverted(r.Id); r.Relative = _vm.Midi.IsRelative(r.Id); }
     }
 
     private void MidiConnect_Click(object sender, RoutedEventArgs e)
@@ -205,6 +205,13 @@ public partial class SettingsWindow : Window
         var name = MidiCombo.SelectedItem as string;
         _vm.ApplyMidiDevice(name == "(nessuno)" ? null : name);
         MidiActivity.Text = _vm.Midi.IsOpen ? "Collegato: " + _vm.Midi.DeviceName : "Non collegato";
+    }
+
+    /// <summary>Etichetta del controllo assegnato, con "SHIFT +" davanti se vale solo col tasto shift.</summary>
+    private static string BindingLabel(ViewModels.MainViewModel vm, string id)
+    {
+        var k = vm.Midi.KeyFor(id);
+        return k == null ? "—" : (vm.Midi.IsShiftAction(id) ? "SHIFT + " : "") + k;
     }
 
     private void MidiLearn_Click(object sender, RoutedEventArgs e)
@@ -216,12 +223,14 @@ public partial class SettingsWindow : Window
         row.LearnLabel = "Muovi…";
         _vm.Midi.BeginLearn(key =>
         {
-            _vm.Midi.SetMapping(row.Id, key);
-            row.Binding = key.ToString();
+            // imparato tenendo premuto SHIFT? allora vale solo con SHIFT (le console hanno due comandi per tasto)
+            bool shift = _vm.Midi.LastLearnShifted;
+            _vm.Midi.SetMapping(row.Id, key, shift);
+            row.Binding = (shift ? "SHIFT + " : "") + key;
             row.LearnLabel = "Impara MIDI";
             _learning = null;
             // se lo stesso controllo era assegnato altrove, aggiorna la riga
-            foreach (var r in _midiRows.Where(r => r != row && r.Binding == key.ToString())) r.Binding = "—";
+            foreach (var r in _midiRows.Where(r => r != row && r.Binding == row.Binding && r.Id != row.Id)) r.Binding = "—";
         });
     }
 

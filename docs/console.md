@@ -1,4 +1,4 @@
-# Console MIDI in Mixfonia — fai da te
+﻿# Console MIDI in Mixfonia — fai da te
 
 Mixfonia riconosce da sola **42 console** (Pioneer, Hercules, Numark, Denon, Reloop, Roland, Novation Launchpad):
 la colleghi e in 3 secondi la barra di stato dice *"Console riconosciuta: …"*. Tutto il resto lo puoi sistemare tu,
@@ -52,3 +52,17 @@ Qualsiasi altra griglia (Akai APC/MPD, Arturia, tastiere con pad) si mappa con *
 - Niente LED/feedback verso la console (uscita MIDI non ancora implementata).
 - I jog vengono letti come encoder relativi; lo scratch parte quando la console manda il "tocco" del piatto.
 - Le mappature convertite da Mixxx/djay coprono le funzioni di base; i pad in modalità speciali (slicer, toneplay, FX) restano scoperti.
+
+## SHIFT: due comandi per ogni controllo
+
+Quasi tutte le console hanno un tasto SHIFT che cambia il significato di manopole e tasti
+(sulla Instinct P8, per esempio, la manopola fa il loop da sola e il filtro con SHIFT premuto).
+
+Mixfonia tiene due strati di mappatura. Per configurarlo:
+
+1. Impostazioni → MIDI e tastiera, riga **«SHIFT della console (tieni premuto)»** → «Impara MIDI» → premi il tasto SHIFT.
+2. Riga del comando che vuoi **senza** shift (es. «Deck A – Loop: lunghezza») → «Impara MIDI» → muovi la manopola normalmente.
+3. Riga del comando che vuoi **con** shift (es. «Deck A – Filtro») → «Impara MIDI» → **tieni premuto SHIFT** e muovi la stessa manopola.
+
+Chi è assegnato col tasto shift si riconosce dalla scritta `SHIFT + cc ch1 #52` nella colonna del controllo.
+Il registratore MIDI segna `SHIFT+` davanti ai messaggi ricevuti mentre il tasto era premuto.

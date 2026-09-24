@@ -1,4 +1,4 @@
-using System.Windows.Threading;
+﻿using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KaraokeDJ.Services;
@@ -142,7 +142,7 @@ public partial class MainViewModel
     private void OnMidiLogMessage(MidiKey key, int value)
     {
         var action = Midi.ActionFor(key);
-        _midiLog?.WriteLine($"{DateTime.Now:HH:mm:ss.fff}  {key}  = {value,3}  → {action ?? "(non mappato)"}");
+        _midiLog?.WriteLine($"{DateTime.Now:HH:mm:ss.fff}  {(Midi.ShiftHeld ? "SHIFT+" : "      ")}{key}  = {value,3}  → {action ?? "(non mappato)"}");
     }
 
     public void StopMidiLog()

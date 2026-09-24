@@ -2445,6 +2445,16 @@ public sealed partial class MainViewModel : ObservableObject
                 case "loophalf": deck.LoopHalfCommand.Execute(null); break;
                 case "loopdouble": deck.LoopDoubleCommand.Execute(null); break;
                 case "loopexit": deck.LoopExitCommand.Execute(null); break;
+                // manopola del loop (sulle console e spesso la stessa del filtro, con e senza SHIFT):
+                // la posizione sceglie la lunghezza, dalla mezza battuta alle 16
+                case "loopsize":
+                    if (continuous)
+                    {
+                        double[] sizes = { 0.5, 1, 2, 4, 8, 16 };
+                        deck.LoopBeatsCommand.Execute(sizes[Math.Clamp((int)(norm * sizes.Length), 0, sizes.Length - 1)]
+                            .ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    }
+                    break;
                 case "jumpback4": deck.BeatJump("-4"); break;
                 case "jumpfwd4": deck.BeatJump("4"); break;
                 case "jumpback8": deck.BeatJump("-8"); break;
@@ -2511,6 +2521,7 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
+        if (action == "shift") { Midi.ShiftHeld = pressed; return; }
         if (!pressed) { if (action == "talk") TalkOver = false; return; }
         switch (action)
         {

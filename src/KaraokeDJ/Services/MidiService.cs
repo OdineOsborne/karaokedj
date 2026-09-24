@@ -18,6 +18,8 @@ public sealed class MidiMapping
     public bool Invert { get; set; }
     /// <summary>Encoder relativo (jog, browse): il valore è un delta, non una posizione.</summary>
     public bool Relative { get; set; }
+    /// <summary>Vale solo col tasto SHIFT premuto: sulle console quasi ogni comando ne ha due.</summary>
+    public bool Shift { get; set; }
 
     public MidiKey Key => new(Type, Channel, Number);
 }
@@ -33,6 +35,8 @@ public sealed class MidiService : IDisposable
 {
     private MidiIn? _in;
     private readonly Dictionary<MidiKey, string> _map = new();
+    /// <summary>Secondo strato: cosa fa lo stesso controllo col tasto SHIFT premuto.</summary>
+    private readonly Dictionary<MidiKey, string> _shiftMap = new();
     private readonly HashSet<MidiKey> _invert = new();
     /// <summary>Encoder relativi mappati su azioni assolute (es. SHIFT+jog → tempo): teniamo noi la posizione 0..127.</summary>
     private readonly HashSet<MidiKey> _relative = new();
@@ -64,12 +68,14 @@ public sealed class MidiService : IDisposable
 
     public void LoadMappings(IEnumerable<MidiMapping> mappings)
     {
-        _map.Clear(); _invert.Clear(); _relative.Clear(); _relPos.Clear();
+        _map.Clear(); _shiftMap.Clear(); _invert.Clear(); _relative.Clear(); _relPos.Clear();
         foreach (var m in mappings) Put(m);
     }
 
     public List<MidiMapping> ExportMappings() =>
-        _map.Select(kv => new MidiMapping { Action = kv.Value, Type = kv.Key.Type, Channel = kv.Key.Channel, Number = kv.Key.Number, Invert = _invert.Contains(kv.Key), Relative = _relative.Contains(kv.Key) }).ToList();
+        _map.Select(kv => new MidiMapping { Action = kv.Value, Type = kv.Key.Type, Channel = kv.Key.Channel, Number = kv.Key.Number, Invert = _invert.Contains(kv.Key), Relative = _relative.Contains(kv.Key) })
+            .Concat(_shiftMap.Select(kv => new MidiMapping { Action = kv.Value, Type = kv.Key.Type, Channel = kv.Key.Channel, Number = kv.Key.Number, Shift = true, Invert = _invert.Contains(kv.Key), Relative = _relative.Contains(kv.Key) }))
+            .ToList();
 
     /// <summary>Aggiunge le mappature senza cancellare le altre (preset di fabbrica + personalizzazioni).</summary>
     public void AddMappings(IEnumerable<MidiMapping> mappings)
@@ -79,7 +85,7 @@ public sealed class MidiService : IDisposable
 
     private void Put(MidiMapping m)
     {
-        _map[m.Key] = m.Action;
+        if (m.Shift) _shiftMap[m.Key] = m.Action; else _map[m.Key] = m.Action;
         if (m.Invert) _invert.Add(m.Key); else _invert.Remove(m.Key);
         if (m.Relative) _relative.Add(m.Key); else _relative.Remove(m.Key);
     }
@@ -88,8 +94,14 @@ public sealed class MidiService : IDisposable
     private static bool TakesDelta(string action) => action == "browse" || action.Contains(".jog");
     public int Count => _map.Count;
 
-    public MidiKey? KeyFor(string action) => _map.FirstOrDefault(kv => kv.Value == action).Key;
-    public string? ActionFor(MidiKey key) => _map.TryGetValue(key, out var a) ? a : null;
+    /// <summary>Tasto SHIFT della console tenuto premuto adesso.</summary>
+    public bool ShiftHeld { get; set; }
+
+    public MidiKey? KeyFor(string action) => _map.FirstOrDefault(kv => kv.Value == action).Key
+                                          ?? _shiftMap.FirstOrDefault(kv => kv.Value == action).Key;
+    public bool IsShiftAction(string action) => _shiftMap.Any(kv => kv.Value == action);
+    public string? ActionFor(MidiKey key) =>
+        ShiftHeld && _shiftMap.TryGetValue(key, out var sa) ? sa : _map.TryGetValue(key, out var a) ? a : null;
     public bool IsInverted(string action) => KeyFor(action) is { } k && _invert.Contains(k);
     public bool IsRelative(string action) => KeyFor(action) is { } k && _relative.Contains(k);
     /// <summary>Inverti / relativo sul controllo già mappato a questa azione (correzioni fai-da-te: fader al contrario, encoder).</summary>
@@ -100,19 +112,23 @@ public sealed class MidiService : IDisposable
         if (relative) _relative.Add(k); else { _relative.Remove(k); _relPos.Remove(k); }
     }
 
-    public void SetMapping(string action, MidiKey key)
+    /// <summary>Assegna un controllo a un'azione. Con <paramref name="shift"/> finisce nel secondo strato.</summary>
+    public void SetMapping(string action, MidiKey key, bool shift = false)
     {
-        foreach (var k in _map.Where(kv => kv.Value == action).Select(kv => kv.Key).ToList()) _map.Remove(k);
-        _map[key] = action;
+        ClearMapping(action);
+        if (shift) _shiftMap[key] = action; else _map[key] = action;
     }
 
     public void ClearMapping(string action)
     {
         foreach (var k in _map.Where(kv => kv.Value == action).Select(kv => kv.Key).ToList()) _map.Remove(k);
+        foreach (var k in _shiftMap.Where(kv => kv.Value == action).Select(kv => kv.Key).ToList()) _shiftMap.Remove(k);
     }
 
     /// <summary>Il prossimo messaggio ricevuto viene passato al callback invece di eseguire l'azione.</summary>
     public void BeginLearn(Action<MidiKey> callback) => _learnCallback = callback;
+    /// <summary>true se l'ultimo controllo imparato è stato mosso col tasto SHIFT premuto.</summary>
+    public bool LastLearnShifted { get; private set; }
     public void CancelLearn() => _learnCallback = null;
 
     public bool Open(string? deviceName)
@@ -176,13 +192,17 @@ public sealed class MidiService : IDisposable
             if (_learnCallback != null)
             {
                 if (value == 0 && !continuous) return; // il rilascio del tasto non è un controllo da imparare
+                if (_map.TryGetValue(key, out var held) && held == "shift") return;   // il tasto SHIFT non si impara come comando
+                LastLearnShifted = ShiftHeld;
                 var cb = _learnCallback;
                 _learnCallback = null;
                 cb(key);
                 return;
             }
             if (Muted) return;
-            if (_map.TryGetValue(key, out var action))
+            // col tasto SHIFT premuto comanda il secondo strato, se quel controllo ce l'ha
+            if (!(ShiftHeld && _shiftMap.TryGetValue(key, out var action)) && !_map.TryGetValue(key, out action)) action = null;
+            if (action != null)
             {
                 int v = value;
                 if (continuous && _relative.Contains(key) && !TakesDelta(action))

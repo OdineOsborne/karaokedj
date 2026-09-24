@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -99,7 +99,7 @@ public sealed class ShortcutPopup : Window
             if (!_vm.Midi.IsOpen) { _hint.Text = "Nessun controller MIDI collegato: aprilo da Impostazioni → MIDI."; return; }
             _learningKey = false; _keyLearn.Content = "Premi un tasto…";
             _midiLearn.Content = "…muovi ora";
-            _vm.Midi.BeginLearn(key => { _vm.Midi.SetMapping(_action, key); Refresh(); });
+            _vm.Midi.BeginLearn(key => { _vm.Midi.SetMapping(_action, key, _vm.Midi.LastLearnShifted); Refresh(); });
         };
         PreviewKeyDown += OnKey;
         Closed += (_, _) => { _vm.Midi.CancelLearn(); _vm.SaveSettings(); };

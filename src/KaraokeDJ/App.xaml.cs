@@ -151,7 +151,7 @@ public partial class App : Application
             var sources = string.Join(", ", Vm.ImportSources.Select(s => s.Id));
             Console.Error.WriteLine("SELFTEST OK");
             try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-selftest.log"), "OK\nplugins: " + plugins + "\nsources: " + sources + "\ncontrollers: " + KaraokeDJ.Services.ControllerPresets.All.Count + " preset, midi: " + (Vm.Midi.DeviceName ?? "nessuno")
-                + "\nmappings: " + KaraokeDJ.Services.ControllerPresets.All.Sum(p => p.Mappings.Count) + ", sample: " + string.Join(",", KaraokeDJ.Services.ControllerPresets.All.Take(2).Select(p => p.Id + "=" + p.Mappings[0].Action)) + ImportTest() + MidiRangeTest() + DropTest() + StopTest()); } catch { }
+                + "\nmappings: " + KaraokeDJ.Services.ControllerPresets.All.Sum(p => p.Mappings.Count) + ", sample: " + string.Join(",", KaraokeDJ.Services.ControllerPresets.All.Take(2).Select(p => p.Id + "=" + p.Mappings[0].Action)) + ImportTest() + MidiRangeTest() + DropTest() + ShiftTest() + StopTest()); } catch { }
             Shutdown(0);
         }
         catch (Exception ex)
@@ -207,6 +207,40 @@ public partial class App : Application
             foreach (var q in queueBackup) vm.Queue.Add(q);
         }
         return "\ndrop: " + (errors.Count == 0 ? "OK (deck da libreria, deck da file, coda nel punto giusto)" : "ERRORI → " + string.Join("; ", errors));
+    }
+
+    /// <summary>
+    /// Selftest dello strato SHIFT: lo stesso controllo deve fare due cose diverse a seconda del tasto SHIFT,
+    /// e la distinzione deve sopravvivere al salvataggio (export/import delle mappature).
+    /// Gira su un servizio MIDI a parte: le mappature dell'utente non si toccano.
+    /// </summary>
+    private static string ShiftTest()
+    {
+        var errors = new List<string>();
+        try
+        {
+            var midi = new KaraokeDJ.Services.MidiService();
+            var key = new KaraokeDJ.Services.MidiKey("cc", 1, 52);
+            midi.LoadMappings(new[]
+            {
+                new KaraokeDJ.Services.MidiMapping { Action = "a.loopsize", Type = "cc", Channel = 1, Number = 52 },
+                new KaraokeDJ.Services.MidiMapping { Action = "a.filtervalue", Type = "cc", Channel = 1, Number = 52, Shift = true },
+            });
+            midi.ShiftHeld = false;
+            if (midi.ActionFor(key) != "a.loopsize") errors.Add("senza SHIFT la manopola non fa il loop (" + (midi.ActionFor(key) ?? "niente") + ")");
+            midi.ShiftHeld = true;
+            if (midi.ActionFor(key) != "a.filtervalue") errors.Add("con SHIFT la manopola non fa il filtro (" + (midi.ActionFor(key) ?? "niente") + ")");
+            if (!midi.IsShiftAction("a.filtervalue") || midi.IsShiftAction("a.loopsize")) errors.Add("l'app non sa quale delle due vuole SHIFT");
+            // giro completo: salvo e ricarico
+            var saved = midi.ExportMappings();
+            if (saved.Count != 2 || saved.Count(m => m.Shift) != 1) errors.Add("il salvataggio perde l'informazione SHIFT");
+            var midi2 = new KaraokeDJ.Services.MidiService();
+            midi2.LoadMappings(saved);
+            midi2.ShiftHeld = true;
+            if (midi2.ActionFor(key) != "a.filtervalue") errors.Add("dopo il salvataggio SHIFT non funziona più");
+        }
+        catch (Exception ex) { errors.Add(ex.Message); }
+        return Environment.NewLine + "shift: " + (errors.Count == 0 ? "OK (stesso controllo, due comandi; si salva e si ricarica)" : "ERRORI → " + string.Join("; ", errors));
     }
 
     /// <summary>
