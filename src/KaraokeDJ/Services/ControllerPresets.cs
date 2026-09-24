@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace KaraokeDJ.Services;
@@ -14,6 +14,36 @@ public sealed class ControllerPreset
     [JsonPropertyName("mappings")] public List<MidiMapping> Mappings { get; set; } = new();
     /// <summary>true se viene dalla cartella dell'utente (importata o esportata da lui), non dall'app.</summary>
     [JsonIgnore] public bool IsUser { get; set; }
+
+    /// <summary>Comandi senza i quali una console non si usa in serata.</summary>
+    private static readonly (string Action, string Label)[] Essential =
+    {
+        ("a.play", "play"), ("a.cue", "cue"), ("a.fader", "fader"), ("crossfader", "crossfader"),
+        ("a.jog", "piatti"), ("a.eqlow", "EQ"), ("a.hotcue1", "hot cue"), ("browse", "browse"),
+    };
+
+    /// <summary>Cosa copre questo preset e cosa gli manca: si legge prima di sceglierlo, senza provare la console.</summary>
+    [JsonIgnore]
+    public (string Has, string Missing) Coverage
+    {
+        get
+        {
+            var acts = Mappings.Select(m => m.Action).ToHashSet();
+            var has = Essential.Where(e => acts.Contains(e.Action)).Select(e => e.Label);
+            var missing = Essential.Where(e => !acts.Contains(e.Action)).Select(e => e.Label);
+            return (string.Join(", ", has), string.Join(", ", missing));
+        }
+    }
+
+    /// <summary>Preset senza play o senza cue: si puo usare, ma il DJ deve saperlo prima.</summary>
+    [JsonIgnore] public bool Incomplete => Mappings.All(m => m.Action != "a.play") || Mappings.All(m => m.Action != "a.cue");
+
+    /// <summary>Da dove vengono i numeri, in una riga: documento del produttore, console vera, o mappatura della comunita.</summary>
+    [JsonIgnore]
+    public string Provenance =>
+        System.Text.RegularExpressions.Regex.IsMatch(Source ?? "", "registratore|console vera|misurat", System.Text.RegularExpressions.RegexOptions.IgnoreCase) ? "provato su console vera"
+        : System.Text.RegularExpressions.Regex.IsMatch(Source ?? "", "ufficiale|MIDI Mapping|Command List|manuale", System.Text.RegularExpressions.RegexOptions.IgnoreCase) ? "dal documento del produttore"
+        : IsUser ? "tua" : "da mappatura della comunita, non provata";
 }
 
 /// <summary>

@@ -27,6 +27,35 @@ public partial class MainViewModel
         _controllerTimer.Start();
     }
 
+    /// <summary>LED della console (pad hot cue, play): vedi <see cref="MidiFeedback"/>.</summary>
+    public MidiFeedback Leds { get; } = new();
+    private string _ledState = "";
+
+    /// <summary>
+    /// Aggiorna i LED: pad degli hot cue accesi dove c'è un punto salvato (blu sul deck A, rosso sul B),
+    /// tasto play acceso mentre il deck suona. Chiamata dal timer: si manda qualcosa solo se è cambiato davvero.
+    /// </summary>
+    private void TickLeds()
+    {
+        if (!Leds.IsOpen) return;
+        var sb = new System.Text.StringBuilder();
+        foreach (var d in new[] { DeckA, DeckB })
+        {
+            sb.Append(d.IsPlaying ? '1' : '0');
+            for (int i = 0; i < 8; i++) sb.Append(d.Track?.HotCue(i) >= 0 ? '1' : '0');
+        }
+        var now = sb.ToString();
+        if (now == _ledState) return;
+        _ledState = now;
+        foreach (var (d, colour) in new[] { (DeckA, MidiFeedback.Blue), (DeckB, MidiFeedback.Red) })
+        {
+            string p = d == DeckA ? "a." : "b.";
+            Leds.Set(Midi.KeyFor(p + "play"), d.IsPlaying ? colour : MidiFeedback.Off);
+            for (int i = 0; i < 8; i++)
+                Leds.Set(Midi.KeyFor($"{p}hotcue{i + 1}"), d.Track?.HotCue(i) >= 0 ? colour : MidiFeedback.Off);
+        }
+    }
+
     private readonly HashSet<string> _unmappedSeen = new();
     private DateTime _lastUnmappedHint;
 
@@ -70,16 +99,30 @@ public partial class MainViewModel
     public bool OpenController(string name, bool announce)
     {
         if (!Midi.Open(name)) { ControllerStatus = "Impossibile aprire " + name; return false; }
-        var preset = ControllerPresets.Find(name);
+        // la console scelta a mano vince sul riconoscimento dal nome della porta (nomi uguali, cloni, porte generiche)
+        var preset = ControllerPresets.All.FirstOrDefault(p => p.Id == Settings.ControllerPresetId) ?? ControllerPresets.Find(name);
         ActivePreset = preset;
         Midi.LoadMappings(Enumerable.Empty<MidiMapping>());
         if (preset != null) Midi.AddMappings(preset.Mappings);
         Midi.AddMappings(Settings.MidiMappings);
         Settings.MidiDeviceName = name;
         ControllerConnected = true;
-        ControllerStatus = preset != null ? $"{preset.Name} — pronta, {Midi.Count} controlli mappati" : $"{name} — nessun preset: usa \"Impara\" (tasto destro sui comandi)";
+        // stessa console anche in uscita, per i LED dei pad (se non c'è o non risponde, pazienza)
+        if (Settings.ControllerLeds) { Leds.Open(name); _ledState = ""; } else Leds.Close();
+        ControllerStatus = preset != null
+            ? $"{preset.Name} — pronta, {Midi.Count} controlli mappati ({preset.Provenance})" + (preset.Incomplete ? " ⚠ senza play/cue: assegnali a mano" : "")
+            : $"{name} — nessun preset: scegli la console qui sotto o usa \"Impara\"";
         if (announce) StatusText = preset != null ? $"Console riconosciuta: {preset.Name}. Plug & play: play, cue, jog, fader, EQ, filtro, hot cue, loop, browse." : "MIDI collegato: " + name;
         return true;
+    }
+
+    /// <summary>Sceglie a mano il preset da usare con la console collegata (o null = torna al riconoscimento automatico).</summary>
+    public void ApplyPreset(string? presetId)
+    {
+        Settings.ControllerPresetId = presetId;
+        _unmappedSeen.Clear();
+        if (Midi.IsOpen && Midi.DeviceName is { } dev) OpenController(dev, announce: true);
+        SaveSettings();
     }
 
     /// <summary>Scelta manuale dalle impostazioni ("(nessuno)" = MIDI spento anche per le console riconosciute).</summary>

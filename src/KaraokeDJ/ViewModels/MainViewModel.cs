@@ -246,6 +246,7 @@ public sealed partial class MainViewModel : ObservableObject
         Rhythm.Save();
         _remote?.Dispose();
         SaveQueue();
+        Leds.Dispose();
         Midi.Dispose();
         _suno?.Dispose();
         SaveCelebration();
@@ -330,6 +331,7 @@ public sealed partial class MainViewModel : ObservableObject
         CheckFillMusic();
         TickApplause();
         TickRecording();
+        TickLeds();
         TickControllerJog();
         UpdateActiveKaraokeDeck();
         UpdateDedication();

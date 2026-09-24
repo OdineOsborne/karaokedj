@@ -78,6 +78,8 @@ public partial class App : Application
         // --midiwatch <secondi>: ascolta la console senza eseguire niente e scrive che cosa manda (per capire i comandi impazziti)
         int watchIdx = Array.IndexOf(e.Args, "--midiwatch");
         if (watchIdx >= 0) RunMidiWatch(watchIdx + 1 < e.Args.Length && int.TryParse(e.Args[watchIdx + 1], out var ws) ? ws : 10);
+        // --ledtest: accende i pad della console per qualche secondo (per vedere se i LED rispondono)
+        if (e.Args.Contains("--ledtest")) RunLedTest();
         // --jogtest: il piatto va avanti e indietro? (silenzioso: master a zero)
         if (e.Args.Contains("--jogtest")) RunJogTest();
         // --preflight: stampa il controllo pre-serata ed esce
@@ -108,6 +110,19 @@ public partial class App : Application
             {
                 var t = Vm!.Tracks.FirstOrDefault(x => x.Display.Contains(want, StringComparison.OrdinalIgnoreCase));
                 if (t != null) Vm.LoadToDeck(Vm.DeckA, t, confirmIfPlaying: false);
+            }
+            // MIXFONIA_SHOT_WINDOW=impostazioni|preserata: fotografa quella finestra invece della principale
+            var which = Environment.GetEnvironmentVariable("MIXFONIA_SHOT_WINDOW");
+            if (!string.IsNullOrWhiteSpace(which))
+            {
+                Window w = which == "preserata" ? new Views.PreflightWindow(Vm!) { Owner = win } : new Views.SettingsWindow(Vm!) { Owner = win };
+                w.Show();
+                if (w is Views.SettingsWindow settings) settings.ShowMidiTab();
+                await System.Threading.Tasks.Task.Delay(2500);
+                ShotOf(w, path);
+                Console.Error.WriteLine("SHOT OK " + path);
+                Shutdown(0);
+                return;
             }
             var size = Environment.GetEnvironmentVariable("MIXFONIA_SIZE");
             if (size != null && size.Split('x') is [var sw, var sh] && double.TryParse(sw, out var pw) && double.TryParse(sh, out var ph))
@@ -151,7 +166,7 @@ public partial class App : Application
             var sources = string.Join(", ", Vm.ImportSources.Select(s => s.Id));
             Console.Error.WriteLine("SELFTEST OK");
             try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-selftest.log"), "OK\nplugins: " + plugins + "\nsources: " + sources + "\ncontrollers: " + KaraokeDJ.Services.ControllerPresets.All.Count + " preset, midi: " + (Vm.Midi.DeviceName ?? "nessuno")
-                + "\nmappings: " + KaraokeDJ.Services.ControllerPresets.All.Sum(p => p.Mappings.Count) + ", sample: " + string.Join(",", KaraokeDJ.Services.ControllerPresets.All.Take(2).Select(p => p.Id + "=" + p.Mappings[0].Action)) + ImportTest() + MidiRangeTest() + DropTest() + ShiftTest() + StopTest()); } catch { }
+                + "\nmappings: " + KaraokeDJ.Services.ControllerPresets.All.Sum(p => p.Mappings.Count) + ", sample: " + string.Join(",", KaraokeDJ.Services.ControllerPresets.All.Take(2).Select(p => p.Id + "=" + p.Mappings[0].Action)) + ImportTest() + MidiRangeTest() + DropTest() + PresetTest() + ShiftTest() + StopTest()); } catch { }
             Shutdown(0);
         }
         catch (Exception ex)
@@ -207,6 +222,30 @@ public partial class App : Application
             foreach (var q in queueBackup) vm.Queue.Add(q);
         }
         return "\ndrop: " + (errors.Count == 0 ? "OK (deck da libreria, deck da file, coda nel punto giusto)" : "ERRORI → " + string.Join("; ", errors));
+    }
+
+    /// <summary>
+    /// Selftest dei preset delle console: azioni inesistenti (refusi), stesso controllo su due azioni
+    /// (uno dei due non funzionerebbe mai), preset senza play o senza cue. Sono gli errori che ci hanno
+    /// fatto perdere una giornata sulla P8: da qui in avanti saltano fuori a ogni build.
+    /// </summary>
+    private static string PresetTest()
+    {
+        var known = KaraokeDJ.Services.AppActions.All.Select(a => a.Id).ToHashSet();
+        var problems = new List<string>();
+        int incomplete = 0;
+        foreach (var p in KaraokeDJ.Services.ControllerPresets.All)
+        {
+            foreach (var a in p.Mappings.Select(m => m.Action).Distinct())
+                if (!known.Contains(a)) problems.Add($"{p.Id}: azione inesistente \"{a}\"");
+            foreach (var g in p.Mappings.GroupBy(m => (m.Type, m.Channel, m.Number, m.Shift)))
+                if (g.Select(m => m.Action).Distinct().Count() > 1)
+                    problems.Add($"{p.Id}: {g.Key.Type} ch{g.Key.Channel} #{g.Key.Number} fa due cose ({string.Join(" e ", g.Select(m => m.Action).Distinct())})");
+            if (p.Incomplete) incomplete++;
+        }
+        return Environment.NewLine + "preset: " + (problems.Count == 0
+            ? $"OK ({KaraokeDJ.Services.ControllerPresets.All.Count} console, nessun controllo doppio o azione inesistente" + (incomplete > 0 ? $", {incomplete} senza play/cue segnalati nell'elenco)" : ")")
+            : "ERRORI → " + string.Join("; ", problems.Take(8)) + (problems.Count > 8 ? $" … e altri {problems.Count - 8}" : ""));
     }
 
     /// <summary>
@@ -428,6 +467,32 @@ public partial class App : Application
         var msg = $"STRUTTURA FINITA in {(DateTime.UtcNow - t0).TotalMinutes:0.0} min · trovata su {found}/{todo.Count}, affidabile su {good}";
         Console.Error.WriteLine(msg);
         try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-sezioni.log"), msg); } catch { }
+        Shutdown(0);
+    }
+
+    /// <summary>--ledtest: accende i pad degli hot cue della console per qualche secondo e poi li spegne.</summary>
+    private async void RunLedTest()
+    {
+        var vm = Vm!;
+        await System.Threading.Tasks.Task.Delay(2000);
+        var outs = KaraokeDJ.Services.MidiFeedback.ListDevices();
+        if (!vm.Leds.IsOpen) vm.Leds.Open(vm.Midi.DeviceName);
+        var keys = Enumerable.Range(1, 8)
+            .SelectMany(i => new[] { vm.Midi.KeyFor($"a.hotcue{i}"), vm.Midi.KeyFor($"b.hotcue{i}") })
+            .Concat(new[] { vm.Midi.KeyFor("a.play"), vm.Midi.KeyFor("b.play") })
+            .Where(k => k is { Type: "note" }).ToList();
+        string res = $"led: uscite MIDI viste: {(outs.Count == 0 ? "nessuna" : string.Join(", ", outs))}"
+                   + Environment.NewLine + $"  console in uscita: {vm.Leds.DeviceName ?? "non aperta"} · pad accendibili: {keys.Count}";
+        if (vm.Leds.IsOpen && keys.Count > 0)
+        {
+            foreach (var k in keys) vm.Leds.Set(k, KaraokeDJ.Services.MidiFeedback.Blue);
+            res += Environment.NewLine + "  accesi per 5 secondi: guarda la console";
+            await System.Threading.Tasks.Task.Delay(5000);
+            vm.Leds.AllOff();
+            res += " → spenti";
+        }
+        Console.Error.WriteLine(res);
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-ledtest.log"), res); } catch { }
         Shutdown(0);
     }
 

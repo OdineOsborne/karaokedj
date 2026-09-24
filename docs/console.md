@@ -66,3 +66,37 @@ Mixfonia tiene due strati di mappatura. Per configurarlo:
 
 Chi è assegnato col tasto shift si riconosce dalla scritta `SHIFT + cc ch1 #52` nella colonna del controllo.
 Il registratore MIDI segna `SHIFT+` davanti ai messaggi ricevuti mentre il tasto era premuto.
+
+## Scegliere la console a mano, e sapere cosa si prende
+
+Impostazioni → MIDI e tastiera → **«La mia console»**: l'elenco di tutte le console conosciute.
+Serve quando la porta MIDI ha un nome generico, quando due modelli si chiamano uguale o quando
+si vuole provare il preset di un modello vicino. «Riconoscimento automatico» torna al comportamento normale.
+
+Sotto all'elenco c'è scritto **quanto ci si può fidare** di quel preset:
+
+- *provato su console vera* — numeri verificati col registratore MIDI sull'hardware;
+- *dal documento del produttore* — presi dalla tabella MIDI ufficiale;
+- *da mappatura della comunità, non provata* — derivati da Mixxx/djay: quasi sempre giusti, ma nessuno li ha verificati.
+
+E c'è **cosa copre**: play, cue, fader, crossfader, piatti, EQ, hot cue, browse. Se manca qualcosa lo dice,
+così lo si assegna con «Impara MIDI» prima della serata invece di scoprirlo sul palco. I preset senza play o cue
+sono segnati con ⚠ nell'elenco.
+
+## LED dei pad
+
+Con **«Accendi i LED dei pad sulla console»** Mixfonia accende i pad degli hot cue (blu sul deck A, rosso sul B)
+e il tasto play mentre il deck suona. Usa l'uscita MIDI della console: il LED di un tasto risponde allo stesso
+numero di nota che il tasto manda quando lo premi, quindi non serve una seconda tabella. Se la tua console non
+funziona così non si accende niente e non si rompe niente; per provare:
+
+```bash
+KaraokeDJ.exe --ledtest
+```
+
+## Come sono controllati i preset
+
+`node tools/controllers/check.js src/KaraokeDJ/Assets/Controllers` cerca gli errori che ci sono costati una giornata
+sulla P8: stesso controllo su due azioni, azioni inesistenti, comandi essenziali mancanti, una manopola sparsa su
+tanti CC (segno che i numeri erano tirati a indovinare). Gli stessi controlli girano a ogni build dentro `--selftest`
+(riga `preset:`).

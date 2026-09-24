@@ -81,6 +81,8 @@ public partial class SettingsWindow : Window
         foreach (var (id, label, cont) in MidiActions.All)
             _midiRows.Add(new MidiRow { Id = id, Label = label, IsContinuous = cont, Binding = BindingLabel(vm, id), Invert = vm.Midi.IsInverted(id), Relative = vm.Midi.IsRelative(id), KeyBinding = KeyboardService.Pretty(vm.Keys.GestureFor(id)) });
         MidiList.ItemsSource = _midiRows;
+        FillPresets();
+        LedsBox.IsChecked = vm.Settings.ControllerLeds;
         SupportedList.Text = "Console riconosciute da sole (plug & play): " + MainViewModel.SupportedControllers + ". Altre console: scegli la porta qui sopra e usa Impara.";
         vm.Midi.MessageReceived += OnMidiMessage;
         JamendoBox.Text = vm.Settings.JamendoClientId ?? "";
@@ -198,6 +200,56 @@ public partial class SettingsWindow : Window
     private void RefreshMidiRows()
     {
         foreach (var r in _midiRows) { r.Binding = BindingLabel(_vm, r.Id); r.Invert = _vm.Midi.IsInverted(r.Id); r.Relative = _vm.Midi.IsRelative(r.Id); }
+    }
+
+    /// <summary>Una console nell'elenco: nome + quanto e affidabile il preset, cosi si sceglie sapendo cosa si prende.</summary>
+    private sealed record PresetRow(string? Id, string Label);
+
+    private void FillPresets()
+    {
+        var rows = new List<PresetRow> { new(null, "(riconoscimento automatico)") };
+        rows.AddRange(Services.ControllerPresets.All
+            .OrderBy(p => p.Name, StringComparer.CurrentCultureIgnoreCase)
+            .Select(p => new PresetRow(p.Id, p.Name + (p.Incomplete ? "  ⚠ incompleto" : "") + (p.IsUser ? "  (tua)" : ""))));
+        PresetCombo.ItemsSource = rows;
+        PresetCombo.SelectedItem = rows.FirstOrDefault(r => r.Id == _vm.Settings.ControllerPresetId) ?? rows[0];
+        ShowPresetInfo();
+    }
+
+    private void ShowPresetInfo()
+    {
+        var id = (PresetCombo.SelectedItem as PresetRow)?.Id;
+        var p = Services.ControllerPresets.All.FirstOrDefault(x => x.Id == id) ?? _vm.ActivePreset;
+        if (p == null) { PresetInfo.Text = "La console viene riconosciuta dal nome della porta MIDI."; return; }
+        var (has, missing) = p.Coverage;
+        PresetInfo.Text = $"{p.Mappings.Count} controlli · {p.Provenance}"
+                        + (has.Length > 0 ? Environment.NewLine + "c'è: " + has : "")
+                        + (missing.Length > 0 ? Environment.NewLine + "manca: " + missing + " — assegnali con «Impara MIDI» qui sotto" : "");
+    }
+
+    private void PresetCombo_Changed(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (!IsLoaded) return;
+        ShowPresetInfo();
+        _vm.ApplyPreset((PresetCombo.SelectedItem as PresetRow)?.Id);
+        RefreshMidiRows();
+    }
+
+    /// <summary>Apre la finestra sulla scheda MIDI (usata dalle verifiche visive).</summary>
+    public void ShowMidiTab() => Tabs.SelectedIndex = 1;
+
+    private void Leds_Click(object sender, RoutedEventArgs e)
+    {
+        _vm.Settings.ControllerLeds = LedsBox.IsChecked == true;
+        if (_vm.Settings.ControllerLeds) _vm.Leds.Open(_vm.Midi.DeviceName); else _vm.Leds.Close();
+        _vm.SaveSettings();
+    }
+
+    private void PresetAuto_Click(object sender, RoutedEventArgs e)
+    {
+        _vm.ApplyPreset(null);
+        FillPresets();
+        RefreshMidiRows();
     }
 
     private void MidiConnect_Click(object sender, RoutedEventArgs e)

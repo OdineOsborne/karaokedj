@@ -90,6 +90,10 @@ public sealed class AppSettings
     public bool ShowNextSingersOnProjector { get; set; } = true;
     public List<PadDto> Pads { get; set; } = new();
     public string? MidiDeviceName { get; set; }
+    /// <summary>Preset di console scelto a mano: vince sul riconoscimento dal nome della porta.</summary>
+    public string? ControllerPresetId { get; set; }
+    /// <summary>Accendere i LED dei pad sulla console.</summary>
+    public bool ControllerLeds { get; set; } = true;
     public List<Services.MidiMapping> MidiMappings { get; set; } = new();
     /// <summary>Scorciatoie da tastiera (vuoto = predefinite).</summary>
     public List<Services.KeyMapping> KeyMappings { get; set; } = new();

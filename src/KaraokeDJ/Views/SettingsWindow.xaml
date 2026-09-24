@@ -1,4 +1,4 @@
-<Window x:Class="KaraokeDJ.Views.SettingsWindow" FontFamily="{StaticResource UiFont}"
+﻿<Window x:Class="KaraokeDJ.Views.SettingsWindow" FontFamily="{StaticResource UiFont}"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Impostazioni" Width="860" Height="700" MinWidth="760" MinHeight="600" WindowStartupLocation="CenterOwner"
@@ -28,7 +28,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TabControl Grid.Row="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" Padding="12">
+        <TabControl x:Name="Tabs" Grid.Row="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" Padding="12">
             <!-- ═══ generale ═══ -->
             <TabItem Header="Generale">
                 <Grid>
@@ -149,6 +149,16 @@
                                         ToolTip="Cancella le mappature imparate e torna al preset della console"/>
                                 <TextBlock Text="{Binding ControllerStatus}" FontWeight="Medium" VerticalAlignment="Center" TextWrapping="Wrap"/>
                             </DockPanel>
+                            <!-- scelta esplicita della console: chi non viene riconosciuto dal nome della porta la sceglie qui -->
+                            <DockPanel Margin="0,8,0,0">
+                                <TextBlock Text="La mia console" Width="100" VerticalAlignment="Center"/>
+                                <Button DockPanel.Dock="Right" Content="Riconoscimento automatico" Style="{StaticResource SmallButton}" Click="PresetAuto_Click" Margin="6,0,0,0"
+                                        ToolTip="Torna a riconoscere la console dal nome della porta MIDI"/>
+                                <ComboBox x:Name="PresetCombo" SelectionChanged="PresetCombo_Changed" DisplayMemberPath="Label"/>
+                            </DockPanel>
+                            <TextBlock x:Name="PresetInfo" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="100,4,0,0" FontSize="11"/>
+                            <CheckBox x:Name="LedsBox" Content="Accendi i LED dei pad sulla console (hot cue e play)" Margin="100,6,0,0" Click="Leds_Click"
+                                      ToolTip="Usa l'uscita MIDI della console. Se la tua fa i capricci, togli la spunta: i LED non c'entrano niente con l'audio."/>
                             <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,6,0,0" x:Name="SupportedList"/>
                             <WrapPanel Margin="0,8,0,0">
                                 <Button Content="Importa mappatura…" Style="{StaticResource SmallButton}" Click="MidiImport_Click" Margin="0,0,6,0"

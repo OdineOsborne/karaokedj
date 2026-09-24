@@ -125,7 +125,7 @@
    "type": "cc",
    "channel": 1,
    "number": 57,
-   "action": "a.volume"
+   "action": "a.fader"
   },
   {
    "type": "note",
@@ -191,7 +191,7 @@
    "type": "cc",
    "channel": 1,
    "number": 61,
-   "action": "b.volume"
+   "action": "b.fader"
   },
   {
    "type": "note",
