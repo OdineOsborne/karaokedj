@@ -6,7 +6,7 @@
   "InstinctP8",
   "Instinct-P8"
  ],
- "source": "Hercules \"DJControl Instinct P8 MIDI Command List v1.1\" (documento ufficiale Hercules), canale 1",
+ "source": "Hercules \"DJControl Instinct P8 MIDI Mapping Version 1.1\" (ts.hercules.com/download/sound/MIDI_Mapping/DJ_InstinctP8/DJControl_Instinct_P8_MIDI_Command_List.pdf), canale 1, confrontato con il registratore MIDI su console vera il 24/09/2026.",
  "mappings": [
   {
    "type": "note",
@@ -614,27 +614,55 @@
    "type": "cc",
    "channel": 1,
    "number": 52,
-   "action": "a.filtervalue",
+   "action": "a.loopsize",
    "relative": true
   },
   {
    "type": "cc",
    "channel": 1,
    "number": 87,
-   "action": "a.filtervalue",
+   "action": "a.loopsize",
    "relative": true
   },
   {
    "type": "cc",
    "channel": 1,
    "number": 89,
-   "action": "a.filtervalue",
+   "action": "a.loopsize",
    "relative": true
   },
   {
    "type": "cc",
    "channel": 1,
    "number": 97,
+   "action": "a.loopsize",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 53,
+   "action": "a.filtervalue",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 88,
+   "action": "a.filtervalue",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 96,
+   "action": "a.filtervalue",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 98,
    "action": "a.filtervalue",
    "relative": true
   },
@@ -642,27 +670,55 @@
    "type": "cc",
    "channel": 1,
    "number": 54,
-   "action": "b.filtervalue",
+   "action": "b.loopsize",
    "relative": true
   },
   {
    "type": "cc",
    "channel": 1,
    "number": 99,
-   "action": "b.filtervalue",
+   "action": "b.loopsize",
    "relative": true
   },
   {
    "type": "cc",
    "channel": 1,
    "number": 101,
-   "action": "b.filtervalue",
+   "action": "b.loopsize",
    "relative": true
   },
   {
    "type": "cc",
    "channel": 1,
    "number": 103,
+   "action": "b.loopsize",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 55,
+   "action": "b.filtervalue",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 100,
+   "action": "b.filtervalue",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 102,
+   "action": "b.filtervalue",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 1,
+   "number": 104,
    "action": "b.filtervalue",
    "relative": true
   },

@@ -92,3 +92,26 @@ e **non fa partire la musica**.
 KaraokeDJ.exe --jogtest
 ```
 Rifa questi stessi scatti e misura dove finisce la puntina (master a zero: si puo lanciare con le casse accese).
+
+## Da dove viene il preset
+
+Documento ufficiale Hercules **«DJControl Instinct P8 MIDI Mapping Version 1.1»**
+(`ts.hercules.com/download/sound/MIDI_Mapping/DJ_InstinctP8/DJControl_Instinct_P8_MIDI_Command_List.pdf`),
+confrontato riga per riga col registratore MIDI sulla console vera il 24/09/2026. Ogni controllo che la
+console ha mandato nelle registrazioni risulta mappato, tranne i due tasti SHIFT (vedi sotto).
+
+**La manopola LOOP/FILTER**: la console gestisce lo SHIFT da sola e manda un CC diverso —
+`LOOP_Dx_Mn` girandola normalmente (lunghezza del loop) e `SH_LOOP_Dx_Mn` con SHIFT premuto (filtro).
+Sono quattro coppie per deck, una per ogni modo dei pad:
+
+| | Loop (senza shift) | Filtro (con shift) |
+|---|---|---|
+| Deck A | CC 0x34, 0x57, 0x59, 0x61 | CC 0x35, 0x58, 0x60, 0x62 |
+| Deck B | CC 0x36, 0x63, 0x65, 0x67 | CC 0x37, 0x64, 0x66, 0x68 |
+
+**I tasti SHIFT** (SH_RIGHT 0x2F, SH_LEFT 0x63) restano apposta senza funzione: sulla P8 lo shift lo fa
+la console, e misurando si vede che mandano solo la pressione e mai il rilascio — usarli come SHIFT interno
+vorrebbe dire restare disallineati prima o poi.
+
+**Ancora da sfruttare**: il documento descrive anche l'uscita MIDI, cioe i LED dei pad
+(`00` spento, `7D` blu, `7E` rosso, `7F` viola). Per ora Mixfonia non accende niente sulla console.

@@ -2521,7 +2521,14 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         }
 
-        if (action == "shift") { Midi.ShiftHeld = pressed; return; }
+        if (action == "shift")
+        {
+            // Alcune console (la Instinct P8 fra queste) mandano solo la pressione e nessun rilascio:
+            // trattarlo come interruttore funziona in tutti e due i casi — chi manda il rilascio lo spegne comunque.
+            Midi.ShiftHeld = pressed && !Midi.ShiftHeld;
+            StatusText = Midi.ShiftHeld ? "SHIFT della console attivo" : "SHIFT spento";
+            return;
+        }
         if (!pressed) { if (action == "talk") TalkOver = false; return; }
         switch (action)
         {

@@ -31,15 +31,22 @@ note(0x5B, "a.cuepfl"); note(0x5C, "b.cuepfl"); note(0x64, "a.keylock"); note(0x
 note(0x5F, "loadA"); note(0x60, "loadB"); note(0x2B, "browseload"); note(0x2C, "addqueue");
 // mano sul piatto (scratch), SHIFT+SCRATCH = automix
 note(0x61, "a.jogtouch"); note(0x62, "b.jogtouch"); note(0x2E, "automix");
-// (0x2D SCRATCH, 0x2F/0x63 SHIFT, 0x30 MODE, 0x5D/0x5E volume cuffia: gestiti dalla console o senza funzione)
+// SH_RIGHT (0x2F) e SH_LEFT (0x63) NON si mappano sull'azione "shift": sulla P8 lo shift lo gestisce la console,
+// che manda numeri diversi per ogni comando (SH_*). Misurato: questi due tasti mandano solo la pressione,
+// mai il rilascio, quindi usarli come SHIFT interno vorrebbe dire restare disallineati prima o poi.
+// (0x2D SCRATCH, 0x30 MODE, 0x5D/0x5E volume cuffia: gestiti dalla console o senza funzione)
 
 // jog: pitch bend / scratch; SHIFT+jog = tempo (encoder relativo accumulato); i CC "JOG_TOUCH" arrivano quando il piatto è toccato
 // CC 0x30/0x32 = piatto senza mano (pitch bend); 0x69/0x6B = piatto CON la mano sopra → scratch anche all'indietro
 cc(0x30, "a.jog", { relative: true }); cc(0x69, "a.jogscratch", { relative: true }); cc(0x31, "a.tempo", { relative: true }); cc(0x6A, "a.tempo", { relative: true });
 cc(0x32, "b.jog", { relative: true }); cc(0x6B, "b.jogscratch", { relative: true }); cc(0x33, "b.tempo", { relative: true }); cc(0x6C, "b.tempo", { relative: true });
-// encoder LOOP (nei 4 modi pad) = filtro del deck, relativo
-for (const n of [0x34, 0x57, 0x59, 0x61]) cc(n, "a.filtervalue", { relative: true });
-for (const n of [0x36, 0x63, 0x65, 0x67]) cc(n, "b.filtervalue", { relative: true });
+// Encoder LOOP, nei quattro modi dei pad (M1..M4 del documento). La console fa lo SHIFT da sola:
+// manda un CC per la manopola girata normalmente (loop) e un altro con SHIFT premuto (filtro).
+// LOOP_Dx_Mn / SH_LOOP_Dx_Mn del documento ufficiale, confermati col registratore MIDI su console vera.
+for (const n of [0x34, 0x57, 0x59, 0x61]) cc(n, "a.loopsize", { relative: true });
+for (const n of [0x35, 0x58, 0x60, 0x62]) cc(n, "a.filtervalue", { relative: true });
+for (const n of [0x36, 0x63, 0x65, 0x67]) cc(n, "b.loopsize", { relative: true });
+for (const n of [0x37, 0x64, 0x66, 0x68]) cc(n, "b.filtervalue", { relative: true });
 // browser
 cc(0x38, "browse", { relative: true }); cc(0x39, "browse", { relative: true });
 // fader di canale, SHIFT+fader = gain
@@ -54,7 +61,7 @@ const preset = {
   id: "hercules-instinct-p8",
   name: "Hercules DJControl Instinct P8",
   match: ["Instinct P8", "InstinctP8", "Instinct-P8"],
-  source: "Hercules \"DJControl Instinct P8 MIDI Command List v1.1\" (documento ufficiale Hercules), canale 1",
+  source: "Hercules \"DJControl Instinct P8 MIDI Mapping Version 1.1\" (ts.hercules.com/download/sound/MIDI_Mapping/DJ_InstinctP8/DJControl_Instinct_P8_MIDI_Command_List.pdf), canale 1, confrontato con il registratore MIDI su console vera il 24/09/2026.",
   mappings: M,
 };
 fs.writeFileSync(require("path").join(process.argv[2] || "../../src/KaraokeDJ/Assets/Controllers", "hercules-instinct-p8.json"), JSON.stringify(preset, null, 1));
