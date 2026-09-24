@@ -1,4 +1,4 @@
-# Hercules DJControl Instinct P8 — mappatura Mixfonia
+﻿# Hercules DJControl Instinct P8 — mappatura Mixfonia
 
 Preset di fabbrica `Assets/Controllers/hercules-instinct-p8.json`, ricavato dalla *MIDI Command List v1.1* ufficiale Hercules
 (canale 1). Riconosciuta automaticamente quando la porta MIDI contiene "Instinct P8": in 3 secondi la barra di stato dice
@@ -68,3 +68,27 @@ Pad vuoto = imposta il cue; pad pieno = salta lì (quantizzato). Cancellare: tas
 5. Pad nei 4 modi (MODE sulla console).
 6. Cuffia: LISTEN su B mentre A suona in sala.
 7. LED: i pad **non** si accendono dal software (feedback MIDI non ancora implementato, in roadmap 1.7).
+
+## I piatti, misurati (registratore MIDI, 24/09/2026)
+
+Registrazione vera dalla P8, 2418 messaggi:
+
+| Controllo | Messaggio | Valori |
+|---|---|---|
+| Piatto A libero | CC 48 | 1 = avanti, 127 = indietro (719 avanti / 626 indietro) |
+| Piatto A premuto | CC 105 | idem (225 / 192) |
+| Piatto B libero / premuto | CC 50 / CC 107 | idem |
+| Mano sul piatto A / B | note 97 / 98 | 127 alla pressione |
+
+**La velocita sta nella frequenza degli scatti, non nel valore**: il valore dice solo il verso.
+Girata secca senza mano 280-345 scatti/s, mano appoggiata 43-96 scatti/s. Da qui la taratura
+di `JogMeter`: 120 scatti/s = velocita normale del brano (1x).
+
+Con la mano sopra il piatto fa scratch vero (avanti e indietro); senza mano fa pitch bend
+(max +-25 %, il brano non torna mai indietro); a deck fermo sposta il punto di ascolto in silenzio
+e **non fa partire la musica**.
+
+```bash
+KaraokeDJ.exe --jogtest
+```
+Rifa questi stessi scatti e misura dove finisce la puntina (master a zero: si puo lanciare con le casse accese).

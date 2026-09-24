@@ -84,6 +84,8 @@ public sealed partial class DeckViewModel : ObservableObject
     public DateTime LastJogMessage;
     /// <summary>Scratch dedotto dal movimento del piatto (console che non mandano il tasto "mano sul piatto").</summary>
     public bool AutoJog;
+    /// <summary>Misura la velocità del piatto dalla frequenza degli scatti (vedi <see cref="Audio.JogMeter"/>).</summary>
+    public Audio.JogMeter JogSpeed { get; } = new();
     /// <summary>Sta suonando musica di riempimento fra un cantante e l'altro.</summary>
     [ObservableProperty] private bool _isFill;
     /// <summary>Un brano trascinato dalla libreria è sopra questo deck: il pannello si illumina.</summary>
@@ -986,6 +988,9 @@ public sealed partial class DeckViewModel : ObservableObject
     public void Tick()
     {
         IsPlaying = Deck.IsPlaying;
+        // se il motore e uscito dal jog (pausa, stop, seek), lo specchio deve accorgersene:
+        // altrimenti il piatto resta "in scratch" e smette di rispondere
+        if (IsJogging && !Deck.JogActive) { IsJogging = false; AutoJog = false; JogSpeed.Reset(); }
         PositionSec = Deck.PositionSec;
         if (Math.Abs(TempoFactor - Deck.Tempo) > 1e-4) TempoFactor = Deck.Tempo;
         if (!IsJogging) JogAngle = (PositionSec * Views.JogWheel.DegPerSecAtNormal) % 360;

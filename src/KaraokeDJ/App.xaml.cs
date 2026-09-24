@@ -78,6 +78,8 @@ public partial class App : Application
         // --midiwatch <secondi>: ascolta la console senza eseguire niente e scrive che cosa manda (per capire i comandi impazziti)
         int watchIdx = Array.IndexOf(e.Args, "--midiwatch");
         if (watchIdx >= 0) RunMidiWatch(watchIdx + 1 < e.Args.Length && int.TryParse(e.Args[watchIdx + 1], out var ws) ? ws : 10);
+        // --jogtest: il piatto va avanti e indietro? (silenzioso: master a zero)
+        if (e.Args.Contains("--jogtest")) RunJogTest();
         // --preflight: stampa il controllo pre-serata ed esce
         if (e.Args.Contains("--preflight")) RunPreflight();
         // --sections [force]: calcola la struttura ai brani che non ce l'hanno (silenzioso)
@@ -393,6 +395,18 @@ public partial class App : Application
         Console.Error.WriteLine(msg);
         try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-sezioni.log"), msg); } catch { }
         Shutdown(0);
+    }
+
+    /// <summary>--jogtest: prova il piatto avanti/indietro con i numeri veri della console (vedi Services/JogTest).</summary>
+    private async void RunJogTest()
+    {
+        await System.Threading.Tasks.Task.Delay(1500);
+        string res;
+        try { res = await KaraokeDJ.Services.JogTest.RunAsync(Vm!); }
+        catch (Exception ex) { res = "jog: FAIL " + ex.Message; }
+        Console.Error.WriteLine(res);
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-jogtest.log"), res); } catch { }
+        Shutdown(res.StartsWith("jog: OK") || res.StartsWith("jog: saltato") ? 0 : 2);
     }
 
     /// <summary>--preflight: il controllo pre-serata a riga di comando (vedi Services/Preflight).</summary>

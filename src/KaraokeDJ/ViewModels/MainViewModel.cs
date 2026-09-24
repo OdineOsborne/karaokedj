@@ -2453,7 +2453,11 @@ public sealed partial class MainViewModel : ObservableObject
                 case "keymatch": KeyMatch(deck); break;
                 case "cuepfl": deck.CueOn = !deck.CueOn; break;
                 case "fader": if (continuous) deck.Fader = norm; break;
-                case "jogtouch": deck.JogStart(); deck.LastJogMessage = DateTime.UtcNow; break;
+                // "mano sul piatto" (la P8 lo manda sulle note 97 e 98): si entra in scratch, ma NON si ferma il disco
+                // e non si avvia un deck fermo. Se il tasto di rilascio non arriva (capita), si esce da soli dopo 260 ms.
+                case "jogtouch":
+                    if (deck.Deck.IsPlaying) { deck.JogStart(); deck.AutoJog = true; deck.LastJogMessage = DateTime.UtcNow; }
+                    break;
                 case "nudgeup": if (deck.Deck.IsPlaying) { deck.Deck.JogStart(); deck.Deck.JogRate(1.06, 0.05); } break;
                 case "nudgedown": if (deck.Deck.IsPlaying) { deck.Deck.JogStart(); deck.Deck.JogRate(0.94, 0.05); } break;
                 default:
@@ -2494,42 +2498,13 @@ public sealed partial class MainViewModel : ObservableObject
                 case "fwd": if (deck.Deck.IsPlaying) deck.ForwardHoldCommand.Execute(null); break;
                 case "back": if (deck.Deck.IsPlaying) deck.BackwardHoldCommand.Execute(null); break;
                 case "jog":
-                    // encoder relativo (jog wheel MIDI): 1..63 avanti, 65..127 indietro (delta in tacche).
-                    // Senza la mano sul piatto è un pitch bend (la traccia non torna indietro: è il comportamento dei mixer veri).
-                    if (continuous)
-                    {
-                        int v = (int)Math.Round(norm * 127);
-                        int delta = v == 0 ? 0 : v < 64 ? v : v - 128;
-                        if (deck.IsJogging) { deck.LastJogMessage = DateTime.UtcNow; deck.JogRate(Math.Clamp(delta * JogTicksToRate, -8, 8)); }
-                        // Regola di ferro: il piatto NON fa partire un deck fermo. Se il DJ ha messo in pausa,
-                        // sfiorare o urtare la console non deve far ripartire la musica (vedi anche Panic).
-                        else if (delta != 0 && deck.Deck.IsPlaying) deck.Nudge(Math.Sign(delta));
-                    }
+                    // Piatto senza la mano sopra: pitch bend, come spingere il bordo del vinile per riprendere il tempo.
+                    // La velocita la da la FREQUENZA degli scatti (vedi JogMeter), non il valore: il valore dice solo il verso.
+                    if (continuous) JogTick(deck, DeltaOf(norm), scratch: false);
                     break;
                 case "jogscratch":
-                    // Alcune console (Hercules Instinct P8, Inpulse…) mandano il movimento del piatto su un CC diverso
-                    // quando ci appoggi la mano, ma non mandano nessun tasto "tocco": qui il tocco lo deduciamo dal messaggio,
-                    // e si esce dallo scratch da soli quando il piatto smette di mandare (vedi TickControllerJog).
-                    if (continuous)
-                    {
-                        int v = (int)Math.Round(norm * 127);
-                        int delta = v == 0 ? 0 : v < 64 ? v : v - 128;
-                        // Il tocco dedotto dal messaggio vale solo su un deck che sta già suonando: su un deck in pausa
-                        // un piatto che manda da solo (o una manata di passaggio) farebbe ripartire la musica, e la serata è persa.
-                        if (!deck.IsJogging && (!deck.Deck.IsPlaying || delta == 0))
-                        {
-                            if (delta != 0 && deck.HasTrack && (DateTime.UtcNow - _lastJogHint).TotalSeconds > 4)
-                            {
-                                _lastJogHint = DateTime.UtcNow;
-                                StatusText = $"Deck {deck.Name} è fermo: il piatto non lo fa partire (premi PLAY e poi gira il piatto)";
-                            }
-                            break;
-                        }
-                        if (!deck.IsJogging) deck.JogStart();
-                        deck.AutoJog = true;
-                        deck.LastJogMessage = DateTime.UtcNow;
-                        deck.JogRate(Math.Clamp(delta * JogTicksToRate, -8, 8));
-                    }
+                    // Mano appoggiata sul piatto (le Hercules lo mandano su un CC diverso): scratch vero, avanti e indietro.
+                    if (continuous) JogTick(deck, DeltaOf(norm), scratch: true);
                     break;
             }
             if (continuous) HintIfInaudible(deck, sub);
@@ -2580,8 +2555,51 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    /// <summary>Tacche del jog → velocità di scratch (dipende dalla risoluzione del piatto; le console Pioneer/Numark stanno intorno a 0,1).</summary>
-    public const double JogTicksToRate = 0.12;
+    /// <summary>Valore MIDI di un encoder relativo → scatti (1…63 avanti, 65…127 indietro).</summary>
+    public static int DeltaOf(double norm)
+    {
+        int v = (int)Math.Round(norm * 127);
+        return v == 0 ? 0 : v < 64 ? v : v - 128;
+    }
+
+    /// <summary>Quanto piega il tempo il piatto senza mano, al massimo (±25 % come un pitch bend vero).</summary>
+    private const double MaxBend = 0.25;
+
+    /// <summary>
+    /// Uno scatto del piatto. Tre casi, e uno solo di essi fa suonare qualcosa:
+    ///
+    /// · deck fermo → sposta il punto di ascolto (ricerca silenziosa): il piatto non fa MAI partire la musica;
+    /// · mano sul piatto (scratch) → il disco va alla velocità della mano, avanti e indietro;
+    /// · piatto senza mano → pitch bend: il brano accelera o rallenta finché giri, poi torna al suo tempo.
+    ///
+    /// La velocità viene dalla frequenza degli scatti (JogMeter): le console mandano un messaggio per scatto
+    /// e nel valore ci sta solo il verso. È questo che prima mancava, ed è per quello che il piatto "andava solo avanti".
+    /// </summary>
+    private void JogTick(DeckViewModel deck, int delta, bool scratch)
+    {
+        if (delta == 0 || !deck.HasTrack) return;
+        double speed = deck.JogSpeed.Add(delta);
+
+        // lo stato vero e quello del motore: lo specchio IsJogging puo restare indietro di un tick
+        if (!deck.Deck.IsPlaying && !deck.Deck.JogActive)
+        {
+            // Deck fermo: si cerca il punto, in silenzio. Niente Play, per nessun motivo.
+            deck.Deck.Seek(Math.Max(0, deck.Deck.PositionSec + delta * Audio.JogMeter.SecondsPerTick));
+            if ((DateTime.UtcNow - _lastJogHint).TotalSeconds > 5)
+            {
+                _lastJogHint = DateTime.UtcNow;
+                StatusText = $"Deck {deck.Name} fermo: il piatto cerca il punto senza far partire la musica";
+            }
+            return;
+        }
+
+        if (!deck.Deck.JogActive) deck.JogStart();
+        deck.AutoJog = true;
+        deck.LastJogMessage = DateTime.UtcNow;
+        deck.JogRate(scratch
+            ? Math.Clamp(speed, -8, 8)                                  // scratch: la mano comanda il disco
+            : 1 + Math.Clamp(speed * 0.2, -MaxBend, MaxBend));          // bend: il brano continua, un po' più in fretta o più piano
+    }
 
     /// <summary>Encoder BROWSE della console: sposta la selezione in libreria.</summary>
     public void MoveLibrarySelection(int delta)
