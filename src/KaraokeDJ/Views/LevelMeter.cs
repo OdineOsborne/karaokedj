@@ -32,6 +32,8 @@ public sealed class LevelMeter : FrameworkElement
     protected override void OnRender(DrawingContext dc)
     {
         double w = ActualWidth, h = ActualHeight;
+        // durante il primo layout (altezza legata a una proprietà) può arrivare una misura minuscola:
+        // i segmenti uscirebbero negativi e Rect lancia un'eccezione
         if (w <= 0 || h <= 0) return;
         dc.DrawRoundedRectangle(Bg, null, new Rect(0, 0, w, h), 3, 3);
         const int segs = 24;
@@ -47,12 +49,12 @@ public sealed class LevelMeter : FrameworkElement
                 Rect r;
                 if (Vertical)
                 {
-                    double segH = (h - gap * (segs - 1)) / segs, segW = (w - 3) / 2;
+                    double segH = Math.Max(0, (h - gap * (segs - 1)) / segs), segW = Math.Max(0, (w - 3) / 2);
                     r = new Rect(ch * (segW + 3), h - (i + 1) * segH - i * gap, segW, segH);
                 }
                 else
                 {
-                    double segW = (w - gap * (segs - 1)) / segs, segH = (h - 3) / 2;
+                    double segW = Math.Max(0, (w - gap * (segs - 1)) / segs), segH = Math.Max(0, (h - 3) / 2);
                     r = new Rect(i * (segW + gap), ch * (segH + 3), segW, segH);
                 }
                 dc.DrawRectangle(b, null, r);

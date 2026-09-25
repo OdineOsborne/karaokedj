@@ -113,7 +113,7 @@
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Top">
+                            <StackPanel Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Top" Visibility="{Binding MixerKnobsVisible, Converter={StaticResource BoolToVis}}">
                                 <v:Knob Label="TRIM" Value="{Binding DeckA.GainDb}" Minimum="-24" Maximum="12" Diameter="24" DefaultValue="0" Accent="{StaticResource AccentABrush}" v:Shortcut.Action="a.volume" ToolTip="{Binding DeckA.GainLabel, StringFormat=Trim A: {0}}"/>
                                 <v:Knob Label="HI" Value="{Binding DeckA.EqHigh}" Minimum="-12" Maximum="12" Diameter="24" Bipolar="True" Accent="{StaticResource AccentABrush}" IsKilled="{Binding DeckA.EqHighKill}" v:Shortcut.Action="a.eqhigh" RightClick="KillHighA" ToolTip="EQ alti A · tasto destro = kill · doppio click = 0"/>
                                 <v:Knob Label="MID" Value="{Binding DeckA.EqMid}" Minimum="-12" Maximum="12" Diameter="24" Bipolar="True" Accent="{StaticResource AccentABrush}" IsKilled="{Binding DeckA.EqMidKill}" v:Shortcut.Action="a.eqmid" RightClick="KillMidA" ToolTip="EQ medi A · tasto destro = kill · doppio click = 0"/>
@@ -123,38 +123,40 @@
                             </StackPanel>
                             <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="4,0">
                                 <ToggleButton Content="🎧" IsChecked="{Binding DeckA.CueOn}" v:Shortcut.Action="a.cuepfl" Style="{StaticResource ToolToggle}" Padding="0" Width="28" Height="20" MinWidth="0" FontSize="10" Margin="0,2,0,6" ToolTip="Pre-ascolto in cuffia del deck A"/>
-                                <Grid Height="190" Width="28">
-                                    <v:LevelMeter Left="{Binding DeckA.LevelL}" Right="{Binding DeckA.LevelR}" Vertical="True" Width="12" Height="190" HorizontalAlignment="Center" ToolTip="Livello deck A (dopo trim e fader)"/>
-                                    <Slider Minimum="0" Maximum="1" Value="{Binding DeckA.Fader}" Width="190" Height="28" Background="Transparent" v:Shortcut.Action="a.fader" Foreground="Transparent" ToolTip="Fader di canale A">
+                                <Grid Height="{Binding MixerMeterHeight}" Width="28">
+                                    <v:LevelMeter Left="{Binding DeckA.LevelL}" Right="{Binding DeckA.LevelR}" Vertical="True" Width="12" Height="{Binding MixerMeterHeight}" HorizontalAlignment="Center" ToolTip="Livello deck A (dopo trim e fader)"/>
+                                    <Slider Minimum="0" Maximum="1" Value="{Binding DeckA.Fader}" Width="{Binding MixerMeterHeight}" Height="28" Background="Transparent" v:Shortcut.Action="a.fader" Foreground="Transparent" ToolTip="Fader di canale A">
                                         <Slider.LayoutTransform><RotateTransform Angle="-90"/></Slider.LayoutTransform>
                                     </Slider>
                                 </Grid>
                                 <TextBlock Text="A" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center" Margin="0,4,0,0" Foreground="{StaticResource AccentABrush}"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="6,0">
+                                <ToggleButton Content="🎚" IsChecked="{Binding MixerKnobsVisible}" Style="{StaticResource ToolToggle}" Padding="0" Width="28" Height="20" MinWidth="0" FontSize="10" HorizontalAlignment="Center"
+                                              ToolTip="Manopole del mixer a schermo (trim, EQ, filtro, pan, cuffia, mic).&#10;Con una console che ha il suo mixer si nascondono da sole per lasciare spazio alla libreria."/>
                                 <TextBlock Text="MASTER" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center" Margin="0,4,0,4"/>
-                                <Grid Height="146" Width="34">
-                                    <v:LevelMeter Left="{Binding MasterL}" Right="{Binding MasterR}" Vertical="True" Width="20" Height="146" HorizontalAlignment="Center" ToolTip="Uscita master: sinistra e destra"/>
-                                    <Slider Minimum="0" Maximum="1.2" Value="{Binding MasterVolume}" Width="146" Height="34" Background="Transparent" v:Shortcut.Action="master" Foreground="Transparent" ToolTip="Volume master">
+                                <Grid Height="{Binding MasterMeterHeight}" Width="34">
+                                    <v:LevelMeter Left="{Binding MasterL}" Right="{Binding MasterR}" Vertical="True" Width="20" Height="{Binding MasterMeterHeight}" HorizontalAlignment="Center" ToolTip="Uscita master: sinistra e destra"/>
+                                    <Slider Minimum="0" Maximum="1.2" Value="{Binding MasterVolume}" Width="{Binding MasterMeterHeight}" Height="34" Background="Transparent" v:Shortcut.Action="master" Foreground="Transparent" ToolTip="Volume master">
                                         <Slider.LayoutTransform><RotateTransform Angle="-90"/></Slider.LayoutTransform>
                                     </Slider>
                                 </Grid>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0" Visibility="{Binding MixerKnobsVisible, Converter={StaticResource BoolToVis}}">
                                     <v:Knob Label="CUE" Value="{Binding CueVolume}" Minimum="0" Maximum="1.5" DefaultValue="1" Diameter="24" Accent="{StaticResource TextBrush}" v:Shortcut.Action="cuevolume" Margin="0,0,4,0" ToolTip="Volume cuffie (pre-ascolto)"/>
                                     <v:Knob Label="MIC" Value="{Binding MicGainDb}" Minimum="-24" Maximum="24" DefaultValue="0" Diameter="24" Accent="{StaticResource TextBrush}" v:Shortcut.Action="micvolume" ToolTip="{Binding MicGainLabel, StringFormat=Gain microfono: {0}}"/>
                                 </StackPanel>
                             </StackPanel>
                             <StackPanel Grid.Column="3" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="4,0">
                                 <ToggleButton Content="🎧" IsChecked="{Binding DeckB.CueOn}" v:Shortcut.Action="b.cuepfl" Style="{StaticResource ToolToggle}" Padding="0" Width="28" Height="20" MinWidth="0" FontSize="10" Margin="0,2,0,6" ToolTip="Pre-ascolto in cuffia del deck B"/>
-                                <Grid Height="190" Width="28">
-                                    <v:LevelMeter Left="{Binding DeckB.LevelL}" Right="{Binding DeckB.LevelR}" Vertical="True" Width="12" Height="190" HorizontalAlignment="Center" ToolTip="Livello deck B (dopo trim e fader)"/>
-                                    <Slider Minimum="0" Maximum="1" Value="{Binding DeckB.Fader}" Width="190" Height="28" Background="Transparent" v:Shortcut.Action="b.fader" Foreground="Transparent" ToolTip="Fader di canale B">
+                                <Grid Height="{Binding MixerMeterHeight}" Width="28">
+                                    <v:LevelMeter Left="{Binding DeckB.LevelL}" Right="{Binding DeckB.LevelR}" Vertical="True" Width="12" Height="{Binding MixerMeterHeight}" HorizontalAlignment="Center" ToolTip="Livello deck B (dopo trim e fader)"/>
+                                    <Slider Minimum="0" Maximum="1" Value="{Binding DeckB.Fader}" Width="{Binding MixerMeterHeight}" Height="28" Background="Transparent" v:Shortcut.Action="b.fader" Foreground="Transparent" ToolTip="Fader di canale B">
                                         <Slider.LayoutTransform><RotateTransform Angle="-90"/></Slider.LayoutTransform>
                                     </Slider>
                                 </Grid>
                                 <TextBlock Text="B" Style="{StaticResource SectionTitle}" HorizontalAlignment="Center" Margin="0,4,0,0" Foreground="{StaticResource AccentBBrush}"/>
                             </StackPanel>
-                            <StackPanel Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Top">
+                            <StackPanel Grid.Column="4" HorizontalAlignment="Center" VerticalAlignment="Top" Visibility="{Binding MixerKnobsVisible, Converter={StaticResource BoolToVis}}">
                                 <v:Knob Label="TRIM" Value="{Binding DeckB.GainDb}" Minimum="-24" Maximum="12" Diameter="24" DefaultValue="0" Accent="{StaticResource AccentBBrush}" v:Shortcut.Action="b.volume" ToolTip="{Binding DeckB.GainLabel, StringFormat=Trim B: {0}}"/>
                                 <v:Knob Label="HI" Value="{Binding DeckB.EqHigh}" Minimum="-12" Maximum="12" Diameter="24" Bipolar="True" Accent="{StaticResource AccentBBrush}" IsKilled="{Binding DeckB.EqHighKill}" v:Shortcut.Action="b.eqhigh" RightClick="KillHighB" ToolTip="EQ alti B · tasto destro = kill · doppio click = 0"/>
                                 <v:Knob Label="MID" Value="{Binding DeckB.EqMid}" Minimum="-12" Maximum="12" Diameter="24" Bipolar="True" Accent="{StaticResource AccentBBrush}" IsKilled="{Binding DeckB.EqMidKill}" v:Shortcut.Action="b.eqmid" RightClick="KillMidB" ToolTip="EQ medi B · tasto destro = kill · doppio click = 0"/>

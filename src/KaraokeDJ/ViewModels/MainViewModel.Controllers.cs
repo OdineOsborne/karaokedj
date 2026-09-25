@@ -27,6 +27,23 @@ public partial class MainViewModel
         _controllerTimer.Start();
     }
 
+    /// <summary>
+    /// Mixer a schermo con le manopole (trim, EQ, filtro, pan, cuffia, mic). Con una console che ha il suo mixer
+    /// si nascondono, come fa Serato: quello spazio va alla libreria. Il tasto 🎚 le riporta quando servono.
+    /// </summary>
+    [ObservableProperty] private bool _mixerKnobsVisible = true;
+    [ObservableProperty] private double _mixerMeterHeight = 190;
+    [ObservableProperty] private double _masterMeterHeight = 146;
+    partial void OnMixerKnobsVisibleChanged(bool value)
+    {
+        MixerMeterHeight = value ? 190 : 110;
+        MasterMeterHeight = value ? 146 : 86;
+    }
+
+    /// <summary>La console ha EQ e fader di canale suoi? Allora il mixer a schermo è un doppione.</summary>
+    private static bool HasHardwareMixer(ControllerPreset? p) =>
+        p != null && p.Mappings.Any(m => m.Action == "a.eqlow") && p.Mappings.Any(m => m.Action == "a.fader");
+
     /// <summary>LED della console (pad hot cue, play): vedi <see cref="MidiFeedback"/>.</summary>
     public MidiFeedback Leds { get; } = new();
     private string _ledState = "";
@@ -118,6 +135,7 @@ public partial class MainViewModel
             {
                 var gone = Midi.DeviceName;
                 Midi.Close(); ActivePreset = null; ControllerConnected = false;
+                MixerKnobsVisible = true;   // senza console il mixer a schermo è l'unico che c'è
                 ControllerStatus = "Console scollegata: " + gone;
                 StatusText = ControllerStatus;
             }
@@ -142,6 +160,7 @@ public partial class MainViewModel
         Midi.AddMappings(Settings.MidiMappings);
         Settings.MidiDeviceName = name;
         ControllerConnected = true;
+        MixerKnobsVisible = !HasHardwareMixer(preset);
         // stessa console anche in uscita, per i LED dei pad (se non c'è o non risponde, pazienza)
         if (Settings.ControllerLeds) { Leds.Open(name); _ledState = ""; } else Leds.Close();
         ControllerStatus = preset != null

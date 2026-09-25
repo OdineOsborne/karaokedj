@@ -160,8 +160,12 @@ public partial class App : Application
             foreach (var w in wins) { w.Show(); await System.Threading.Tasks.Task.Delay(300); }
             Vm.IsProjectorOpen = true;
             await System.Threading.Tasks.Task.Delay(800);
+            // si aprono gli effetti per vedere che il pannello si disegna, poi si rimette com'era:
+            // la scelta finisce nelle impostazioni dell'utente, e il selftest non deve cambiargli lo schermo
+            bool fxWas = Vm.DeckA.FxVisible;
             Vm.DeckA.FxVisible = true;
             await System.Threading.Tasks.Task.Delay(500);
+            Vm.DeckA.FxVisible = fxWas;
             var plugins = string.Join("; ", Vm.Plugins.Plugins.Select(p => p.Name + (p.Ok ? "" : " ERR: " + p.Error)));
             var sources = string.Join(", ", Vm.ImportSources.Select(s => s.Id));
             Console.Error.WriteLine("SELFTEST OK");
