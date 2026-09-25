@@ -12,6 +12,8 @@ public sealed class ControllerPreset
     [JsonPropertyName("match")] public List<string> Match { get; set; } = new();
     [JsonPropertyName("source")] public string Source { get; set; } = "";
     [JsonPropertyName("mappings")] public List<MidiMapping> Mappings { get; set; } = new();
+    /// <summary>Colori dei LED di questa console (facoltativo: senza, quelli della Instinct P8).</summary>
+    [JsonPropertyName("leds")] public LedPalette? Leds { get; set; }
     /// <summary>true se viene dalla cartella dell'utente (importata o esportata da lui), non dall'app.</summary>
     [JsonIgnore] public bool IsUser { get; set; }
 

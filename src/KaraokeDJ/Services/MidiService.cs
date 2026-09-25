@@ -186,7 +186,40 @@ public sealed class MidiService : IDisposable
 
         var dispatcher = System.Windows.Application.Current?.Dispatcher;
         if (dispatcher == null) return;
-        dispatcher.BeginInvoke(() =>
+        // Un messaggio alla volta in coda al thread dell'interfaccia, a priorità Normal, con i piatti che ne mandano
+        // centinaia al secondo: l'interfaccia non disegnava più e non rispondeva più (congelamento in serata).
+        // Ora si accumula e si svuota a blocchi, a priorità Input; fader e manopole assoluti tengono solo l'ultimo valore.
+        _pending.Enqueue((key, value, continuous));
+        if (Interlocked.Exchange(ref _drainQueued, 1) == 0)
+            dispatcher.BeginInvoke(Drain, System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private readonly System.Collections.Concurrent.ConcurrentQueue<(MidiKey Key, int Value, bool Continuous)> _pending = new();
+    private int _drainQueued;
+
+    private void Drain()
+    {
+        Interlocked.Exchange(ref _drainQueued, 0);
+        var batch = new List<(MidiKey Key, int Value, bool Continuous)>();
+        while (_pending.TryDequeue(out var m)) batch.Add(m);
+        if (batch.Count == 0) return;
+        // per ogni controllo assoluto conta solo la posizione più recente; encoder, piatti e tasti passano tutti
+        var lastAbs = new Dictionary<MidiKey, int>();
+        for (int i = 0; i < batch.Count; i++)
+            if (batch[i].Continuous && !_relative.Contains(batch[i].Key) && !IsDeltaKey(batch[i].Key)) lastAbs[batch[i].Key] = i;
+        for (int i = 0; i < batch.Count; i++)
+        {
+            var (key, value, continuous) = batch[i];
+            if (lastAbs.TryGetValue(key, out var last) && last != i) continue;
+            try { Handle(key, value, continuous); } catch { }
+        }
+    }
+
+    private bool IsDeltaKey(MidiKey key) =>
+        (_map.TryGetValue(key, out var a) && TakesDelta(a)) || (_shiftMap.TryGetValue(key, out var b) && TakesDelta(b));
+
+    private void Handle(MidiKey key, int value, bool continuous)
+    {
         {
             MessageReceived?.Invoke(key, value);
             if (_learnCallback != null)
@@ -221,7 +254,7 @@ public sealed class MidiService : IDisposable
                 }
                 ActionTriggered?.Invoke(action, continuous && _invert.Contains(key) ? 127 - v : v, continuous);
             }
-        });
+        }
     }
 
     public void Dispose() => Close();

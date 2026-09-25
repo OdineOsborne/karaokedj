@@ -106,6 +106,8 @@ public sealed class AppSettings
 
     /// <summary>Dimensione dell'interfaccia: 0 = automatica (si adatta alla finestra), altrimenti 0,6…1,5.</summary>
     public double UiScale { get; set; }
+    /// <summary>Testo della libreria in pixel: 0 = automatico (più grande sugli schermi fitti), altrimenti 11…26. Ctrl + rotella sulla libreria.</summary>
+    public double LibraryFontSize { get; set; }
     public double WindowWidth { get; set; } = 1500;
     public double WindowHeight { get; set; } = 960;
 }

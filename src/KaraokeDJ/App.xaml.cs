@@ -485,7 +485,7 @@ public partial class App : Application
                    + Environment.NewLine + $"  console in uscita: {vm.Leds.DeviceName ?? "non aperta"} · pad accendibili: {keys.Count}";
         if (vm.Leds.IsOpen && keys.Count > 0)
         {
-            foreach (var k in keys) vm.Leds.Set(k, KaraokeDJ.Services.MidiFeedback.Blue);
+            foreach (var k in keys) vm.Leds.Set(k, vm.ActivePreset?.Leds?.A ?? KaraokeDJ.Services.MidiFeedback.Blue);
             res += Environment.NewLine + "  accesi per 5 secondi: guarda la console";
             await System.Threading.Tasks.Task.Delay(5000);
             vm.Leds.AllOff();

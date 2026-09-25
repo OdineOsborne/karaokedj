@@ -430,6 +430,7 @@
                     </DockPanel>
 
                     <DataGrid Grid.Row="3" x:Name="LibraryGrid" ItemsSource="{Binding LibraryView}" SelectedItem="{Binding SelectedTrack}"
+                              FontSize="{Binding LibraryFontSize}" RowHeight="{Binding LibraryRowHeight}" PreviewMouseWheel="LibraryGrid_PreviewMouseWheel"
                               MouseDoubleClick="LibraryGrid_MouseDoubleClick" EnableRowVirtualization="True"
                               PreviewMouseLeftButtonDown="LibraryGrid_PreviewMouseDown" PreviewMouseMove="LibraryGrid_PreviewMouseMove"
                               AllowDrop="True" DragOver="LibraryGrid_DragOver" Drop="LibraryGrid_Drop"
@@ -711,7 +712,7 @@
         </Grid>
 
         <!-- ═══════════ pad + download ═══════════ -->
-        <Grid Grid.Row="5" Margin="0,0,0,8" Visibility="{Binding BottomStripVisible, Converter={StaticResource BoolToVis}}">
+        <Grid Grid.Row="5" Margin="0,0,0,8" x:Name="BottomStrip" Visibility="{Binding BottomStripVisible, Converter={StaticResource BoolToVis}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="2*"/>

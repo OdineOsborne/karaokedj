@@ -30,6 +30,8 @@ public partial class MainWindow : Window
             }
         };
         SizeChanged += (_, _) => ApplyUiScale();
+        // la libreria cambia misura anche senza che cambi la finestra (pannelli aperti/chiusi, testo più grande)
+        LibraryGrid.SizeChanged += (_, _) => Dispatcher.BeginInvoke(ApplyUiScale, System.Windows.Threading.DispatcherPriority.Background);
         PreviewKeyDown += MainWindow_PreviewKeyDown;
         SourceInitialized += (_, _) => { if (Vm.Settings.GlassEffect) WindowBackdrop.Apply(this); };
         PreviewKeyUp += MainWindow_PreviewKeyUp;
@@ -54,7 +56,10 @@ public partial class MainWindow : Window
     // Formato di riferimento del layout: sotto questa misura l'interfaccia viene rimpicciolita invece di essere tagliata.
     private const double DesignWidth = 1180, DesignHeight = 944;
     // altezze misurate del layout: fisse (barre, deck, mixer, stato) + libreria minima + i due pannelli facoltativi
-    private const double MixViewHeight = 78, StripHeight = 133, LibraryMin = 170, NeedFull = 944;
+    private const double MixViewHeight = 78, StripHeight = 133, LibraryMin = 170, NeedFull = 944, LibraryRoom = 320;
+    /// <summary>Righe della libreria sotto le quali la striscia jingle vuota lascia il posto.</summary>
+    private const int LibraryRowsGood = 8;
+    private double _stripMeasured = StripHeight;
     /// <summary>Sotto questa scala si preferisce chiudere un pannello invece di continuare a rimpicciolire i testi.</summary>
     private const double ComfortScale = 0.8;
     /// <summary>Sotto questo fattore i testi diventano illeggibili: meglio fermarsi e lasciare che l'utente chiuda qualche pannello.</summary>
@@ -76,19 +81,89 @@ public partial class MainWindow : Window
         else
         {
             double w = ActualWidth > 0 ? ActualWidth : Width, h = ActualHeight > 0 ? ActualHeight : Height;
+            // Prima l'automatica poteva solo rimpicciolire: su un 15,6" 1080p con Windows al 100 % restava al 100 %
+            // e i testi erano minuscoli. Ora cresce fino a quanto chiede la densità dello schermo, se lo spazio c'è.
+            // Ma solo se la libreria resta comoda (LibraryRoom in più): ingrandire tutto schiacciandola a zero righe
+            // sarebbe peggio di prima. Se non c'è spazio si resta al 100 % e cresce solo il testo della libreria.
+            double grow = DensityScale();
             double Fit(double need) => Math.Min(1, Math.Min((w - 4) / DesignWidth, (h - 4) / need));
+            double grown = Math.Min(grow, Math.Min((w - 4) / DesignWidth, (h - 4) / (NeedFull + LibraryRoom)));
             // Prima si rimpicciolisce un po' (fino all'80 %); se non basta si chiudono i pannelli meno importanti
             // — prima la striscia jingle/importazione, poi la vista mix — così la libreria resta sempre utilizzabile.
             s = Fit(NeedFull);
             bool hideStrip = false, hideMix = false;
             if (s < ComfortScale) { hideStrip = true; s = Fit(NeedFull - StripHeight); }
             if (s < ComfortScale && hideStrip) { hideMix = true; s = Fit(NeedFull - StripHeight - MixViewHeight); }
-            s = Math.Clamp(s, MinScale, 1);
+            s = Math.Clamp(Math.Max(s, grown), MinScale, Math.Max(1, grow));
+            // Portatile 1080p a schermo intero: la libreria restava con 2 righe. Se nessun jingle è assegnato
+            // la striscia jingle/importazione non serve in serata e lascia il posto alla libreria (si riapre col tasto 🎛).
+            // Si misura la libreria vera (le stime fisse del layout sbagliavano di quasi 200 px), calcolata
+            // "come se la striscia ci fosse", così nascondere o mostrare la striscia non fa cambiare idea al giro dopo.
+            if (!hideStrip && LibraryGrid.ActualHeight > 0 && vm.Pads.All(p => string.IsNullOrEmpty(p.FilePath)))
+            {
+                if (BottomStrip.ActualHeight > 0) _stripMeasured = BottomStrip.ActualHeight + BottomStrip.Margin.Bottom;
+                double libWithStrip = LibraryGrid.ActualHeight - (vm.BottomStripVisible ? 0 : _stripMeasured);
+                if (libWithStrip < vm.LibraryRowHeight * LibraryRowsGood) hideStrip = true;
+            }
             AutoHide(vm, hideStrip, hideMix);
         }
-        if (Math.Abs(UiScale.ScaleX - s) < 0.005) return;
-        UiScale.ScaleX = UiScale.ScaleY = s;
-        vm.UiScaleLabel = vm.Settings.UiScale > 0.05 ? $"Interfaccia {s * 100:0} %" : $"Interfaccia {s * 100:0} % (automatica)";
+        if (Math.Abs(UiScale.ScaleX - s) >= 0.005)
+        {
+            UiScale.ScaleX = UiScale.ScaleY = s;
+            vm.UiScaleLabel = vm.Settings.UiScale > 0.05 ? $"Interfaccia {s * 100:0} %" : $"Interfaccia {s * 100:0} % (automatica)";
+        }
+        UpdateLibraryFont(vm);
+    }
+
+    private static double? _density;
+
+    /// <summary>
+    /// Quanto ingrandire rispetto a uno schermo "normale" (~115 punti per pollice a parità di scala di Windows).
+    /// Si legge la misura fisica del monitor: 1920 pixel su 34 cm (15,6") sono 143 ppi → 1,24.
+    /// Se Windows non la conosce (proiettori, adattatori) si resta a 1.
+    /// </summary>
+    private double DensityScale()
+    {
+        if (_density is { } d) return d;
+        double r = 1;
+        try
+        {
+            var hdc = GetDC(IntPtr.Zero);
+            int mm = GetDeviceCaps(hdc, 4), px = GetDeviceCaps(hdc, 8);   // HORZSIZE, HORZRES
+            ReleaseDC(IntPtr.Zero, hdc);
+            double dpiScale = System.Windows.Media.VisualTreeHelper.GetDpi(this).DpiScaleX;
+            if (mm > 150 && px > 0) r = Math.Clamp(px / (mm / 25.4) / dpiScale / 115.0, 1, 1.4);
+        }
+        catch { }
+        return (_density = r).Value;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr hwnd);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr hwnd, IntPtr hdc);
+    [System.Runtime.InteropServices.DllImport("gdi32.dll")] private static extern int GetDeviceCaps(IntPtr hdc, int index);
+
+    /// <summary>
+    /// Testo della libreria: la parte che si legge di più, spesso da in piedi e a un metro dallo schermo.
+    /// Automatico = 13 px portati alla densità dello schermo (tolto quanto già ingrandisce l'interfaccia);
+    /// oppure la misura scelta con Ctrl + rotella sulla libreria.
+    /// </summary>
+    private void UpdateLibraryFont(MainViewModel vm)
+    {
+        double size = vm.Settings.LibraryFontSize > 0
+            ? vm.Settings.LibraryFontSize
+            : Math.Round(Math.Max(13, 13 * DensityScale() / Math.Max(0.1, UiScale.ScaleX)));
+        if (Math.Abs(vm.LibraryFontSize - size) > 0.1) vm.LibraryFontSize = size;
+    }
+
+    private void LibraryGrid_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if ((Keyboard.Modifiers & ModifierKeys.Control) == 0) return;
+        e.Handled = true;
+        var vm = Vm;
+        double cur = vm.LibraryFontSize;
+        vm.Settings.LibraryFontSize = Math.Clamp(cur + (e.Delta > 0 ? 1 : -1), 11, 26);
+        UpdateLibraryFont(vm);
+        vm.StatusText = $"Testo libreria: {vm.LibraryFontSize:0} px (Ctrl + rotella per cambiarlo)";
     }
 
     private bool _autoHidStrip, _autoHidMix, _stripByUser, _mixByUser, _applyingAutoHide;

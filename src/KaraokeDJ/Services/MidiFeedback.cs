@@ -12,6 +12,28 @@ namespace KaraokeDJ.Services;
 ///
 /// Regola: i LED non devono mai poter disturbare l'audio. Tutto qui dentro è "prova e lascia perdere".
 /// </summary>
+/// <summary>
+/// Il colore di un pad è la velocity della nota, e ogni marca ha la sua tavolozza: il 0x7D blu della P8
+/// sulla Inpulse 500 esce quasi bianco. Button = valore per i tasti a un colore (play, cue); null = colore del deck.
+/// </summary>
+public sealed class LedPalette
+{
+    [System.Text.Json.Serialization.JsonPropertyName("a")] public int A { get; set; } = MidiFeedback.Blue;
+    [System.Text.Json.Serialization.JsonPropertyName("b")] public int B { get; set; } = MidiFeedback.Red;
+    [System.Text.Json.Serialization.JsonPropertyName("button")] public int? Button { get; set; }
+    /// <summary>VU meter della console: un CC con valore 0…Max (Inpulse 500: B1 40 deck A, B2 40 deck B, B0 40/41 master).</summary>
+    [System.Text.Json.Serialization.JsonPropertyName("vu")] public List<VuOut> Vu { get; set; } = new();
+}
+
+public sealed class VuOut
+{
+    /// <summary>a, b, masterL, masterR</summary>
+    [System.Text.Json.Serialization.JsonPropertyName("source")] public string Source { get; set; } = "";
+    [System.Text.Json.Serialization.JsonPropertyName("channel")] public int Channel { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("number")] public int Number { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("max")] public int Max { get; set; } = 127;
+}
+
 public sealed class MidiFeedback : IDisposable
 {
     private MidiOut? _out;
@@ -68,12 +90,30 @@ public sealed class MidiFeedback : IDisposable
         catch { }
     }
 
+    /// <summary>Valore di un CC (VU meter): come Set, solo se cambiato.</summary>
+    public void SetCc(int channel, int number, int value)
+    {
+        if (_out == null) return;
+        int id = CcBase + channel * 1000 + number;
+        if (_sent.TryGetValue(id, out var prev) && prev == value) return;
+        _sent[id] = value;
+        try { _out.Send(MidiMessage.ChangeControl(number, value, Math.Clamp(channel, 1, 16)).RawData); }
+        catch { }
+    }
+
+    private const int CcBase = 100_000;   // nella stessa cache delle note, senza collisioni
+
     public void AllOff()
     {
         if (_out == null) return;
         foreach (var id in _sent.Keys.ToList())
         {
-            try { _out.Send(MidiMessage.StartNote(id % 1000, 0, Math.Clamp(id / 1000, 1, 16)).RawData); } catch { }
+            try
+            {
+                int k = id % CcBase, ch = Math.Clamp(k / 1000, 1, 16), n = k % 1000;
+                _out.Send(id >= CcBase ? MidiMessage.ChangeControl(n, 0, ch).RawData : MidiMessage.StartNote(n, 0, ch).RawData);
+            }
+            catch { }
         }
         _sent.Clear();
     }

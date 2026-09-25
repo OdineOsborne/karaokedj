@@ -38,21 +38,54 @@ public partial class MainViewModel
     private void TickLeds()
     {
         if (!Leds.IsOpen) return;
+        TickVu();
         var sb = new System.Text.StringBuilder();
         foreach (var d in new[] { DeckA, DeckB })
         {
-            sb.Append(d.IsPlaying ? '1' : '0');
+            sb.Append(d.IsPlaying ? '1' : '0').Append(d.HasTrack ? '1' : '0');
             for (int i = 0; i < 8; i++) sb.Append(d.Track?.HotCue(i) >= 0 ? '1' : '0');
         }
+        // jingle: pad acceso se ha un suono (FilePath e non HasFile: niente File.Exists 25 volte al secondo)
+        foreach (var p in Pads) sb.Append(p.IsPlaying ? '2' : string.IsNullOrEmpty(p.FilePath) ? '0' : '1');
         var now = sb.ToString();
         if (now == _ledState) return;
         _ledState = now;
-        foreach (var (d, colour) in new[] { (DeckA, MidiFeedback.Blue), (DeckB, MidiFeedback.Red) })
+        var pal = ActivePreset?.Leds ?? new LedPalette();
+        foreach (var (d, colour) in new[] { (DeckA, pal.A), (DeckB, pal.B) })
         {
             string p = d == DeckA ? "a." : "b.";
-            Leds.Set(Midi.KeyFor(p + "play"), d.IsPlaying ? colour : MidiFeedback.Off);
+            int on = pal.Button ?? colour;
+            Leds.Set(Midi.KeyFor(p + "play"), d.IsPlaying ? on : MidiFeedback.Off);
+            // CUE acceso a deck carico e fermo: si vede subito quale deck è pronto a partire
+            Leds.Set(Midi.KeyFor(p + "cue"), d.HasTrack && !d.IsPlaying ? on : MidiFeedback.Off);
             for (int i = 0; i < 8; i++)
                 Leds.Set(Midi.KeyFor($"{p}hotcue{i + 1}"), d.Track?.HotCue(i) >= 0 ? colour : MidiFeedback.Off);
+        }
+        for (int i = 0; i < Pads.Count; i++)
+        {
+            var pad = Pads[i];
+            Leds.Set(Midi.KeyFor($"pad{i + 1}"), pad.IsPlaying ? pal.B : string.IsNullOrEmpty(pad.FilePath) ? MidiFeedback.Off : pal.A);
+        }
+    }
+
+    /// <summary>
+    /// VU meter della console seguono quelli dello schermo: in serata si guardano i livelli senza girarsi verso il PC.
+    /// 25 volte al secondo, ma MidiFeedback manda solo i valori cambiati.
+    /// </summary>
+    private void TickVu()
+    {
+        if (ActivePreset?.Leds?.Vu is not { Count: > 0 } vus) return;
+        foreach (var v in vus)
+        {
+            double level = v.Source switch
+            {
+                "a" => Math.Max(DeckA.LevelL, DeckA.LevelR),
+                "b" => Math.Max(DeckB.LevelL, DeckB.LevelR),
+                "masterL" => MasterL,
+                "masterR" => MasterR,
+                _ => 0,
+            };
+            Leds.SetCc(v.Channel, v.Number, (int)Math.Round(Math.Clamp(level, 0, 1) * v.Max));
         }
     }
 
@@ -67,6 +100,8 @@ public partial class MainViewModel
     private void OnMidiMessageForHints(MidiKey key, int value)
     {
         if (value == 0 || Midi.ActionFor(key) != null) return;
+        // manopole a 14 bit (Inpulse e molte altre): il CC n+32 è la metà fine del CC n, già mappato. Non è un comando nuovo.
+        if (key.Type == "cc" && key.Number is >= 32 and < 64 && Midi.ActionFor(key with { Number = key.Number - 32 }) != null) return;
         if (!_unmappedSeen.Add(key.ToString())) return;                       // una volta sola per controllo
         if ((DateTime.UtcNow - _lastUnmappedHint).TotalSeconds < 6) return;   // e senza inondare la barra
         _lastUnmappedHint = DateTime.UtcNow;

@@ -100,3 +100,17 @@ KaraokeDJ.exe --ledtest
 sulla P8: stesso controllo su due azioni, azioni inesistenti, comandi essenziali mancanti, una manopola sparsa su
 tanti CC (segno che i numeri erano tirati a indovinare). Gli stessi controlli girano a ogni build dentro `--selftest`
 (riga `preset:`).
+
+## Hercules Inpulse 500: da dove vengono i numeri
+
+Tabella ufficiale Hercules "DJControl Inpulse 500 – MIDI Commands" (2022), scaricabile dalla pagina di supporto
+(https://support.hercules.com/en/product/djcontrolinpulse500-en/). Attenzione: lì i canali partono da 0
+(il deck 1 è "canale 1" = `0x91` = canale MIDI 2 in Mixfonia). Serato non serve: la sua mappatura nativa è
+chiusa dentro il programma e i numeri sono questi.
+
+Provato sulla console il 25/9/2026 con una sonda MIDI esterna:
+- si accendono: PLAY/CUE/SYNC (`9x 07/06/05`, 7F), pad con colore = velocity (blu `03`, rosso `60`, versioni
+  tenui `02`/`40`), VU meter dei deck (`B1 40`, `B2 40`, 0…125) e master (`B0 40`/`41`, 0…124);
+- non rispondono: SLIP, Q, VINYL, LOOP IN/OUT, cuffia — li governa la console da sola.
+- CC 11 del canale 1 è la **curva** del crossfader, non il crossfader (il vecchio preset li confondeva).
+- Le manopole sono a 14 bit: il CC n+32 è la metà fine del CC n e viene ignorato senza avvisi.

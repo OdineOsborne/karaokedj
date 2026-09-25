@@ -131,7 +131,7 @@ public sealed class LibraryDb : IDisposable
     }
 
     /// <summary>Manutenzione leggera all'avvio: statistiche per il planner e checkpoint del WAL.</summary>
-    public void Optimize() { Exec("PRAGMA optimize; PRAGMA wal_checkpoint(TRUNCATE);"); }
+    public void Optimize() { Exec("PRAGMA optimize; PRAGMA wal_checkpoint(PASSIVE);"); }  // PASSIVE: non aspetta nessuno, così un salvataggio dall'interfaccia non resta in coda dietro al checkpoint
 
     public string? GetMeta(string key)
     {

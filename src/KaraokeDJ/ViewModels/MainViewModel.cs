@@ -89,7 +89,8 @@ public sealed partial class MainViewModel : ObservableObject
         InitLive();
         Engine.OutputRestarted += msg => Application.Current?.Dispatcher.BeginInvoke(() => { StatusText = msg; CrashLog.Write("audio: " + msg); });
 
-        _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(40) };
+        // priorità Input e non Render: un giro lento (automix che sceglie il brano) non deve passare davanti a mouse e tastiera
+        _timer = new DispatcherTimer(DispatcherPriority.Input) { Interval = TimeSpan.FromMilliseconds(40) };
         _timer.Tick += (_, _) => Tick();
     }
 
@@ -152,6 +153,11 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _statusText = "Pronto";
     /// <summary>Dimensione attuale dell'interfaccia, mostrata nella barra di stato (Ctrl + / − / 0).</summary>
     [ObservableProperty] private string _uiScaleLabel = "";
+    /// <summary>Dimensione del testo nella tabella della libreria (vedi MainWindow.UpdateLibraryFont).</summary>
+    [ObservableProperty] private double _libraryFontSize = 13;
+    /// <summary>Righe della libreria proporzionate al testo (28 px a 13 px, come prima).</summary>
+    [ObservableProperty] private double _libraryRowHeight = 28;
+    partial void OnLibraryFontSizeChanged(double value) => LibraryRowHeight = Math.Round(value * 28 / 13);
     [ObservableProperty] private bool _isScanning;
     [ObservableProperty] private double _scanPercent;
     [ObservableProperty] private bool _isProjectorOpen;
@@ -295,6 +301,8 @@ public sealed partial class MainViewModel : ObservableObject
 
         DeckA.Tick();
         DeckB.Tick();
+        FlushJogSeek(DeckA);
+        FlushJogSeek(DeckB);
         if (IsAnalyzing && _analyzeTotal > 0 && DateTime.UtcNow.Millisecond < 120)
             AnalyzeStatus = $"Analisi {_analyzeDone}/{_analyzeTotal} · {(int)(DateTime.UtcNow - _analyzeStartedUtc).TotalSeconds} s: {_analyzeCurrent}";
         double ml = Views.LevelMeter.ToScale(Engine.MasterPeakL), mr = Views.LevelMeter.ToScale(Engine.MasterPeakR);
@@ -418,6 +426,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (r == null) { CompatReferenceLabel = "Nessun brano di riferimento"; return; }
         if (r.Bpm <= 0 && string.IsNullOrEmpty(r.Key)) AnalyzeInBackground(r);
         CompatReferenceLabel = $"Compatibili con: {r.Display}" + (r.Bpm > 0 ? $" ({r.Bpm:0} BPM, {r.KeyLabel})" : "");
+        using var pass = ScoringPass(r);
         foreach (var t in Tracks)
         {
             double s = SuggestScore(r, t);
@@ -917,7 +926,9 @@ public sealed partial class MainViewModel : ObservableObject
         var onDecks = new HashSet<string>();
         if (DeckA.Track != null) onDecks.Add(DeckA.Track.Id);
         if (DeckB.Track != null) onDecks.Add(DeckB.Track.Id);
-        var pool = Tracks.Where(t => !t.IsKaraoke && !onDecks.Contains(t.Id) && File.Exists(t.FilePath)).ToList();
+        // Missing è già tenuto aggiornato dal controllo in background: un File.Exists per brano sul disco E:
+        // (decine di migliaia di file) bloccava l'interfaccia a ogni cambio brano
+        var pool = Tracks.Where(t => !t.IsKaraoke && !onDecks.Contains(t.Id) && !t.Missing).ToList();
         if (pool.Count == 0) return false;
 
         var setGenres = SetGenreList();
@@ -931,6 +942,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
 
         Track? pick = null; string why = "";
+        using var pass = current != null ? ScoringPass(current) : null;
         if (current != null)
         {
             bool curGenre = !string.IsNullOrWhiteSpace(current.Genre);
@@ -945,29 +957,39 @@ public sealed partial class MainViewModel : ObservableObject
                     .Select(t => (t, s: SuggestScore(current, t) * (t.Analyzed ? 1.0 : 0.6)))
                     .Where(x => x.s > 0.3)
                     .OrderByDescending(x => x.s).ThenBy(x => x.t.PlayCount)
+                    .Where(x => Present(x.t))
                     .Take(5).ToList();
                 if (best.Count > 0) { var b = best[Random.Shared.Next(Math.Min(3, best.Count))]; pick = b.t; why = $"{w}, match {b.s * 100:0}%"; break; }
             }
             if (pick == null && curGenre)
             {
-                pick = fresh.Where(t => GenreAffinity(current, t) >= 0.8).OrderBy(t => t.PlayCount).ThenBy(_ => Random.Shared.Next()).FirstOrDefault();
+                pick = fresh.Where(t => GenreAffinity(current, t) >= 0.8).OrderBy(t => t.PlayCount).ThenBy(_ => Random.Shared.Next()).FirstOrDefault(Present);
                 if (pick != null) why = $"stesso genere ({current.Genre}), BPM/tonalità non compatibili";
             }
             if (pick == null && current.Year > 0)
             {
-                pick = fresh.Where(t => DecadeAffinity(current, t) >= 1.0).OrderBy(t => t.PlayCount).ThenBy(_ => Random.Shared.Next()).FirstOrDefault();
+                pick = fresh.Where(t => DecadeAffinity(current, t) >= 1.0).OrderBy(t => t.PlayCount).ThenBy(_ => Random.Shared.Next()).FirstOrDefault(Present);
                 if (pick != null) why = $"stessa decade ({current.Decade}), BPM/tonalità non compatibili";
             }
         }
         if (pick == null)
         {
-            pick = fresh.OrderBy(t => t.PlayCount).ThenBy(t => t.LastPlayedUtc ?? DateTime.MinValue).ThenBy(_ => Random.Shared.Next()).FirstOrDefault();
+            pick = fresh.OrderBy(t => t.PlayCount).ThenBy(t => t.LastPlayedUtc ?? DateTime.MinValue).ThenBy(_ => Random.Shared.Next()).FirstOrDefault(Present);
             if (pick != null) why = current == null ? "primo brano" : "nessun riferimento utile: brano meno suonato";
         }
-        if (pick == null) { pick = pool.OrderBy(t => t.LastPlayedUtc ?? DateTime.MinValue).First(); why = "tutti già suonati: riparto dal più vecchio"; }
+        if (pick == null) { pick = pool.OrderBy(t => t.LastPlayedUtc ?? DateTime.MinValue).FirstOrDefault(Present); why = "tutti già suonati: riparto dal più vecchio"; }
+        if (pick == null) return false;
         Queue.Add(new QueueEntry { Track = pick, Note = "automix · " + why });
         StatusText = $"Automix: aggiunto {pick.Display} ({why})";
         return true;
+    }
+
+    /// <summary>Il file c'è davvero? Si guarda solo sui candidati scelti, e chi manca resta segnato.</summary>
+    private static bool Present(Track t)
+    {
+        if (File.Exists(t.FilePath)) return true;
+        t.Missing = true;
+        return false;
     }
 
     /// <summary>Generi della serata (testo libero separato da virgole) → lista normalizzata.</summary>
@@ -1535,6 +1557,7 @@ public sealed partial class MainViewModel : ObservableObject
         Suggestions.Clear();
         if (r == null) { SuggestionsLabel = ""; return; }
         var queued = new HashSet<string>(Queue.Select(q => q.Track.Id));
+        using var pass = ScoringPass(r);
         var all = Tracks
             .Where(t => t.Id != r.Id && !queued.Contains(t.Id) && !t.PlayedThisSession && !t.IsKaraoke)
             .Select(t => { var (s, why, off) = SuggestScoreWhy(r, t); return (t, s: s * (t.Analyzed ? 1.0 : 0.6), why, off); })
@@ -1642,13 +1665,33 @@ public sealed partial class MainViewModel : ObservableObject
     private (double Score, string Why, bool OffStyle) SuggestScoreWhy(Track r, Track t)
     {
         if (Feedback.IsRejectedNow(t)) return (0, "", false);
-        var (s, why, off) = SetFlow.Rank(t, FlowContextNow(r));
+        var ctx = _passRef == r && _passCtx != null ? _passCtx : FlowContextNow(r);
+        var (s, why, off) = SetFlow.Rank(t, ctx);
         if (s <= 0) return (0, why, off);
         s *= Feedback.Factor(r, t);
         // il filtro scelto dal DJ stringe ulteriormente
         if (SuggestBy == "decade") s *= DecadeAffinity(r, t);
         else if (SuggestBy == "genre") s *= GenreAffinity(r, t);
         return (s, why, off);
+    }
+
+    private FlowContext? _passCtx;
+    private Track? _passRef;
+
+    /// <summary>
+    /// Il contesto della serata si calcola una volta per giro di punteggi, non una per brano: ricostruirlo
+    /// rileggeva tutta la libreria per ogni brano (N² sul thread dell'interfaccia) e con la libreria di E:
+    /// l'app si piantava a ogni cambio brano.
+    /// </summary>
+    private IDisposable ScoringPass(Track r)
+    {
+        _passCtx = FlowContextNow(r); _passRef = r;
+        return new PassScope(this);
+    }
+
+    private sealed class PassScope(MainViewModel vm) : IDisposable
+    {
+        public void Dispose() { vm._passCtx = null; vm._passRef = null; }
     }
 
     /// <summary>Come vogliamo che vada la serata adesso: il brano di riferimento, l'intenzione del DJ e cosa è già suonato.</summary>
@@ -2604,7 +2647,10 @@ public sealed partial class MainViewModel : ObservableObject
         if (!deck.Deck.IsPlaying && !deck.Deck.JogActive)
         {
             // Deck fermo: si cerca il punto, in silenzio. Niente Play, per nessun motivo.
-            deck.Deck.Seek(Math.Max(0, deck.Deck.PositionSec + delta * Audio.JogMeter.SecondsPerTick));
+            // Gli scatti si sommano e il file si riposiziona al massimo ogni 30 ms (il resto lo fa Tick):
+            // un Seek per scatto, a centinaia di scatti al secondo, fermava l'interfaccia.
+            _jogSeekAcc[deck] = _jogSeekAcc.GetValueOrDefault(deck) + delta;
+            if ((DateTime.UtcNow - _jogSeekLast.GetValueOrDefault(deck)).TotalMilliseconds >= 30) FlushJogSeek(deck);
             if ((DateTime.UtcNow - _lastJogHint).TotalSeconds > 5)
             {
                 _lastJogHint = DateTime.UtcNow;
@@ -2619,6 +2665,18 @@ public sealed partial class MainViewModel : ObservableObject
         deck.JogRate(scratch
             ? Math.Clamp(speed, -8, 8)                                  // scratch: la mano comanda il disco
             : 1 + Math.Clamp(speed * 0.2, -MaxBend, MaxBend));          // bend: il brano continua, un po' più in fretta o più piano
+    }
+
+    private readonly Dictionary<DeckViewModel, int> _jogSeekAcc = new();
+    private readonly Dictionary<DeckViewModel, DateTime> _jogSeekLast = new();
+
+    private void FlushJogSeek(DeckViewModel deck)
+    {
+        if (!_jogSeekAcc.TryGetValue(deck, out var acc) || acc == 0) return;
+        _jogSeekAcc[deck] = 0;
+        _jogSeekLast[deck] = DateTime.UtcNow;
+        if (!deck.HasTrack || deck.Deck.IsPlaying || deck.Deck.JogActive) return;
+        deck.Deck.Seek(Math.Max(0, deck.Deck.PositionSec + acc * Audio.JogMeter.SecondsPerTick));
     }
 
     /// <summary>Encoder BROWSE della console: sposta la selezione in libreria.</summary>
@@ -2748,7 +2806,11 @@ public sealed partial class MainViewModel : ObservableObject
     {
         foreach (var w in _watchers) { try { w.Dispose(); } catch { } }
         _watchers.Clear();
-        foreach (var folder in Settings.LibraryFolders.Where(Directory.Exists))
+        var folders = Settings.LibraryFolders.Where(Directory.Exists).ToList();
+        // una cartella dentro un'altra già sorvegliata (E:\ ed E:\voxa download) darebbe ogni evento due volte
+        static string Norm(string f) => Path.GetFullPath(f).TrimEnd('\\') + "\\";
+        folders = folders.Where(f => !folders.Any(o => o != f && Norm(f).StartsWith(Norm(o), StringComparison.OrdinalIgnoreCase))).ToList();
+        foreach (var folder in folders)
         {
             try
             {
@@ -2775,7 +2837,18 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Applica i cambiamenti accumulati (debounce: i file grandi arrivano a pezzi).</summary>
+    private bool _inWatchTick;
+
     private async void WatchTick(object? sender, EventArgs e)
+    {
+        // il timer continua a scattare mentre si aspetta AddFile: due giri insieme scrivevano la stessa cache
+        // della libreria da due thread, e un Dictionary rotto così può far girare l'interfaccia all'infinito
+        if (_inWatchTick) return;
+        _inWatchTick = true;
+        try { await WatchTickCore(); } finally { _inWatchTick = false; }
+    }
+
+    private async Task WatchTickCore()
     {
         List<string> batch;
         lock (_pendingFiles) { if (_pendingFiles.Count == 0) return; batch = _pendingFiles.ToList(); _pendingFiles.Clear(); }
@@ -2789,6 +2862,9 @@ public sealed partial class MainViewModel : ObservableObject
                 if (existing != null) { RemoveTrackFromLibrary(existing); removed++; }
                 continue;
             }
+            // già in libreria e solo "modificato" (tag, data): si tiene com'è, con cue e analisi.
+            // Reimportarlo gli dava un Id nuovo e lo rianalizzava a ogni scrittura.
+            if (existing != null && Tracks.Any(x => x.Id == existing.Id)) continue;
             // file ancora in scrittura? riprova al prossimo giro
             try { using var fs = File.Open(p, FileMode.Open, FileAccess.Read, FileShare.ReadWrite); }
             catch { lock (_pendingFiles) _pendingFiles.Add(path); continue; }

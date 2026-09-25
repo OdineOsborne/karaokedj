@@ -4,25 +4,62 @@
  "match": [
   "Inpulse 500"
  ],
- "source": "Mixxx mapping \"Hercules_DJControl_Inpulse_500\" (DJ Phatso, Event1ne and Reset Reboot), GPL — usati solo i numeri MIDI",
+ "source": "Numeri dalla mappatura Mixxx \"Hercules_DJControl_Inpulse_500\" (DJ Phatso, Event1ne, resetreboot), GPL. LED provati sulla console vera il 25/9/2026: play/cue/sync e pad colorati rispondono, VU meter (B1/B2 40, B0 40/41) pure, SLIP/Q/VINYL/LOOP/cuffia no (li gestisce la console). Tabella ufficiale: Hercules \"DJControl Inpulse 500 MIDI Commands\" (2022).",
+ "leds": {
+  "a": 3,
+  "b": 96,
+  "button": 127,
+  "vu": [
+   {
+    "source": "a",
+    "channel": 2,
+    "number": 64,
+    "max": 125
+   },
+   {
+    "source": "b",
+    "channel": 3,
+    "number": 64,
+    "max": 125
+   },
+   {
+    "source": "masterL",
+    "channel": 1,
+    "number": 64,
+    "max": 124
+   },
+   {
+    "source": "masterR",
+    "channel": 1,
+    "number": 65,
+    "max": 124
+   }
+  ]
+ },
  "mappings": [
   {
-   "type": "note",
+   "type": "cc",
    "channel": 1,
-   "number": 3,
-   "action": "automix"
-  },
-  {
-   "type": "note",
-   "channel": 1,
-   "number": 24,
+   "number": 0,
    "action": "crossfader"
   },
   {
    "type": "cc",
    "channel": 1,
-   "number": 11,
-   "action": "crossfader"
+   "number": 1,
+   "action": "browse"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 0,
+   "action": "browseload"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 3,
+   "action": "automix"
   },
   {
    "type": "note",
@@ -56,69 +93,27 @@
   },
   {
    "type": "note",
-   "channel": 5,
-   "number": 13,
-   "action": "loadA"
-  },
-  {
-   "type": "note",
    "channel": 2,
    "number": 2,
    "action": "a.quantize"
   },
   {
    "type": "note",
-   "channel": 5,
-   "number": 2,
-   "action": "a.quantize"
+   "channel": 2,
+   "number": 9,
+   "action": "a.loop4"
   },
   {
    "type": "note",
-   "channel": 3,
-   "number": 7,
-   "action": "b.play"
+   "channel": 2,
+   "number": 10,
+   "action": "a.loopexit"
   },
   {
    "type": "note",
-   "channel": 3,
-   "number": 6,
-   "action": "b.cue"
-  },
-  {
-   "type": "note",
-   "channel": 3,
-   "number": 5,
-   "action": "b.sync"
-  },
-  {
-   "type": "note",
-   "channel": 3,
-   "number": 12,
-   "action": "b.cuepfl"
-  },
-  {
-   "type": "note",
-   "channel": 3,
-   "number": 13,
-   "action": "loadB"
-  },
-  {
-   "type": "note",
-   "channel": 6,
-   "number": 13,
-   "action": "loadB"
-  },
-  {
-   "type": "note",
-   "channel": 3,
-   "number": 2,
-   "action": "b.quantize"
-  },
-  {
-   "type": "note",
-   "channel": 6,
-   "number": 2,
-   "action": "b.quantize"
+   "channel": 2,
+   "number": 44,
+   "action": "a.loopexit"
   },
   {
    "type": "note",
@@ -130,583 +125,25 @@
    "type": "note",
    "channel": 5,
    "number": 6,
-   "action": "a.cue"
+   "action": "a.stop"
   },
   {
    "type": "note",
    "channel": 5,
    "number": 5,
-   "action": "a.sync"
+   "action": "a.keymatch"
   },
   {
    "type": "note",
-   "channel": 6,
-   "number": 7,
-   "action": "b.play"
-  },
-  {
-   "type": "note",
-   "channel": 6,
-   "number": 6,
-   "action": "b.cue"
-  },
-  {
-   "type": "note",
-   "channel": 6,
-   "number": 5,
-   "action": "b.sync"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 0,
-   "action": "a.hotcue1"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 1,
-   "action": "a.hotcue2"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 2,
-   "action": "a.hotcue3"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 3,
-   "action": "a.hotcue4"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 4,
-   "action": "a.hotcue5"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 5,
-   "action": "a.hotcue6"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 6,
-   "action": "a.hotcue7"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 7,
-   "action": "a.hotcue8"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 8,
-   "action": "a.hotcue1"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 9,
-   "action": "a.hotcue2"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 10,
-   "action": "a.hotcue3"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 11,
-   "action": "a.hotcue4"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 12,
-   "action": "a.hotcue5"
-  },
-  {
-   "type": "note",
-   "channel": 7,
+   "channel": 5,
    "number": 13,
-   "action": "a.hotcue6"
+   "action": "a.eject"
   },
   {
    "type": "note",
-   "channel": 7,
-   "number": 14,
-   "action": "a.hotcue7"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 15,
-   "action": "a.hotcue8"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 19,
-   "action": "a.loop1"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 20,
-   "action": "a.loop2"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 21,
-   "action": "a.loop4"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 22,
-   "action": "a.loop8"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 23,
-   "action": "a.loop8"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 48,
-   "action": "pad1"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 49,
-   "action": "pad2"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 50,
-   "action": "pad3"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 51,
-   "action": "pad4"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 52,
-   "action": "pad5"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 53,
-   "action": "pad6"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 54,
-   "action": "pad7"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 55,
-   "action": "pad8"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 56,
-   "action": "pad1"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 57,
-   "action": "pad2"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 58,
-   "action": "pad3"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 59,
-   "action": "pad4"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 60,
-   "action": "pad5"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 61,
-   "action": "pad6"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 62,
-   "action": "pad7"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 63,
-   "action": "pad8"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 70,
-   "action": "a.tempo"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 69,
-   "action": "a.tempo"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 68,
-   "action": "a.tempo"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 83,
-   "action": "a.loop1"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 84,
-   "action": "a.loop2"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 85,
-   "action": "a.loop2"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 86,
-   "action": "a.loop8"
-  },
-  {
-   "type": "note",
-   "channel": 7,
-   "number": 87,
-   "action": "a.loop2"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 0,
-   "action": "b.hotcue1"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 1,
-   "action": "b.hotcue2"
-  },
-  {
-   "type": "note",
-   "channel": 8,
+   "channel": 5,
    "number": 2,
-   "action": "b.hotcue3"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 3,
-   "action": "b.hotcue4"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 4,
-   "action": "b.hotcue5"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 5,
-   "action": "b.hotcue6"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 6,
-   "action": "b.hotcue7"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 7,
-   "action": "b.hotcue8"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 8,
-   "action": "b.hotcue1"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 9,
-   "action": "b.hotcue2"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 10,
-   "action": "b.hotcue3"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 11,
-   "action": "b.hotcue4"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 12,
-   "action": "b.hotcue5"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 13,
-   "action": "b.hotcue6"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 14,
-   "action": "b.hotcue7"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 15,
-   "action": "b.hotcue8"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 19,
-   "action": "b.loop1"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 20,
-   "action": "b.loop2"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 21,
-   "action": "b.loop4"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 22,
-   "action": "b.loop8"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 23,
-   "action": "b.loop8"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 48,
-   "action": "pad1"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 49,
-   "action": "pad2"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 50,
-   "action": "pad3"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 51,
-   "action": "pad4"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 52,
-   "action": "pad5"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 53,
-   "action": "pad6"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 54,
-   "action": "pad7"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 55,
-   "action": "pad8"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 56,
-   "action": "pad1"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 57,
-   "action": "pad2"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 58,
-   "action": "pad3"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 59,
-   "action": "pad4"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 60,
-   "action": "pad5"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 61,
-   "action": "pad6"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 62,
-   "action": "pad7"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 63,
-   "action": "pad8"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 70,
-   "action": "b.tempo"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 69,
-   "action": "b.tempo"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 68,
-   "action": "b.tempo"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 83,
-   "action": "b.loop1"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 84,
-   "action": "b.loop2"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 85,
-   "action": "b.loop2"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 86,
-   "action": "b.loop8"
-  },
-  {
-   "type": "note",
-   "channel": 8,
-   "number": 87,
-   "action": "b.loop2"
-  },
-  {
-   "type": "cc",
-   "channel": 1,
-   "number": 0,
-   "action": "crossfader"
-  },
-  {
-   "type": "cc",
-   "channel": 1,
-   "number": 1,
-   "action": "browse"
+   "action": "a.keylock"
   },
   {
    "type": "cc",
@@ -764,38 +201,183 @@
   },
   {
    "type": "note",
-   "channel": 2,
-   "number": 8,
-   "action": "a.jogtouch",
-   "relative": true
-  },
-  {
-   "type": "cc",
-   "channel": 2,
-   "number": 12,
-   "action": "a.jogtouch",
-   "relative": true
-  },
-  {
-   "type": "cc",
-   "channel": 2,
-   "number": 10,
-   "action": "a.jog",
-   "relative": true
-  },
-  {
-   "type": "cc",
-   "channel": 2,
-   "number": 9,
-   "action": "a.jog",
-   "relative": true
+   "channel": 7,
+   "number": 0,
+   "action": "a.hotcue1"
   },
   {
    "type": "note",
-   "channel": 5,
-   "number": 8,
-   "action": "a.jogtouch",
-   "relative": true
+   "channel": 7,
+   "number": 1,
+   "action": "a.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 2,
+   "action": "a.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 3,
+   "action": "a.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 4,
+   "action": "a.hotcue5"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 5,
+   "action": "a.hotcue6"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 6,
+   "action": "a.hotcue7"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 7,
+   "action": "a.hotcue8"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 19,
+   "action": "a.loop1"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 20,
+   "action": "a.loop2"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 21,
+   "action": "a.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 22,
+   "action": "a.loop8"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 64,
+   "action": "a.keydown"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 65,
+   "action": "a.keydown"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 66,
+   "action": "a.keyup"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 67,
+   "action": "a.keyup"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 7,
+   "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 6,
+   "action": "b.cue"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 5,
+   "action": "b.sync"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 12,
+   "action": "b.cuepfl"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 13,
+   "action": "loadB"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 2,
+   "action": "b.quantize"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 9,
+   "action": "b.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 10,
+   "action": "b.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 3,
+   "number": 44,
+   "action": "b.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 7,
+   "action": "b.play"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 6,
+   "action": "b.stop"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 5,
+   "action": "b.keymatch"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 13,
+   "action": "b.eject"
+  },
+  {
+   "type": "note",
+   "channel": 6,
+   "number": 2,
+   "action": "b.keylock"
   },
   {
    "type": "cc",
@@ -850,6 +432,215 @@
    "channel": 6,
    "number": 8,
    "action": "b.tempo"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 0,
+   "action": "b.hotcue1"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 1,
+   "action": "b.hotcue2"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 2,
+   "action": "b.hotcue3"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 3,
+   "action": "b.hotcue4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 4,
+   "action": "b.hotcue5"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 5,
+   "action": "b.hotcue6"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 6,
+   "action": "b.hotcue7"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 7,
+   "action": "b.hotcue8"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 19,
+   "action": "b.loop1"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 20,
+   "action": "b.loop2"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 21,
+   "action": "b.loop4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 22,
+   "action": "b.loop8"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 64,
+   "action": "b.keydown"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 65,
+   "action": "b.keydown"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 66,
+   "action": "b.keyup"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 67,
+   "action": "b.keyup"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 48,
+   "action": "pad1"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 49,
+   "action": "pad2"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 50,
+   "action": "pad3"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 51,
+   "action": "pad4"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 52,
+   "action": "pad5"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 53,
+   "action": "pad6"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 54,
+   "action": "pad7"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 55,
+   "action": "pad8"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 48,
+   "action": "pad9"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 49,
+   "action": "pad10"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 50,
+   "action": "pad11"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 51,
+   "action": "pad12"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 52,
+   "action": "padstop"
+  },
+  {
+   "type": "note",
+   "channel": 2,
+   "number": 8,
+   "action": "a.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 12,
+   "action": "a.jogtouch",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 10,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 9,
+   "action": "a.jog",
+   "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 5,
+   "number": 8,
+   "action": "a.jogtouch",
+   "relative": true
   },
   {
    "type": "note",
