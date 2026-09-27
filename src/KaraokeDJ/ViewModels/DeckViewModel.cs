@@ -67,7 +67,8 @@ public sealed partial class DeckViewModel : ObservableObject
     [ObservableProperty] private string _remainingLabel = "-0:00";
     [ObservableProperty] private bool _isEnding;
     [ObservableProperty] private int _keyShift;
-    [ObservableProperty] private int _tempoPercent;
+    /// <summary>Tempo in % con i decimali: a passi interi ogni scatto valeva ~1,3 BPM (pitch fader a scatti, SYNC impreciso).</summary>
+    [ObservableProperty] private double _tempoPercent;
     /// <summary>Gain del deck in dB (-24 … +12, 0 = unity). Sostituisce il vecchio "volume": il livello si dosa col crossfader.</summary>
     [ObservableProperty] private double _gainDb;
     public string GainLabel => Math.Abs(GainDb) < 0.05 ? "0 dB" : GainDb.ToString("+0.0;-0.0") + " dB";
@@ -598,7 +599,7 @@ public sealed partial class DeckViewModel : ObservableObject
     }
 
     public string KeyLabel => KeyShift == 0 ? "0" : (KeyShift > 0 ? $"+{KeyShift}" : KeyShift.ToString());
-    public string TempoLabel => TempoPercent == 0 ? "0%" : (TempoPercent > 0 ? $"+{TempoPercent}%" : $"{TempoPercent}%");
+    public string TempoLabel => Math.Abs(TempoPercent) < 0.005 ? "0%" : TempoPercent.ToString("+0.0#;-0.0#") + "%";
     public int CdgOffsetMs { get; set; }
 
     partial void OnKeyShiftChanged(int value)
@@ -608,7 +609,7 @@ public sealed partial class DeckViewModel : ObservableObject
         RefreshAnalysisLabels();
     }
 
-    partial void OnTempoPercentChanged(int value)
+    partial void OnTempoPercentChanged(double value)
     {
         Deck.Tempo = 1.0 + value / 100.0;
         TempoFactor = Deck.Tempo;

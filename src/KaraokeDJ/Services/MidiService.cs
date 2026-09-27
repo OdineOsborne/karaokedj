@@ -46,6 +46,12 @@ public sealed class MidiService : IDisposable
 
     /// <summary>(azione, valore 0..127, è un CC continuo). Chiamato sul thread UI.</summary>
     public event Action<string, int, bool>? ActionTriggered;
+    /// <summary>
+    /// (azione, posizione 0..1) per i controlli a 14 bit: la console manda il CC n (parte grossa) e il CC n+32
+    /// (parte fine). Con i soli 128 valori della parte grossa il pitch fader della Inpulse andava a scatti.
+    /// </summary>
+    public event Action<string, double>? FineTriggered;
+    private readonly Dictionary<MidiKey, int> _msb = new(), _lsb = new();
     /// <summary>Ultimo messaggio ricevuto (per mostrare "attività MIDI" nella UI).</summary>
     public event Action<MidiKey, int>? MessageReceived;
 
@@ -235,6 +241,7 @@ public sealed class MidiService : IDisposable
             if (Muted) return;
             // col tasto SHIFT premuto comanda il secondo strato, se quel controllo ce l'ha
             if (!(ShiftHeld && _shiftMap.TryGetValue(key, out var action)) && !_map.TryGetValue(key, out action)) action = null;
+            if (continuous && key.Type == "cc" && TryFine(key, value, action)) return;
             if (action != null)
             {
                 int v = value;
@@ -255,6 +262,35 @@ public sealed class MidiService : IDisposable
                 ActionTriggered?.Invoke(action, continuous && _invert.Contains(key) ? 127 - v : v, continuous);
             }
         }
+    }
+
+    /// <summary>
+    /// Controlli a 14 bit. La parte fine (CC n+32) non ha un'azione sua: si combina con l'ultima parte grossa del
+    /// CC n mappato. Una volta visto che un controllo è a 14 bit, anche la parte grossa usa l'ultima fine
+    /// (altrimenti il valore saltellerebbe fra 128 e 16384 posizioni). Ritorna true se il messaggio è gestito qui.
+    /// </summary>
+    private bool TryFine(MidiKey key, int value, string? action)
+    {
+        if (action == null && key.Number is >= 32 and < 64)
+        {
+            var msbKey = key with { Number = key.Number - 32 };
+            if (!(ShiftHeld && _shiftMap.TryGetValue(msbKey, out var a)) && !_map.TryGetValue(msbKey, out a)) return false;
+            if (_relative.Contains(msbKey) || TakesDelta(a)) return false;
+            _lsb[msbKey] = value;
+            if (_msb.TryGetValue(msbKey, out var hi)) FireFine(msbKey, a, hi, value);
+            return true;
+        }
+        if (action == null || key.Number >= 32 || _relative.Contains(key) || TakesDelta(action)) return false;
+        _msb[key] = value;
+        if (!_lsb.TryGetValue(key, out var lo)) return false;   // mai vista la parte fine: controllo a 7 bit normale
+        FireFine(key, action, value, lo);
+        return true;
+    }
+
+    private void FireFine(MidiKey key, string action, int hi, int lo)
+    {
+        double norm = ((hi << 7) | lo) / 16383.0;
+        FineTriggered?.Invoke(action, _invert.Contains(key) ? 1 - norm : norm);
     }
 
     public void Dispose() => Close();

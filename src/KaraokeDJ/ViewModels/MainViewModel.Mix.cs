@@ -228,7 +228,7 @@ public sealed partial class MainViewModel
         var inDeck = p.In.Deck; var outDeck = p.Out.Deck;
         // tempi iniziali
         inDeck.Tempo = p.InTempo0;
-        p.In.TempoPercent = (int)Math.Round((p.InTempo0 - 1) * 100);
+        p.In.TempoPercent = (p.InTempo0 - 1) * 100;
         // il brano in arrivo parte ora: quando il brano in uscita raggiunge OutStartSec, quello in arrivo deve essere a InStartSec
         double waitOut = Math.Max(0, (p.OutStartSec - outDeck.PositionSec) / Math.Max(0.5, outDeck.Tempo)); // secondi di uscita
         double inPos = p.InStartSec - waitOut * inDeck.Tempo;
@@ -342,7 +342,7 @@ public sealed partial class MainViewModel
         o.EqLow = 0; o.FilterValue = 0; o.GainDb = 0; o.Deck.Fx.Reset(); o.TempoPercent = 0;
         if (o.EchoOutRunning) o.CancelEchoOutCommand.Execute(null);
         i.EqLow = 0; i.FilterValue = 0; i.GainDb = 0;
-        i.Deck.Tempo = p.InTempo1; i.TempoPercent = (int)Math.Round((p.InTempo1 - 1) * 100);
+        i.Deck.Tempo = p.InTempo1; i.TempoPercent = (p.InTempo1 - 1) * 100;
         MixStatus = "";
         StatusText = $"Passaggio completato ({TechniqueLabel(p.Technique)})";
     }

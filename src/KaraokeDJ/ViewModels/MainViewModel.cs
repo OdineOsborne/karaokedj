@@ -35,6 +35,7 @@ public sealed partial class MainViewModel : ObservableObject
         Plugins = new PluginManager();
         Midi = new MidiService();
         Midi.ActionTriggered += HandleMidiAction;
+        Midi.FineTriggered += (action, norm) => ExecuteAction(action, true, norm, continuous: true);
 
         DeckA = new DeckViewModel(Engine.DeckA);
         DeckB = new DeckViewModel(Engine.DeckB);
@@ -1411,7 +1412,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (Math.Abs(pct) < Math.Abs(bestPct)) bestPct = pct;
         }
         if (Math.Abs(bestPct) > 25) { StatusText = $"Deck {deck.Name}: {bpm:0} BPM troppo lontani da {targetBpm:0} (serve {bestPct:+0;-0} %)"; return false; }
-        deck.TempoPercent = (int)Math.Round(bestPct);
+        deck.TempoPercent = bestPct;
         return true;
     }
 
@@ -1515,7 +1516,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (t.Glide)
         {
             // il brano entrante arriva al suo tempo: allineo l'indicatore del deck
-            t.Incoming.TempoPercent = (int)Math.Round((t.InTempo1 - 1) * 100);
+            t.Incoming.TempoPercent = (t.InTempo1 - 1) * 100;
             t.Incoming.Deck.Tempo = t.InTempo1;
             t.Outgoing.TempoPercent = 0;
         }
@@ -2475,7 +2476,7 @@ public sealed partial class MainViewModel : ObservableObject
                 case "fwd10": deck.Forward10(); break;
                 case "eject": deck.Eject(); break;
                 case "volume": if (continuous) deck.GainDb = (norm - 0.5) * 24; break;      // −12 … +12 dB, centro = unity
-                case "tempo": if (continuous) deck.TempoPercent = (int)Math.Round((norm - 0.5) * 50); break; // −25 … +25
+                case "tempo": if (continuous) deck.TempoPercent = Math.Round((norm - 0.5) * 50, 2); break; // −25 … +25, a centesimi
                 case "temporeset": deck.TempoReset(); break;
                 case "pan": if (continuous) deck.Pan = norm * 2 - 1; break;
                 case "panreset": deck.Pan = 0; break;
