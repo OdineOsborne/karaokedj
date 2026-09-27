@@ -66,6 +66,8 @@ public partial class App : Application
         if (e.Args.Contains("--layouttest")) RunLayoutTest(win);
         // --analyze: analizza in blocco la libreria (BPM, tonalità, intro/outro, energia, brillantezza) e esce
         if (e.Args.Contains("--analyze")) RunAnalyze(e.Args.Contains("force"));
+        // --pulisci-titoli [applica]: artista/titolo sistemati in tutta la libreria (solo database, i file non si toccano)
+        if (e.Args.Contains("--pulisci-titoli")) RunCleanTitles(e.Args.Contains("applica"));
         // --gridtest [quanti]: quanto la griglia dei battiti sta davvero sui colpi del brano
         int gridIdx = Array.IndexOf(e.Args, "--gridtest");
         if (gridIdx >= 0) RunGridTest(gridIdx + 1 < e.Args.Length && int.TryParse(e.Args[gridIdx + 1], out var gn) ? gn : 20);
@@ -363,6 +365,46 @@ public partial class App : Application
         catch (Exception ex) { res = "grid: FAIL " + ex.Message; }
         Console.Error.WriteLine(res);
         try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-grid.log"), res); } catch { }
+        Shutdown(0);
+    }
+
+    /// <summary>
+    /// --pulisci-titoli: la rinomina intelligente su tutta la libreria, prima a secco (elenco in
+    /// %TEMP%\mixfonia-titoli.log), con "applica" scrive nel database. I file non vengono toccati.
+    /// Un cognome da solo ("Dalla") diventa l'artista completo se in libreria ce n'è uno solo che finisce così.
+    /// </summary>
+    private async void RunCleanTitles(bool apply)
+    {
+        var vm = Vm!;
+        await System.Threading.Tasks.Task.Delay(1500);
+        // solo nomi "puliti" (2-3 parole, niente virgole, &, feat, trattini): "Basi Musicali - Zucchero" non è un artista
+        var clean = new System.Text.RegularExpressions.Regex(@"^(?!(don|dj|mc|mr|lil|big|el|la|los|the|i|gli|le)\s)[A-Za-zÀ-ÿ'.]+ [A-Za-zÀ-ÿ'.]+$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        var full = vm.Tracks.Select(t => t.Artist?.Trim() ?? "").Where(a => clean.IsMatch(a) && !a.Contains(" feat", StringComparison.OrdinalIgnoreCase))
+            .GroupBy(a => a.Split(' ').Last().ToLowerInvariant())
+            .ToDictionary(g => g.Key, g => g.Select(x => x).Distinct(StringComparer.OrdinalIgnoreCase).ToList());
+        var changes = new List<(KaraokeDJ.Models.Track t, string a, string title)>();
+        foreach (var t in vm.Tracks)
+        {
+            if (t.IsMidi) continue;
+            var (a, title) = KaraokeDJ.Services.TitleCleaner.Clean(t.Artist ?? "", t.Title ?? "", System.IO.Path.GetFileNameWithoutExtension(t.FilePath));
+            // cognome da solo ricavato dal titolo ("Antonacci-Un cuore"): artista completo se in libreria ce n'è uno solo
+            if (string.IsNullOrWhiteSpace(t.Artist) && a.Length > 0 && !a.Contains(' ') && full.TryGetValue(a.ToLowerInvariant(), out var names) && names.Count == 1) a = names[0];
+            if (a != (t.Artist ?? "") || title != (t.Title ?? "")) changes.Add((t, a, title));
+        }
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"titoli da sistemare: {changes.Count} su {vm.Tracks.Count(t => !t.IsMidi)}" + (apply ? " (APPLICATO)" : " (a secco)"));
+        foreach (var (t, a, title) in changes)
+            sb.AppendLine($"[{t.Artist}] [{t.Title}]  →  [{a}] [{title}]");
+        if (apply)
+        {
+            foreach (var (t, a, title) in changes)
+            {
+                t.Artist = a; t.Title = title; t.InvalidateSearchCache();
+                vm.Library.Save(t);
+            }
+        }
+        try { System.IO.File.WriteAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "mixfonia-titoli.log"), sb.ToString()); } catch { }
+        Console.Error.WriteLine(sb.ToString().Split(Environment.NewLine)[0]);
         Shutdown(0);
     }
 
