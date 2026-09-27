@@ -233,9 +233,10 @@ public sealed class AudioEngine : IDisposable
     {
         StopOutput();
         IWavePlayer player;
+        MMDevice? dev = null;
+        WaveFormat? quadFormat = null;
         try
         {
-            MMDevice? dev = null;
             if (!string.IsNullOrEmpty(deviceId))
             {
                 using var en = new MMDeviceEnumerator();
@@ -247,14 +248,22 @@ public sealed class AudioEngine : IDisposable
             OutputDescription = "WASAPI " + (dev?.FriendlyName ?? "predefinito");
             // console con scheda audio integrata (Instinct, Inpulse, DDJ-400…): un solo dispositivo a 4 canali,
             // master su 1-2 e cuffia su 3-4
+            _quad = null;
             if (_cueOnMain)
             {
-                int ch = 2;
-                try { ch = (dev ?? new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia)).AudioClient.MixFormat.Channels; } catch { }
-                if (ch >= 4) { _quad = new QuadProvider(_tap, _cue); CueDescription = "Cuffia: canali 3-4 di " + (dev?.FriendlyName ?? "scheda predefinita"); }
-                else { _quad = null; CueDescription = "Cuffia: la scheda ha solo " + ch + " canali, scegli un'altra uscita"; }
+                WaveFormat? mix = null;
+                try { mix = (dev ?? new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia)).AudioClient.MixFormat; } catch { }
+                int ch = mix?.Channels ?? 2;
+                bool floatMix = mix != null && mix.BitsPerSample == 32 && (mix.Encoding == WaveFormatEncoding.IeeeFloat || mix.Encoding == WaveFormatEncoding.Extensible);
+                if (ch == 4 && floatMix && mix!.SampleRate == SourceFactory.SampleRate)
+                {
+                    _quad = new QuadProvider(_tap, _cue); quadFormat = mix;
+                    CueDescription = "Cuffia: canali 3-4 di " + (dev?.FriendlyName ?? "scheda predefinita");
+                }
+                else CueDescription = ch < 4
+                    ? "Cuffia: la scheda ha solo " + ch + " canali, scegli un'altra uscita"
+                    : $"Cuffia: formato della scheda non gestito ({mix?.SampleRate} Hz, {ch} canali): scegli un'altra uscita per la cuffia";
             }
-            else _quad = null;
         }
         catch
         {
@@ -263,11 +272,47 @@ public sealed class AudioEngine : IDisposable
             _quad = null;
         }
         if (_quad != null) { MasterRing.Clear(); DeckA.CueRing.Clear(); DeckB.CueRing.Clear(); }
-        player.Init((ISampleProvider?)_quad ?? _tap);
+        try
+        {
+            // A 4 canali Windows accetta solo il formato esatto della scheda (Extensible con la mappa dei canali,
+            // sulla Inpulse 500: 44,1 kHz, 32 bit float, 0x33): un 4 canali "semplice" dava "Value does not fall
+            // within the expected range" e l'uscita restava chiusa, cioè niente musica (27/9/2026).
+            if (_quad != null) player.Init(new AsDeviceFormat(_quad, quadFormat!));
+            else player.Init(_tap);
+        }
+        catch (Exception ex) when (_quad != null)
+        {
+            // rete di sicurezza: se i 4 canali non passano, la musica esce comunque sul master a 2 canali
+            try { player.Dispose(); } catch { }
+            _quad = null;
+            CueDescription = "Cuffia sui canali 3-4 non disponibile (" + ex.Message + "): il master suona, scegli un'altra uscita per la cuffia";
+            player = dev != null ? new WasapiOut(dev, AudioClientShareMode.Shared, true, 80) : new WasapiOut(AudioClientShareMode.Shared, 80);
+            player.Init(_tap);
+        }
         player.PlaybackStopped += (_, a) => OnOutputStopped(player, a.Exception);
         _output = player;
         player.Play();
         CurrentDeviceId = deviceId;
+    }
+
+    /// <summary>
+    /// Passa i campioni float alla scheda dichiarando il suo formato esatto (WaveFormatExtensible): la conversione
+    /// standard di NAudio accetta solo il float "semplice", che Windows rifiuta sopra i 2 canali.
+    /// </summary>
+    private sealed class AsDeviceFormat : IWaveProvider
+    {
+        private readonly ISampleProvider _src;
+        private float[] _buf = Array.Empty<float>();
+        public AsDeviceFormat(ISampleProvider src, WaveFormat deviceFormat) { _src = src; WaveFormat = deviceFormat; }
+        public WaveFormat WaveFormat { get; }
+        public int Read(byte[] buffer, int offset, int count)
+        {
+            int n = count / 4;
+            if (_buf.Length < n) _buf = new float[n];
+            int got = _src.Read(_buf, 0, n);
+            Buffer.BlockCopy(_buf, 0, buffer, offset, got * 4);
+            return got * 4;
+        }
     }
 
     private void StopOutput()
