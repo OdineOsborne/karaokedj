@@ -1434,6 +1434,15 @@ public sealed partial class MainViewModel : ObservableObject
             foreach (var t in todo)
             {
                 _analyzeCts.Token.ThrowIfCancellationRequested();
+                // disco della musica scollegato: si ferma e lo dice, invece di "analizzare" migliaia di file che non ci sono
+                var root = Path.GetPathRoot(t.FilePath);
+                if (!string.IsNullOrEmpty(root) && !Directory.Exists(root))
+                {
+                    AnalyzeStatus = $"Analisi ferma: il disco {root} non è collegato ({done}/{todo.Count}). Ricollegalo e rilancia.";
+                    StatusText = AnalyzeStatus;
+                    return;
+                }
+                if (!File.Exists(t.FilePath)) { done++; continue; }
                 _analyzeDone = ++done; _analyzeTotal = todo.Count;
                 AnalyzeStatus = $"Analisi {done}/{todo.Count}: {t.Display}";
                 await AnalyzeTrackAsync(t, _analyzeCts.Token);

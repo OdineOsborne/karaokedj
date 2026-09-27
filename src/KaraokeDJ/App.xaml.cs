@@ -71,6 +71,8 @@ public partial class App : Application
         // --scalettatest <momento>: la scaletta che l'automix preparerebbe (la coda viene rimessa com'era)
         int stIdx = Array.IndexOf(e.Args, "--scalettatest");
         if (stIdx >= 0) RunPlanTest(e.Args.ElementAtOrDefault(stIdx + 1) ?? "libero");
+        int studioIdx = Array.IndexOf(e.Args, "--studiotest");
+        if (studioIdx >= 0 && studioIdx + 1 < e.Args.Length) RunStudioTest(e.Args[studioIdx + 1], e.Args.Contains("spezzoni"));
         // --gridtest [quanti]: quanto la griglia dei battiti sta davvero sui colpi del brano
         int gridIdx = Array.IndexOf(e.Args, "--gridtest");
         if (gridIdx >= 0) RunGridTest(gridIdx + 1 < e.Args.Length && int.TryParse(e.Args[gridIdx + 1], out var gn) ? gn : 20);
@@ -442,6 +444,60 @@ public partial class App : Application
             vm.Queue.Clear(); foreach (var q in before) vm.Queue.Add(q);
         }
         try { System.IO.File.WriteAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "mixfonia-scaletta.log"), sb.ToString()); } catch { }
+        Shutdown(0);
+    }
+
+    /// <summary>
+    /// --studiotest "pezzo titolo 1;pezzo titolo 2;..." [spezzoni]: costruisce il mix con l'assistente dello Studio,
+    /// lo esporta in %TEMP%\mixfonia-studio.wav e scrive scaletta, livelli e tempi in mixfonia-studio.log.
+    /// </summary>
+    private async void RunStudioTest(string list, bool snippets)
+    {
+        var vm = Vm!;
+        // la libreria si carica in background: si aspetta che ci sia
+        for (int w = 0; w < 120 && vm.Tracks.Count < 100; w++) await System.Threading.Tasks.Task.Delay(500);
+        await System.Threading.Tasks.Task.Delay(1000);
+        var sb = new System.Text.StringBuilder();
+        try
+        {
+            var tracks = new List<KaraokeDJ.Models.Track>();
+            foreach (var q in list.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var t = vm.Tracks.Where(x => !x.IsKaraoke && System.IO.File.Exists(x.FilePath) && x.Display.Contains(q, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(x => x.Bpm > 0).ThenByDescending(x => x.Sections != null).FirstOrDefault();
+                var any = vm.Tracks.FirstOrDefault(x => x.Display.Contains(q, StringComparison.OrdinalIgnoreCase));
+                sb.AppendLine(t == null ? $"NON TROVATO: {q} (brani {vm.Tracks.Count}; senza filtri: {any?.Display} kind {any?.Kind} missing {any?.Missing})" : $"{t.Display} · {t.Bpm:0.0} BPM · intro {t.IntroEndSec:0} · uscita {t.OutroStartSec:0} · sezioni {(t.Sections?.Count ?? 0)} (affid. {t.SectionsScore:0.0})");
+                if (t != null) tracks.Add(t);
+            }
+            var p = KaraokeDJ.Services.Studio.StudioDj.Build(tracks, new() { Snippets = snippets }, "Prova studio");
+            sb.AppendLine($"progetto {p.Bpm:0.0} BPM, durata {p.EndSec:0} s");
+            foreach (var c in p.Clips)
+                sb.AppendLine($"  {c.StartSec,7:0.0}–{c.EndSec,7:0.0}  [{p.Lane(c.LaneId)?.Name}] {c.Label}  file {c.InSec:0.0}–{c.OutSec:0.0}  tempo {c.Tempo:0.000}  {(c.TransitionIn ?? "")} {c.TransitionInSec:0.0}s");
+            string PathOf(KaraokeDJ.Models.Studio.StudioClip c)
+            {
+                var t = c.TrackId != null ? vm.Tracks.FirstOrDefault(x => x.Id == c.TrackId) : null;
+                return t != null ? KaraokeDJ.Services.LibraryService.PrepareForPlayback(t).audioPath : c.FilePath!;
+            }
+            var wav = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "mixfonia-studio.wav");
+            var t0 = DateTime.UtcNow;
+            var outPath = await System.Threading.Tasks.Task.Run(() => KaraokeDJ.Services.Studio.StudioExport.Export(p, PathOf, wav, mp3: true, null, default));
+            sb.AppendLine($"esportato {outPath} in {(DateTime.UtcNow - t0).TotalSeconds:0.0} s");
+            // livelli ogni 5 secondi: il volume non deve saltare fra un brano e l'altro
+            using var rd = new NAudio.Wave.AudioFileReader(wav);
+            var buf = new float[44100 * 2 * 5];
+            int n, k = 0; float peak = 0;
+            var line = new System.Text.StringBuilder("  RMS dB ogni 5 s:");
+            while ((n = rd.Read(buf, 0, buf.Length)) > 0)
+            {
+                double sq = 0; for (int i = 0; i < n; i++) { sq += buf[i] * buf[i]; peak = Math.Max(peak, Math.Abs(buf[i])); }
+                line.Append($" {20 * Math.Log10(Math.Sqrt(sq / n) + 1e-9):0}");
+                if (++k % 20 == 0) line.Append("\n   ");
+            }
+            sb.AppendLine(line.ToString());
+            sb.AppendLine($"  picco {peak:0.000}");
+        }
+        catch (Exception ex) { sb.AppendLine("ERRORE " + ex); }
+        try { System.IO.File.WriteAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "mixfonia-studio.log"), sb.ToString()); } catch { }
         Shutdown(0);
     }
 
