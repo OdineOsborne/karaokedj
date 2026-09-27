@@ -71,8 +71,12 @@ public sealed partial class MainViewModel : ObservableObject
         AutoMixUseCues = Settings.AutoMixUseCues;
         AutoMixEndless = Settings.AutoMixEndless;
         AutoMixBpmRange = Settings.AutoMixBpmRange;
-        SetGenres = Settings.SetGenres ?? "";
-        _momentId = Moments.Any(m => m.Id == Settings.AutoMixMoment) ? Settings.AutoMixMoment : (string.IsNullOrWhiteSpace(SetGenres) ? "libero" : CustomMomentId);
+        // prima il momento, poi i generi (come "applicati dal momento"): caricare i generi salvati sembrava una modifica
+        // a mano e all'avvio il momento diventava sempre "Personalizzato"
+        var savedMoment = Settings.AutoMixMoment;
+        _momentId = Moments.Any(m => m.Id == savedMoment) ? savedMoment : (string.IsNullOrWhiteSpace(Settings.SetGenres) ? "libero" : CustomMomentId);
+        _applyingMoment = true;
+        try { SetGenres = Settings.SetGenres ?? ""; } finally { _applyingMoment = false; }
         MixViewVisible = Settings.MixViewVisible;
         HideCryptic = Settings.HideCryptic;
         BottomStripVisible = Settings.BottomStripVisible;
@@ -300,6 +304,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     // ---------------------------------------------------------------- timer
 
+    private string? _suggestRefId;
+
     private void Tick()
     {
         var now = DateTime.UtcNow;
@@ -311,6 +317,10 @@ public sealed partial class MainViewModel : ObservableObject
         FlushJogSeek(DeckA);
         FlushJogSeek(DeckB);
         TickPreview();
+        // i suggeriti seguono il brano che si sente: prima si aggiornavano all'inizio del passaggio, quando si sentiva
+        // ancora quello in uscita, e restavano fermi lì per tutto il brano nuovo
+        var heard = DeckA.IsPlaying || DeckB.IsPlaying ? CompatReference() : null;
+        if (heard != null && heard.Id != _suggestRefId && !IsMixing) { _suggestRefId = heard.Id; UpdateSuggestions(); }
         if (IsAnalyzing && _analyzeTotal > 0 && DateTime.UtcNow.Millisecond < 120)
             AnalyzeStatus = $"Analisi {_analyzeDone}/{_analyzeTotal} · {(int)(DateTime.UtcNow - _analyzeStartedUtc).TotalSeconds} s: {_analyzeCurrent}";
         double ml = Views.LevelMeter.ToScale(Engine.MasterPeakL), mr = Views.LevelMeter.ToScale(Engine.MasterPeakR);
@@ -665,7 +675,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         try
         {
-            JsonStore.Save(AppPaths.QueueFile, Queue.Select(q => new QueueEntryDto { Singer = q.Singer, KeyShift = q.KeyShift, TrackId = q.Track.Id }).ToList());
+            JsonStore.Save(AppPaths.QueueFile, Queue.Select(q => new QueueEntryDto { Singer = q.Singer, KeyShift = q.KeyShift, TrackId = q.Track.Id, Note = q.Note }).ToList());
         }
         catch { }
     }
@@ -676,7 +686,7 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var d in dtos)
         {
             var t = Library.FindById(d.TrackId);
-            if (t != null) Queue.Add(new QueueEntry { Track = t, Singer = d.Singer, KeyShift = d.KeyShift });
+            if (t != null) Queue.Add(new QueueEntry { Track = t, Singer = d.Singer, KeyShift = d.KeyShift, Note = d.Note ?? "" });
         }
     }
 

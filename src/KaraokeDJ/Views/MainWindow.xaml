@@ -623,11 +623,13 @@
             <!-- coda -->
             <Border Grid.Column="1" Style="{StaticResource Panel}">
                 <Grid>
+                    <!-- coda e suggeriti si dividono lo spazio: con i suggeriti ad altezza libera, sullo schermo da 15,6"
+                         la coda (e quindi la scaletta dell'automix) restava alta zero -->
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="3*" MinHeight="130"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="2*" MinHeight="96" MaxHeight="290"/>
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="0" Margin="0,0,0,8">
                     <DockPanel>
@@ -698,7 +700,7 @@
                     </StackPanel>
 
                     <!-- suggeritore prossimo brano -->
-                    <Border Grid.Row="3" Background="{StaticResource InnerPanelBrush}" CornerRadius="3" Padding="8,6" Margin="0,8,0,0" MaxHeight="290">
+                    <Border Grid.Row="3" Background="{StaticResource InnerPanelBrush}" CornerRadius="3" Padding="8,6" Margin="0,8,0,0">
                         <DockPanel>
                             <!-- fuori libreria: proposte AI da scaricare e mettere in coda -->
                             <DockPanel DockPanel.Dock="Bottom" Margin="0,6,0,0" Visibility="{Binding ExternalSuggestionsLabel, Converter={StaticResource NullToVis}}">
@@ -746,6 +748,11 @@
                                 <TextBlock Text="{Binding SuggestionsLabel}" Style="{StaticResource Muted}" Margin="8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                             </DockPanel>
                             <ItemsControl ItemsSource="{Binding Suggestions}">
+                                <ItemsControl.Template>
+                                    <ControlTemplate TargetType="ItemsControl">
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><ItemsPresenter/></ScrollViewer>
+                                    </ControlTemplate>
+                                </ItemsControl.Template>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type m:Track}">
                                         <DockPanel Margin="0,1">

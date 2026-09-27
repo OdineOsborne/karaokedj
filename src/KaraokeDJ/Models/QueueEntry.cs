@@ -21,4 +21,6 @@ public sealed class QueueEntryDto
     public string Singer { get; set; } = "";
     public int KeyShift { get; set; }
     public string TrackId { get; set; } = "";
+    /// <summary>La nota va salvata: "automix · …" è ciò che distingue la scaletta proposta dalle scelte del DJ</summary>
+    public string Note { get; set; } = "";
 }
