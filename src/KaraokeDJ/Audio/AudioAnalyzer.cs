@@ -470,6 +470,10 @@ public static class AudioAnalyzer
         }
         double bpm = 60.0 * framesPerSec / lagF;
 
+        // Con un'interpolazione degenere (lagF enorme o negativo) il BPM esce 0, negativo o infinito:
+        // raddoppiare 0 o un negativo non arriva mai a 70 e il ciclo qui sotto girava per sempre,
+        // fermando l'analisi di tutta la libreria su un brano (Ellie Goulding - O Holy Night).
+        if (!(bpm > 1) || double.IsInfinity(bpm)) return 0;
         // porta nel range "da ballo" 70–170 raddoppiando/dimezzando
         while (bpm < 70) bpm *= 2;
         while (bpm > 170) bpm /= 2;
