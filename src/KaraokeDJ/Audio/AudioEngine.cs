@@ -210,8 +210,77 @@ public sealed class AudioEngine : IDisposable
             if (_e.DeckA.CueOn) _e.DeckA.CueRing.ReadAdd(buffer, offset, count, gc); else _e.DeckA.CueRing.Clear();
             if (_e.DeckB.CueOn) _e.DeckB.CueRing.ReadAdd(buffer, offset, count, gc); else _e.DeckB.CueRing.Clear();
             _e.MasterRing.ReadAdd(buffer, offset, count, gm);
+            // pre-ascolto dalla libreria: sempre udibile in cuffia (non segue il mix cue/master), mai nel master
+            if (_e.PreviewOn) _e.PreviewRing.ReadAdd(buffer, offset, count, Volume * 0.9f);
             return count;
         }
+    }
+
+    // ---------------------------------------------------------------- pre-ascolto dalla libreria (solo cuffia)
+
+    /// <summary>
+    /// Il file del pre-ascolto si legge in un thread suo, a bassa priorità, dentro questo anello (mezzo secondo di
+    /// scorta): con la cuffia sui canali 3-4 cuffia e master sono lo stesso flusso, e leggere dal disco dentro il
+    /// thread audio potrebbe far saltare la musica in sala se il disco rallenta.
+    /// </summary>
+    public SampleRing PreviewRing { get; } = new(SourceFactory.SampleRate * 2 * 2, SourceFactory.SampleRate * 2);
+    private readonly object _pvGate = new();
+    private WaveStream? _pvReader;
+    private CancellationTokenSource? _pvCts;
+    public bool PreviewOn => _pvCts != null;
+    public double PreviewPositionSec { get { lock (_pvGate) return _pvReader?.CurrentTime.TotalSeconds ?? 0; } }
+    public double PreviewDurationSec { get { lock (_pvGate) return _pvReader?.TotalTime.TotalSeconds ?? 0; } }
+
+    public void StartPreview(string path, double startSec)
+    {
+        StopPreview();
+        var (reader, provider) = SourceFactory.Open(path);
+        if (startSec > 0 && startSec < reader.TotalTime.TotalSeconds - 5) reader.CurrentTime = TimeSpan.FromSeconds(startSec);
+        var cts = new CancellationTokenSource();
+        lock (_pvGate) _pvReader = reader;
+        PreviewRing.Clear();
+        _pvCts = cts;
+        new Thread(() => PreviewLoop(reader, provider, cts)) { IsBackground = true, Name = "Pre-ascolto", Priority = ThreadPriority.BelowNormal }.Start();
+    }
+
+    private void PreviewLoop(WaveStream reader, ISampleProvider provider, CancellationTokenSource cts)
+    {
+        var buf = new float[4096];
+        try
+        {
+            while (!cts.IsCancellationRequested)
+            {
+                if (PreviewRing.Count > SourceFactory.SampleRate) { Thread.Sleep(15); continue; }   // mezzo secondo di scorta basta
+                int n;
+                lock (_pvGate) n = provider.Read(buf, 0, buf.Length);
+                if (n == 0) break;
+                PreviewRing.Write(buf, 0, n);
+            }
+        }
+        catch { /* file illeggibile: il pre-ascolto finisce, la serata no */ }
+        finally
+        {
+            lock (_pvGate) { if (_pvReader == reader) _pvReader = null; }
+            if (_pvCts == cts) _pvCts = null;
+            try { reader.Dispose(); } catch { }
+        }
+    }
+
+    public void SeekPreview(double sec)
+    {
+        lock (_pvGate)
+        {
+            if (_pvReader == null) return;
+            _pvReader.CurrentTime = TimeSpan.FromSeconds(Math.Clamp(sec, 0, Math.Max(0, _pvReader.TotalTime.TotalSeconds - 1)));
+        }
+        PreviewRing.Clear();
+    }
+
+    public void StopPreview()
+    {
+        var c = _pvCts; _pvCts = null;
+        c?.Cancel();
+        PreviewRing.Clear();
     }
 
     // ---------------------------------------------------------------- uscita principale

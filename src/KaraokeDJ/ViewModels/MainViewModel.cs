@@ -70,7 +70,9 @@ public sealed partial class MainViewModel : ObservableObject
         AutoMix = false;
         AutoMixUseCues = Settings.AutoMixUseCues;
         AutoMixEndless = Settings.AutoMixEndless;
+        AutoMixBpmRange = Settings.AutoMixBpmRange;
         SetGenres = Settings.SetGenres ?? "";
+        _momentId = Moments.Any(m => m.Id == Settings.AutoMixMoment) ? Settings.AutoMixMoment : (string.IsNullOrWhiteSpace(SetGenres) ? "libero" : CustomMomentId);
         MixViewVisible = Settings.MixViewVisible;
         HideCryptic = Settings.HideCryptic;
         BottomStripVisible = Settings.BottomStripVisible;
@@ -147,9 +149,12 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _bottomStripVisible = true;
     partial void OnBottomStripVisibleChanged(bool value) => Settings.BottomStripVisible = value;
     partial void OnAutoMixEndlessChanged(bool value) => Settings.AutoMixEndless = value;
+    /// <summary>Range BPM per le scelte automatiche (vedi <see cref="AppSettings.AutoMixBpmRange"/>).</summary>
+    [ObservableProperty] private double _autoMixBpmRange = 8;
+    partial void OnAutoMixBpmRangeChanged(double value) => Settings.AutoMixBpmRange = Math.Clamp(value, 0, 60);
     /// <summary>Generi della serata (separati da virgola): l'automix pesca solo lì.</summary>
     [ObservableProperty] private string _setGenres = "";
-    partial void OnSetGenresChanged(string value) => Settings.SetGenres = value;
+    partial void OnSetGenresChanged(string value) { Settings.SetGenres = value; OnSetGenresEditedByHand(); }
     [ObservableProperty] private double _crossfadeSeconds = 6;
     [ObservableProperty] private string _statusText = "Pronto";
     /// <summary>Dimensione attuale dell'interfaccia, mostrata nella barra di stato (Ctrl + / − / 0).</summary>
@@ -305,6 +310,7 @@ public sealed partial class MainViewModel : ObservableObject
         DeckB.Tick();
         FlushJogSeek(DeckA);
         FlushJogSeek(DeckB);
+        TickPreview();
         if (IsAnalyzing && _analyzeTotal > 0 && DateTime.UtcNow.Millisecond < 120)
             AnalyzeStatus = $"Analisi {_analyzeDone}/{_analyzeTotal} · {(int)(DateTime.UtcNow - _analyzeStartedUtc).TotalSeconds} s: {_analyzeCurrent}";
         double ml = Views.LevelMeter.ToScale(Engine.MasterPeakL), mr = Views.LevelMeter.ToScale(Engine.MasterPeakR);
@@ -935,6 +941,29 @@ public sealed partial class MainViewModel : ObservableObject
 
         var setGenres = SetGenreList();
         var fresh = pool.Where(t => !t.PlayedThisSession && !Feedback.IsRejectedNow(t)).ToList();
+        // Range BPM: anche nello stesso genere un brano troppo lontano rompe il ritmo della pista (e con "aggancia
+        // BPM" andrebbe stirato troppo). Conta anche metà/doppio tempo. Se nel range non c'è niente si prende il
+        // più vicino e lo si dice, invece di saltare il ritmo in silenzio.
+        double refBpm = EffectiveBpm(playing);
+        // fascia BPM del momento (es. pista piena 122–132): dentro la fascia si resta vicini al ritmo attuale,
+        // così passando da "cena" a "pista" l'automix sale a gradini invece di saltare
+        var moment = CurrentMoment;
+        if (moment.HasWindow && fresh.Count > 0)
+        {
+            var inWin = fresh.Where(t => moment.InWindow(t.Bpm)).ToList();
+            if (inWin.Count > 0) fresh = inWin;
+            else StatusText = $"Automix: nessun brano fra {moment.MinBpm:0} e {moment.MaxBpm:0} BPM per «{moment.Name}»: resto sul ritmo attuale";
+        }
+        if (AutoMixBpmRange > 0 && refBpm > 0 && fresh.Count > 0)
+        {
+            var inRange = fresh.Where(t => BpmDistance(t.Bpm, refBpm) <= AutoMixBpmRange).ToList();
+            if (inRange.Count > 0) fresh = inRange;
+            else
+            {
+                fresh = fresh.Where(t => t.Bpm > 0).OrderBy(t => BpmDistance(t.Bpm, refBpm)).Take(10).ToList();
+                StatusText = $"Automix: nessun brano entro ±{AutoMixBpmRange:0} BPM da {refBpm:0}: prendo il più vicino";
+            }
+        }
         // generi della serata: il pool si restringe a quelli (se ce n'è abbastanza)
         if (setGenres.Count > 0)
         {
@@ -1392,6 +1421,10 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (BpmLock) foreach (var d in new[] { DeckA, DeckB }) ApplyTempoForTarget(d, value);
     }
+
+    /// <summary>Distanza in BPM contando anche metà e doppio tempo (un 64 va bene dopo un 128). Senza BPM: infinita.</summary>
+    private static double BpmDistance(double bpm, double target) =>
+        bpm <= 0 ? double.MaxValue : new[] { 1.0, 2.0, 0.5 }.Min(m => Math.Abs(bpm * m - target));
 
     /// <summary>BPM effettivi del deck (BPM del brano × tempo), 0 se sconosciuti.</summary>
     private static double EffectiveBpm(DeckViewModel d) =>
@@ -2585,6 +2618,7 @@ public sealed partial class MainViewModel : ObservableObject
             case "fadeA": StartCrossfade(-1); break;
             case "fadeB": StartCrossfade(1); break;
             case "automix": AutoMix = !AutoMix; break;
+            case "preview": PreviewTrackToggleCommand.Execute(null); break;
             case "projector": IsProjectorOpen = !IsProjectorOpen; break;
             case "monitor": IsMonitorOpen = !IsMonitorOpen; break;
             case "search": SearchFocusRequested?.Invoke(); break;

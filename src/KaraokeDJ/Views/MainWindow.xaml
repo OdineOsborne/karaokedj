@@ -235,17 +235,39 @@
                                 ToolTip="Ferma subito: annulla il passaggio in corso e spegne l'auto-mix"/>
                         <Button Content="⏭ MIXA ORA" Command="{Binding PlayNextCommand}" Style="{StaticResource SmallButton}" Height="24" Padding="8,0" FontSize="10.5" Margin="0,0,14,0"
                                 ToolTip="Fa partire subito il passaggio al prossimo in coda (Ctrl+N)"/>
-                        <CheckBox IsChecked="{Binding AutoMix}" Content="dalla coda" v:Shortcut.Action="automix" Margin="0,0,10,0" VerticalAlignment="Center" ToolTip="A fine brano parte automaticamente il prossimo in coda con il passaggio da DJ"/>
+                        <!-- l'interruttore era una casella "dalla coda": nessuno capiva che accendeva l'automix -->
+                        <ToggleButton IsChecked="{Binding AutoMix}" v:Shortcut.Action="automix" Height="24" Padding="10,0" FontSize="10.5" FontWeight="SemiBold" MinWidth="0" Margin="0,0,10,0"
+                                      ToolTip="Accende l'automix: a fine brano parte da solo il prossimo in coda, con il passaggio da DJ.&#10;Con &quot;mai fermarsi&quot;, a coda vuota sceglie lui fra i suggeriti.">
+                            <ToggleButton.Style>
+                                <Style TargetType="ToggleButton" BasedOn="{StaticResource ToolToggle}">
+                                    <Setter Property="Content" Value="⏻ ACCENDI"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsChecked" Value="True"><Setter Property="Content" Value="⏻ SPEGNI"/></Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ToggleButton.Style>
+                        </ToggleButton>
                         <CheckBox IsChecked="{Binding AutoMixEndless}" Content="mai fermarsi" Margin="0,0,10,0" VerticalAlignment="Center" ToolTip="Coda vuota → il prossimo brano viene preso dai suggeriti (stesso genere, non ancora suonato stasera)"/>
-                        <CheckBox IsChecked="{Binding BpmMatch}" Content="aggancia BPM" Margin="0,0,14,0" VerticalAlignment="Center" ToolTip="Il brano entrante viene portato ai BPM di quello in uscita (×1, ×2 o ×½, max ±25 %)"/>
-                        <TextBlock Text="Generi serata" Style="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,6,0" ToolTip="Quando l'automix sceglie da solo pesca solo in questi generi. Vuoto = segue il genere del brano in corso."/>
+                        <CheckBox IsChecked="{Binding BpmMatch}" Content="aggancia BPM" Margin="0,0,10,0" VerticalAlignment="Center" ToolTip="Il brano entrante viene portato ai BPM di quello in uscita (×1, ×2 o ×½, max ±25 %)"/>
+                        <TextBlock Text="BPM ±" Style="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,4,0"
+                                   ToolTip="Quando l'automix sceglie da solo: solo brani entro questa distanza dal BPM del brano in corso (conta anche metà e doppio tempo). 0 = nessun limite. I brani messi in coda da te non vengono filtrati."/>
+                        <TextBox Text="{Binding AutoMixBpmRange, StringFormat={}{0:0}, UpdateSourceTrigger=LostFocus}" Width="34" FontSize="11" Padding="2,2" TextAlignment="Center" VerticalAlignment="Center" Margin="0,0,14,0"
+                                 ToolTip="Distanza massima in BPM per le scelte automatiche (0 = nessun limite)"/>
+                        <TextBlock Text="Momento" Style="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <ComboBox ItemsSource="{Binding MomentList}" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding MomentId}" FontSize="11" Padding="6,2" MinWidth="120" VerticalAlignment="Center" Margin="0,0,6,0"
+                                  ToolTip="Momento della serata: decide generi, fascia di BPM e intenzione (tenere, alzare, calmare) quando l'automix sceglie da solo.&#10;Cambiando momento l'automix si sposta a gradini, senza salti di ritmo."/>
                         <TextBlock DockPanel.Dock="Right" Text="{Binding MixStatus}" Style="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" Margin="12,0,0,0" MaxWidth="260" TextTrimming="CharacterEllipsis"/>
-                        <TextBox Text="{Binding SetGenres, UpdateSourceTrigger=LostFocus}" FontSize="11" Padding="6,2" MinWidth="120" MaxWidth="240" HorizontalAlignment="Left" VerticalAlignment="Center"
-                                 ToolTip="Generi separati da virgola, come nei tag (es. Dance, House, Pop italiano)"/>
+                        <TextBlock Text="{Binding SetGenres}" Style="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="200"
+                                   ToolTip="Generi del momento. Per scriverli a mano: Avanzate → Generi."/>
                     </DockPanel>
                     <Expander Margin="0,4,0,0" IsExpanded="False" Foreground="{StaticResource MutedBrush}">
                                     <Expander.Header><TextBlock Text="Avanzate" Style="{StaticResource Muted}" FontSize="11" FontWeight="SemiBold"/></Expander.Header>
                                     <StackPanel Margin="0,4,0,0">
+                                        <DockPanel Margin="0,3">
+                                            <TextBlock Text="Generi" Width="80" VerticalAlignment="Center" Style="{StaticResource Muted}" FontSize="11"/>
+                                            <TextBox Text="{Binding SetGenres, UpdateSourceTrigger=LostFocus}" FontSize="11" Padding="6,2" MinWidth="220"
+                                                     ToolTip="Generi separati da virgola, come nei tag (es. Dance, House, Pop italiano). Se li cambi a mano il momento diventa «Personalizzato»."/>
+                                        </DockPanel>
                                         <CheckBox IsChecked="{Binding AutoMixUseCues}" Content="Usa intro/uscita rilevate" Margin="0,3" ToolTip="Mixa all'inizio dell'uscita e fa partire il brano successivo dopo l'intro (serve l'analisi del brano)"/>
                                         <DockPanel Margin="0,3">
                                             <CheckBox IsChecked="{Binding BpmLock}" Content="Blocca BPM a" ToolTip="Tutti i brani caricati vengono velocizzati/rallentati a questo tempo"/>
@@ -462,6 +484,7 @@
                             <ContextMenu>
                                 <MenuItem Header="Carica su Deck A" Command="{Binding LoadSelectedToACommand}"/>
                                 <MenuItem Header="Carica su Deck B" Command="{Binding LoadSelectedToBCommand}"/>
+                                <MenuItem Header="🎧 Pre-ascolto in cuffia" Command="{Binding PreviewTrackToggleCommand}" ToolTip="Lo senti solo in cuffia, senza caricarlo su un deck"/>
                                 <MenuItem Header="Aggiungi alla coda" Command="{Binding AddToQueueCommand}"/>
                                 <MenuItem Header="⤒ In cima alla coda" Command="{Binding QueueToTopCommand}"/>
                                 <MenuItem Header="⚡ Mixa ora" Command="{Binding MixNowCommand}" ToolTip="Lo carica sul deck libero e sfuma subito"/>
@@ -506,6 +529,21 @@
                         <TextBlock DockPanel.Dock="Left" Text="🏷" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,6,0" ToolTip="Generi del brano selezionato"/>
                         <TextBlock DockPanel.Dock="Left" Text="{Binding SelectedTrack.Display}" Style="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" MaxWidth="260" TextTrimming="CharacterEllipsis"/>
                         <Button DockPanel.Dock="Right" Content="＋ tag" Style="{StaticResource SmallButton}" Padding="7,1" FontSize="10" Click="SelectedAddTag_Click" ToolTip="Aggiungi un genere al brano selezionato (max 5)"/>
+                        <!-- pre-ascolto: solo cuffia, senza deck -->
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding IsPreviewing, Converter={StaticResource BoolToVis}}" Margin="0,0,6,0">
+                                <TextBlock Text="{Binding PreviewTrack.Display}" Style="{StaticResource Muted}" FontSize="10.5" MaxWidth="180" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <Button Content="◀15" Command="{Binding PreviewJumpCommand}" CommandParameter="-15" Style="{StaticResource SmallButton}" Padding="5,1" FontSize="10" Margin="0,0,3,0" ToolTip="Indietro 15 secondi"/>
+                                <ProgressBar Width="110" Height="8" Minimum="0" Maximum="1" Value="{Binding PreviewFraction, Mode=OneWay}" VerticalAlignment="Center" Margin="2,0"
+                                             Foreground="{StaticResource AccentBrush}" Background="#22FFFFFF" BorderThickness="0" Cursor="Hand"
+                                             MouseLeftButtonDown="PreviewBar_MouseDown" ToolTip="Click: salta in quel punto"/>
+                                <Button Content="15▶" Command="{Binding PreviewJumpCommand}" CommandParameter="15" Style="{StaticResource SmallButton}" Padding="5,1" FontSize="10" Margin="3,0,4,0" ToolTip="Avanti 15 secondi"/>
+                                <TextBlock Text="{Binding PreviewLabel}" Style="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <Button Content="■" Command="{Binding StopPreviewCommand}" Style="{StaticResource SmallButton}" Padding="6,1" FontSize="10" ToolTip="Ferma il pre-ascolto"/>
+                            </StackPanel>
+                            <Button Content="🎧 Ascolta" Command="{Binding PreviewTrackToggleCommand}" Style="{StaticResource SmallButton}" Padding="7,1" FontSize="10"
+                                    ToolTip="Pre-ascolto in cuffia del brano selezionato, senza caricarlo su un deck (ripremi per fermare).&#10;Dalla console: SHIFT + pressione della manopola browse."/>
+                        </StackPanel>
                         <ItemsControl ItemsSource="{Binding SelectedTrackGenres}" VerticalAlignment="Center">
                             <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>

@@ -196,6 +196,12 @@ public partial class MainWindow : Window
         else { _mixByUser = true; _autoHidMix = false; }
     }
 
+    /// <summary>Click sulla barra del pre-ascolto: salta in quel punto del brano.</summary>
+    private void PreviewBar_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.ActualWidth > 0) Vm.PreviewSeekFraction(e.GetPosition(fe).X / fe.ActualWidth);
+    }
+
     /// <summary>Ctrl + / Ctrl − cambiano la dimensione a mano, Ctrl 0 torna automatica.</summary>
     private void ChangeUiScale(int dir)
     {

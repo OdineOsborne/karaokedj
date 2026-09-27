@@ -50,6 +50,10 @@ public sealed class AppSettings
     public string TransitionStyle { get; set; } = "auto";
     /// <summary>Automix senza fine: coda vuota → pesca dai suggerimenti (mai silenzio).</summary>
     public bool AutoMixEndless { get; set; } = true;
+    /// <summary>Quando l'automix sceglie da solo: al massimo ± questi BPM dal brano in corso (anche a metà/doppio tempo). 0 = nessun limite.</summary>
+    public double AutoMixBpmRange { get; set; } = 8;
+    /// <summary>Momento della serata scelto per l'automix (vedi MainViewModel.Moments).</summary>
+    public string AutoMixMoment { get; set; } = "libero";
     /// <summary>Generi della serata per l'automix (testo, separati da virgola).</summary>
     public string SetGenres { get; set; } = "";
     /// <summary>Generi creati a mano dall'utente: compaiono sempre negli elenchi.</summary>

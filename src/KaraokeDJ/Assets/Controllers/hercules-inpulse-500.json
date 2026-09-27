@@ -676,6 +676,12 @@
    "number": 8,
    "action": "b.jogtouch",
    "relative": true
+  },
+  {
+   "type": "note",
+   "channel": 4,
+   "number": 0,
+   "action": "preview"
   }
  ]
 }

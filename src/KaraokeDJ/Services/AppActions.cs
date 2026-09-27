@@ -47,6 +47,7 @@ public static class AppActions
         new("search", "Vai alla ricerca", false), new("addqueue", "Brano selezionato in coda", false), new("queuetop", "Brano selezionato in cima alla coda", false),
         new("mixnow", "Mixa ora il brano selezionato", false),
         new("loadA", "Carica il brano selezionato su A", false), new("loadB", "Carica il brano selezionato su B", false),
+        new("preview", "Libreria: pre-ascolto in cuffia del selezionato (on/off)", false),
         new("browse", "Libreria: scorri (encoder)", true), new("browseup", "Libreria: su", false), new("browsedown", "Libreria: giù", false), new("browseload", "Libreria: carica sul deck libero", false),
         new("rhythm.play", "Ritmi: avvia/ferma", false), new("rhythm.tap", "Ritmi: tap tempo", false), new("rhythm.resync", "Ritmi: riparti dall'1", false), new("rhythm.volume", "Ritmi: volume", true),
         new("padstop", "Stop tutti i pad", false),
