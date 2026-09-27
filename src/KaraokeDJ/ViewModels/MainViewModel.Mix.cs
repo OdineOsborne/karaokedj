@@ -107,6 +107,14 @@ public sealed partial class MainViewModel
         return anchor + k * bar;
     }
 
+    /// <summary>Il prossimo inizio di frase (4 battute dall'ancora della griglia).</summary>
+    private static double NextPhrase(double sec, double anchor, double beat)
+    {
+        double phrase = beat * 16;
+        double k = Math.Ceiling((sec - anchor) / phrase - 1e-6);
+        return anchor + k * phrase;
+    }
+
     /// <summary>Prepara griglia (forma d'onda fine + fase) per un brano, in background. Ritorna la forma d'onda fine se disponibile.</summary>
     private async Task<byte[]?> EnsureGridAsync(Track t)
     {
@@ -149,7 +157,9 @@ public sealed partial class MainViewModel
         _styleOverride = null;
         string tech;
         if (karaoke || style == "fade") tech = "fade";
-        else if (!canBeatMatch) tech = Random.Shared.Next(2) == 0 ? "echo" : "brake";
+        // BPM troppo lontani per agganciare: echo-out, che copre lo stacco. Il brake a sorpresa (era scelto a caso
+        // metà delle volte) in pista suona come un errore: resta solo se il DJ lo chiede
+        else if (!canBeatMatch) tech = style == "brake" ? "brake" : "echo";
         else if (style is "blend" or "bass" or "filter" or "echo" or "cut" or "brake") tech = style;
         else if (style == "glide") tech = "blend";
         else
@@ -160,6 +170,9 @@ public sealed partial class MainViewModel
         }
         plan.Technique = tech;
         plan.Bars = tech switch { "blend" => 16, "bass" => 16, "filter" => 8, "echo" => 4, "cut" => 2, "brake" => 2, _ => 0 };
+        // MIXA ORA: il brano in uscita è a metà, con la voce. 16 battute (mezzo minuto) di due voci sovrapposte si
+        // sentono: il DJ che preme "ora" vuole il cambio in pochi secondi
+        if (startNow && plan.Bars > 8) plan.Bars = 8;
         plan.InAudibleAt = tech switch { "echo" => 0.75, "cut" => 0.5, "brake" => 0.5, _ => 0 };
         plan.BeatMatch = canBeatMatch && tech != "fade";
 
@@ -189,7 +202,13 @@ public sealed partial class MainViewModel
         // punto di uscita: sul battere, dove calano i bassi (o almeno "Bars" battute prima della fine)
         double outStartFile = FindMixOut(to, fineOut, plan.OutAnchor, plan.OutBeat, plan.Bars + 1);
         double now = outgoing.Deck.PositionSec;
-        if (startNow || outStartFile < now + 0.2) outStartFile = NextBar(now + 0.15 * outTempoNow, plan.OutAnchor, plan.OutBeat);
+        if (startNow || outStartFile < now + 0.2)
+        {
+            outStartFile = NextBar(now + 0.15 * outTempoNow, plan.OutAnchor, plan.OutBeat);
+            // meglio sull'inizio di una frase (ogni 4 battute), dove il brano cambia da solo, se arriva entro pochi secondi
+            double phrase = NextPhrase(now + 0.15 * outTempoNow, plan.OutAnchor, plan.OutBeat);
+            if ((phrase - now) / outTempoNow <= 5) outStartFile = phrase;
+        }
         plan.OutStartSec = outStartFile;
 
         // punto di ingresso: il drop del brano in arrivo deve cadere a InAudibleAt del passaggio
@@ -365,6 +384,8 @@ public sealed partial class MainViewModel
     {
         if (outgoing.Track == null || incoming.Track == null) { StartCrossfade(incoming == DeckB ? 1 : -1); return; }
         if (!outgoing.IsPlaying) { Crossfader = incoming == DeckB ? 1 : -1; incoming.Deck.Play(); return; }
+        // la griglia di un brano mai aperto si calcola adesso (qualche secondo): senza messaggio sembra che MIXA ORA non abbia preso
+        MixStatus = "Mix: preparo il passaggio…";
         var plan = await PlanMixAsync(outgoing, incoming, startNow);
         StartMix(plan);
     }

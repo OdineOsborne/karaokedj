@@ -311,6 +311,9 @@ public partial class MainWindow : Window
 
     private void FocusSearch() { SearchBox.Focus(); SearchBox.SelectAll(); }
 
+    // il cursore resta nella ricerca: di solito si pulisce per scrivere subito il brano dopo
+    private void ClearSearch_Click(object sender, RoutedEventArgs e) { Vm.SearchText = ""; SearchBox.Focus(); }
+
     /// <summary>Tasto destro sul nome cantante: menù con i nomi già visti (stasera e nelle serate passate).</summary>
     private void SingerBox_Right(object sender, MouseButtonEventArgs e)
     {

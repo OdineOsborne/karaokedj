@@ -426,6 +426,14 @@ public partial class App : Application
             vm.PlanAutoMix();
             sb.AppendLine($"momento {vm.CurrentMoment.Name} · BPM ±{vm.AutoMixBpmRange:0} · generi: {vm.SetGenres}");
             foreach (var q in vm.Queue) sb.AppendLine($"  {q.Track.Bpm,4:0} BPM  {q.Track.Genre,-16} {q.Track.Display}  ← {q.Note}");
+            // "--scalettatest pista>italiana": cambio di momento ad automix acceso, come fa il DJ in serata
+            var next = Environment.GetEnvironmentVariable("MIXFONIA_MOMENT2");
+            if (!string.IsNullOrEmpty(next))
+            {
+                vm.MomentId = next;
+                sb.AppendLine($"dopo il cambio → {vm.CurrentMoment.Name} · generi: {vm.SetGenres}");
+                foreach (var q in vm.Queue) sb.AppendLine($"  {q.Track.Bpm,4:0} BPM  {q.Track.Genre,-16} {q.Track.Display}  ← {q.Note}");
+            }
         }
         catch (Exception ex) { sb.AppendLine("ERRORE " + ex); }
         finally

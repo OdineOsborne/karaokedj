@@ -68,8 +68,15 @@ public partial class MainViewModel
     /// <summary>Cambiato momento, generi o range: la scaletta proposta si rifà da capo.</summary>
     private void ReplanAutoMix()
     {
-        if (!AutoMix || !AutoMixEndless) return;
+        if (!AutoMix || !AutoMixEndless)
+        {
+            // senza "mai fermarsi" non c'è scaletta da rifare: meglio dirlo che lasciare il DJ ad aspettare
+            if (AutoMix) StatusText = $"Momento {CurrentMoment.Name}: vale per le prossime scelte. Per vedere la scaletta in coda spunta «mai fermarsi»";
+            return;
+        }
         RemoveAutoEntries();
         PlanAutoMix();
+        var first = Queue.FirstOrDefault(IsAutoEntry);
+        if (first != null) StatusText = $"Scaletta rifatta per «{CurrentMoment.Name}»: dopo le tue richieste parte {first.Track.Display}";
     }
 }

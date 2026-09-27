@@ -387,8 +387,32 @@
                                 <TextBlock><Run Text="👥 "/><Run Text="{Binding HiddenDuplicates, Mode=OneWay}"/></TextBlock>
                             </ToggleButton>
                         </StackPanel>
-                        <TextBox x:Name="SearchBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" FontSize="15" Padding="8,6" MinWidth="220"
-                                 ToolTip="Cerca per artista o titolo, anche con refusi (Ctrl+F). Un numero cerca per BPM (es. 120), '8a' o 'Am' per tonalità."/>
+                        <Grid>
+                            <TextBox x:Name="SearchBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" FontSize="15" Padding="8,6,36,6" MinWidth="220"
+                                     ToolTip="Cerca per artista o titolo, anche con refusi (Ctrl+F). Un numero cerca per BPM (es. 120), '8a' o 'Am' per tonalità. ✕ per pulire."/>
+                            <!-- ✕ per pulire la ricerca: in serata si cerca e si ricerca di continuo, selezionare e cancellare è lento -->
+                            <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0" Width="26" Height="26" Padding="0"
+                                    Content="✕" FontSize="14" Cursor="Hand" Focusable="False" Click="ClearSearch_Click" ToolTip="Pulisci la ricerca"
+                                    Background="Transparent" BorderThickness="0" Foreground="{StaticResource MutedBrush}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="13">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Background" Value="#33FFFFFF"/></Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </Grid>
                     </DockPanel>
 
                     <!-- raccolte rapide per genere: un click filtra per tag (più tag = unione), di nuovo per togliere -->
