@@ -88,7 +88,7 @@ public sealed partial class MainViewModel : ObservableObject
         IdleTitle = Settings.IdleTitle;
         IdleSubtitle = Settings.IdleSubtitle;
 
-        Queue.CollectionChanged += (_, _) => { UpdateProjectorState(); SaveQueue(); UpdateSuggestions(); PrefetchNextGrid(); };
+        Queue.CollectionChanged += (_, _) => { UpdateProjectorState(); SaveQueue(); UpdateSuggestions(); PrefetchNextGrid(); SchedulePlanAutoMix(); };
         InitLive();
         Engine.OutputRestarted += msg => Application.Current?.Dispatcher.BeginInvoke(() => { StatusText = msg; CrashLog.Write("audio: " + msg); });
 
@@ -148,13 +148,13 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Striscia in basso (jingle + download) visibile: nascosta dà spazio a libreria e coda.</summary>
     [ObservableProperty] private bool _bottomStripVisible = true;
     partial void OnBottomStripVisibleChanged(bool value) => Settings.BottomStripVisible = value;
-    partial void OnAutoMixEndlessChanged(bool value) => Settings.AutoMixEndless = value;
+    partial void OnAutoMixEndlessChanged(bool value) { Settings.AutoMixEndless = value; if (value) PlanAutoMix(); else RemoveAutoEntries(); }
     /// <summary>Range BPM per le scelte automatiche (vedi <see cref="AppSettings.AutoMixBpmRange"/>).</summary>
     [ObservableProperty] private double _autoMixBpmRange = 8;
-    partial void OnAutoMixBpmRangeChanged(double value) => Settings.AutoMixBpmRange = Math.Clamp(value, 0, 60);
+    partial void OnAutoMixBpmRangeChanged(double value) { Settings.AutoMixBpmRange = Math.Clamp(value, 0, 60); ReplanAutoMix(); }
     /// <summary>Generi della serata (separati da virgola): l'automix pesca solo lì.</summary>
     [ObservableProperty] private string _setGenres = "";
-    partial void OnSetGenresChanged(string value) { Settings.SetGenres = value; OnSetGenresEditedByHand(); }
+    partial void OnSetGenresChanged(string value) { Settings.SetGenres = value; OnSetGenresEditedByHand(); if (!_applyingMoment) ReplanAutoMix(); }
     [ObservableProperty] private double _crossfadeSeconds = 6;
     [ObservableProperty] private string _statusText = "Pronto";
     /// <summary>Dimensione attuale dell'interfaccia, mostrata nella barra di stato (Ctrl + / − / 0).</summary>
@@ -614,7 +614,11 @@ public sealed partial class MainViewModel : ObservableObject
     public void AddToQueue(Track track, string singer, int keyShift)
     {
         if (keyShift == 0) keyShift = RememberedKey(singer, track);
-        Queue.Add(new QueueEntry { Track = track, Singer = singer.Trim(), KeyShift = keyShift });
+        var entry = new QueueEntry { Track = track, Singer = singer.Trim(), KeyShift = keyShift };
+        Queue.Add(entry);
+        // la scelta del DJ passa davanti alla scaletta proposta dall'automix
+        int firstAuto = Queue.ToList().FindIndex(IsAutoEntry);
+        if (firstAuto >= 0 && firstAuto < Queue.Count - 1) Queue.Move(Queue.Count - 1, firstAuto);
         ApplyRotation();
         RefreshKnownSingers();
         StatusText = $"In coda: {track.Display}" + (string.IsNullOrWhiteSpace(singer) ? "" : $" ({singer})");
@@ -835,7 +839,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(AutoMixStateLabel));
         StatusText = value ? "Auto-mix in pausa: finisce questo brano e si ferma" : AutoMix ? "Auto-mix attivo" : "Auto-mix spento";
     }
-    partial void OnAutoMixChanged(bool value) { Settings.AutoMix = value; OnPropertyChanged(nameof(AutoMixStateLabel)); }
+    partial void OnAutoMixChanged(bool value) { Settings.AutoMix = value; OnPropertyChanged(nameof(AutoMixStateLabel)); if (value) PlanAutoMix(); }
 
     /// <summary>Stato leggibile per la sezione automix (anche a due metri dal portatile).</summary>
     public string AutoMixStateLabel => !AutoMix ? "SPENTO" : AutoMixHold ? "IN PAUSA" : "ATTIVO";
@@ -930,21 +934,49 @@ public sealed partial class MainViewModel : ObservableObject
     /// </summary>
     private bool TryFillQueueFromSuggestions(DeckViewModel playing)
     {
-        var current = playing.Track;
-        var onDecks = new HashSet<string>();
-        if (DeckA.Track != null) onDecks.Add(DeckA.Track.Id);
-        if (DeckB.Track != null) onDecks.Add(DeckB.Track.Id);
+        var exclude = QueuedAndOnDeckIds();
+        var (pick, why) = PickAutoNext(playing.Track, EffectiveBpm(playing), exclude, quiet: false);
+        if (pick == null) return false;
+        Queue.Add(new QueueEntry { Track = pick, Note = "automix · " + why });
+        StatusText = $"Automix: aggiunto {pick.Display} ({why})";
+        return true;
+    }
+
+    /// <summary>La canzone, non il file: titolo senza parentesi, "feat." e versioni ("Remix", "Radio Edit").</summary>
+    internal static string SongKey(Track t)
+    {
+        var s = System.Text.RegularExpressions.Regex.Replace(t.Title ?? "", @"[\(\[].*?[\)\]]|\s[-–]\s.*$|\b(feat|ft)\b.*$", " ", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        return SearchUtil.NormalizeForCompare(s);
+    }
+
+    private HashSet<string> QueuedAndOnDeckIds()
+    {
+        var ids = new HashSet<string>(Queue.Select(q => q.Track.Id));
+        if (DeckA.Track != null) ids.Add(DeckA.Track.Id);
+        if (DeckB.Track != null) ids.Add(DeckB.Track.Id);
+        return ids;
+    }
+
+    /// <summary>
+    /// Il prossimo brano che l'automix sceglierebbe dopo <paramref name="current"/> (a <paramref name="refBpm"/> BPM),
+    /// escludendo <paramref name="onDecks"/>. <paramref name="quiet"/>: niente messaggi (scaletta preparata in anticipo).
+    /// </summary>
+    private (Track? pick, string why) PickAutoNext(Track? current, double refBpm, HashSet<string> onDecks, bool quiet)
+    {
+        void Say(string s) { if (!quiet) StatusText = s; }
         // Missing è già tenuto aggiornato dal controllo in background: un File.Exists per brano sul disco E:
         // (decine di migliaia di file) bloccava l'interfaccia a ogni cambio brano
-        var pool = Tracks.Where(t => !t.IsKaraoke && !onDecks.Contains(t.Id) && !t.Missing).ToList();
-        if (pool.Count == 0) return false;
+        // la stessa canzone in due file ("Sweet Dreams" e "Sweet Dreams (feat. Imanbek)") non si ripete:
+        // fuori le canzoni già in coda, sui deck o suonate stasera
+        var songs = new HashSet<string>(Queue.Select(q => SongKey(q.Track)).Concat(Tracks.Where(t => t.PlayedThisSession || onDecks.Contains(t.Id)).Select(SongKey)));
+        var pool = Tracks.Where(t => !t.IsKaraoke && !onDecks.Contains(t.Id) && !t.Missing && !songs.Contains(SongKey(t))).ToList();
+        if (pool.Count == 0) return (null, "");
 
         var setGenres = SetGenreList();
         var fresh = pool.Where(t => !t.PlayedThisSession && !Feedback.IsRejectedNow(t)).ToList();
         // Range BPM: anche nello stesso genere un brano troppo lontano rompe il ritmo della pista (e con "aggancia
         // BPM" andrebbe stirato troppo). Conta anche metà/doppio tempo. Se nel range non c'è niente si prende il
         // più vicino e lo si dice, invece di saltare il ritmo in silenzio.
-        double refBpm = EffectiveBpm(playing);
         // fascia BPM del momento (es. pista piena 122–132): dentro la fascia si resta vicini al ritmo attuale,
         // così passando da "cena" a "pista" l'automix sale a gradini invece di saltare
         var moment = CurrentMoment;
@@ -952,7 +984,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var inWin = fresh.Where(t => moment.InWindow(t.Bpm)).ToList();
             if (inWin.Count > 0) fresh = inWin;
-            else StatusText = $"Automix: nessun brano fra {moment.MinBpm:0} e {moment.MaxBpm:0} BPM per «{moment.Name}»: resto sul ritmo attuale";
+            else Say($"Automix: nessun brano fra {moment.MinBpm:0} e {moment.MaxBpm:0} BPM per «{moment.Name}»: resto sul ritmo attuale");
         }
         if (AutoMixBpmRange > 0 && refBpm > 0 && fresh.Count > 0)
         {
@@ -961,7 +993,7 @@ public sealed partial class MainViewModel : ObservableObject
             else
             {
                 fresh = fresh.Where(t => t.Bpm > 0).OrderBy(t => BpmDistance(t.Bpm, refBpm)).Take(10).ToList();
-                StatusText = $"Automix: nessun brano entro ±{AutoMixBpmRange:0} BPM da {refBpm:0}: prendo il più vicino";
+                Say($"Automix: nessun brano entro ±{AutoMixBpmRange:0} BPM da {refBpm:0}: prendo il più vicino");
             }
         }
         // generi della serata: il pool si restringe a quelli (se ce n'è abbastanza)
@@ -969,7 +1001,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var inSet = fresh.Where(t => MatchesSetGenres(t, setGenres)).ToList();
             if (inSet.Count > 0) fresh = inSet;
-            else StatusText = "Automix: nessun brano non ancora suonato nei generi della serata — scelgo fuori";
+            else Say("Automix: nessun brano non ancora suonato nei generi della serata — scelgo fuori");
         }
 
         Track? pick = null; string why = "";
@@ -1009,10 +1041,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (pick != null) why = current == null ? "primo brano" : "nessun riferimento utile: brano meno suonato";
         }
         if (pick == null) { pick = pool.OrderBy(t => t.LastPlayedUtc ?? DateTime.MinValue).FirstOrDefault(Present); why = "tutti già suonati: riparto dal più vecchio"; }
-        if (pick == null) return false;
-        Queue.Add(new QueueEntry { Track = pick, Note = "automix · " + why });
-        StatusText = $"Automix: aggiunto {pick.Display} ({why})";
-        return true;
+        return (pick, why);
     }
 
     /// <summary>Il file c'è davvero? Si guarda solo sui candidati scelti, e chi manca resta segnato.</summary>

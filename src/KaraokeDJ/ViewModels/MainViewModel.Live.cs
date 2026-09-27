@@ -259,6 +259,8 @@ public partial class MainViewModel
         for (int i = 0; i < Queue.Count; i++)
         {
             var e = Queue[i];
+            // la scaletta proposta dall'automix resta in fondo: non è un cantante da far ruotare
+            if (IsAutoEntry(e)) { keyed.Add((e, int.MaxValue, i)); continue; }
             var k = SingerKey(e.Singer);
             int r = rounds.GetValueOrDefault(k) + (k.Length > 0 ? _sungTonight.GetValueOrDefault(k) : 0);
             rounds[k] = rounds.GetValueOrDefault(k) + 1;

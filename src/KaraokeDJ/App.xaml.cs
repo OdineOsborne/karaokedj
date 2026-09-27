@@ -68,6 +68,9 @@ public partial class App : Application
         if (e.Args.Contains("--analyze")) RunAnalyze(e.Args.Contains("force"));
         // --pulisci-titoli [applica]: artista/titolo sistemati in tutta la libreria (solo database, i file non si toccano)
         if (e.Args.Contains("--pulisci-titoli")) RunCleanTitles(e.Args.Contains("applica"));
+        // --scalettatest <momento>: la scaletta che l'automix preparerebbe (la coda viene rimessa com'era)
+        int stIdx = Array.IndexOf(e.Args, "--scalettatest");
+        if (stIdx >= 0) RunPlanTest(e.Args.ElementAtOrDefault(stIdx + 1) ?? "libero");
         // --gridtest [quanti]: quanto la griglia dei battiti sta davvero sui colpi del brano
         int gridIdx = Array.IndexOf(e.Args, "--gridtest");
         if (gridIdx >= 0) RunGridTest(gridIdx + 1 < e.Args.Length && int.TryParse(e.Args[gridIdx + 1], out var gn) ? gn : 20);
@@ -405,6 +408,32 @@ public partial class App : Application
         }
         try { System.IO.File.WriteAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "mixfonia-titoli.log"), sb.ToString()); } catch { }
         Console.Error.WriteLine(sb.ToString().Split(Environment.NewLine)[0]);
+        Shutdown(0);
+    }
+
+    private async void RunPlanTest(string moment)
+    {
+        var vm = Vm!;
+        await System.Threading.Tasks.Task.Delay(1500);
+        var before = vm.Queue.ToList();
+        var sb = new System.Text.StringBuilder();
+        try
+        {
+            vm.Queue.Clear();
+            vm.MomentId = moment;
+            vm.AutoMixEndless = true;
+            vm.AutoMix = true;
+            vm.PlanAutoMix();
+            sb.AppendLine($"momento {vm.CurrentMoment.Name} · BPM ±{vm.AutoMixBpmRange:0} · generi: {vm.SetGenres}");
+            foreach (var q in vm.Queue) sb.AppendLine($"  {q.Track.Bpm,4:0} BPM  {q.Track.Genre,-16} {q.Track.Display}  ← {q.Note}");
+        }
+        catch (Exception ex) { sb.AppendLine("ERRORE " + ex); }
+        finally
+        {
+            vm.AutoMix = false;
+            vm.Queue.Clear(); foreach (var q in before) vm.Queue.Add(q);
+        }
+        try { System.IO.File.WriteAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "mixfonia-scaletta.log"), sb.ToString()); } catch { }
         Shutdown(0);
     }
 

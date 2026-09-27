@@ -62,6 +62,7 @@ public partial class MainViewModel
                 : $"Momento: {m.Name}" + (m.Genres.Length > 0 ? $" · {m.Genres}" : "");
         }
         OnPropertyChanged(nameof(CurrentMoment));
+        ReplanAutoMix();
     }
 
     /// <summary>Generi cambiati a mano: il momento diventa "personalizzato" (i BPM del momento non valgono più).</summary>
