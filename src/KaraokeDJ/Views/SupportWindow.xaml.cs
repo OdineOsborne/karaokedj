@@ -31,7 +31,7 @@ public partial class SupportWindow : Window
             var until = _vm.UpdatesUntil;
             StatusLabel.Text = $"✓ Licenza di {lic.Name} su questo PC (dal {lic.Issued:dd/MM/yyyy}).";
             StatusLabel.Foreground = Res("AccentABrush");
-            StatusDetail.Text = (lic.IsLegacy ? "Chiave della fase donationware, grazie! " : $"Account {lic.Account}. ")
+            StatusDetail.Text = (lic.IsLegacy ? "Chiave della prima versione, valida per sempre su questo PC. " : $"Account {lic.Account}. ")
                 + (_vm.UpdatesActive ? $"Aggiornamenti inclusi fino al {until:dd/MM/yyyy}." : $"Aggiornamenti scaduti il {until:dd/MM/yyyy}: la versione installata resta tua, le nuove release richiedono il rinnovo.");
             BuyBtn.Visibility = Visibility.Collapsed;
             RenewBtn.Visibility = _vm.UpdatesActive && (until - DateTime.UtcNow)?.TotalDays > 45 ? Visibility.Collapsed : Visibility.Visible;

@@ -139,8 +139,8 @@ Proposta per gli addon (decisa il 27/9/2026, pacchetto da confermare):
 | **Pacchetto completo in offerta** | **35 €** *(proposta)* | **15 €/anno** *(proposta)* |
 
 Da decidere e fare prima di vendere:
-- **`LICENSE.md` va riscritto**: oggi dice «donationware, uso libero senza limiti di funzionalità», in
-  contrasto con una licenza a pagamento e con addon che si attivano solo se acquistati.
+- ~~`LICENSE.md` va riscritto~~ fatto il 27/9/2026: ora è un contratto di licenza a pagamento (su indicazione
+  della commercialista, niente donationware) e prevede già i moduli aggiuntivi (punto 5).
 - Nuovi articoli in Stripe (`scripts/stripe-setup.mjs`): un `lookup_key` per addon, uno per il pacchetto,
   abbonamenti addon; la licenza sul server deve elencare gli addon attivi per account.
 - Chi ha già la licenza: sconto sul pacchetto addon (es. 20 € per i 5 addon)?
