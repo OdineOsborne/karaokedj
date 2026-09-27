@@ -7,10 +7,14 @@ import { stripe, priceId, customerFor, PRODUCTS } from "../lib/stripe.js";
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
   try {
-    const { product, email: e, machine: m, from: f, name } = req.body ?? {};
+    const { product, email: e, machine: m, from: f, name, consent } = req.body ?? {};
     const email = normalizeEmail(e), machine = normalizeMachine(m), from = f ? normalizeMachine(f) : null;
     const art = PRODUCTS[product];
     if (!art) return res.status(400).json({ error: "articolo sconosciuto" });
+    // Senza consenso al contratto e all'esecuzione immediata (perdita del recesso) non si apre il pagamento:
+    // la pagina blocca già i pulsanti, qui si ricontrolla perché la pagina si può aggirare.
+    if (consent?.terms !== true || consent?.immediate !== true)
+      return res.status(400).json({ error: "Per procedere accetta il contratto di licenza e la fornitura immediata (perdita del diritto di recesso)." });
     if (!email) return res.status(400).json({ error: "email non valida" });
     if (!machine && product !== "voxa_updates") return res.status(400).json({ error: "ID macchina non valido" });
     if (product === "voxa_transfer" && !from) return res.status(400).json({ error: "ID del PC di origine non valido" });
@@ -23,7 +27,9 @@ export default async function handler(req, res) {
 
     const base = (process.env.APP_URL || `https://${req.headers.host}`).replace(/\/$/, "");
     const q = `m=${encodeURIComponent(machine ?? "")}&email=${encodeURIComponent(email)}`;
-    const meta = { product, email, machine: machine ?? "", from: from ?? "" };
+    // prova del consenso, conservata nel pagamento Stripe (e nell'abbonamento): quando e su quale testo
+    const meta = { product, email, machine: machine ?? "", from: from ?? "",
+                   consenso: `contratto di licenza (LICENSE.md 27/09/2026) + esecuzione immediata e perdita del recesso · ${new Date().toISOString()}` };
     const session = await stripe().checkout.sessions.create({
       customer,
       mode: art.mode,

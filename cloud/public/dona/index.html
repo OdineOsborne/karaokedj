@@ -32,6 +32,10 @@
   #key { font-family:Consolas, monospace; font-size:11px; word-break:break-all; background:#15151C; padding:10px; border-radius:8px; margin:8px 0 }
   .hide { display:none }
   .status { background:#0D0D12; border-radius:12px; padding:12px 14px; margin-top:10px; line-height:1.6 }
+  .consent { background:#12121A; border:1px solid #2A2A38; border-radius:12px; padding:10px 14px; margin:12px 0 4px; font-size:13px; line-height:1.45 }
+  .consent label { display:flex; gap:10px; align-items:flex-start; margin:6px 0; cursor:pointer }
+  .consent input { width:auto; margin-top:3px; accent-color:var(--violet); flex:none }
+  .consent a { color:var(--cyan) }
 </style>
 </head>
 <body>
@@ -48,6 +52,13 @@
   <div class="err" id="err"></div>
 
   <div id="status" class="status hide"></div>
+  <!-- Codice del Consumo, art. 59 lett. o): per un contenuto digitale il recesso si perde solo con consenso
+       espresso all'esecuzione immediata e presa d'atto della perdita del diritto. Senza le due spunte non si paga
+       (e il server lo ricontrolla). -->
+  <div id="consent" class="consent hide">
+    <label><input type="checkbox" id="c-terms"> <span>Ho letto e accetto il <a href="https://github.com/OdineOsborne/karaokedj/blob/main/LICENSE.md" target="_blank" rel="noopener">contratto di licenza d'uso di Mixfonia</a>.</span></label>
+    <label><input type="checkbox" id="c-now"> <span>Chiedo che la licenza mi sia fornita subito dopo il pagamento e prendo atto che, una volta ricevuta la chiave di attivazione, <b>perdo il diritto di recesso</b>.</span></label>
+  </div>
   <div id="options"></div>
 
   <div id="done" class="hide">
@@ -106,16 +117,25 @@
       `<input id="from" placeholder="ID completo del vecchio PC (VOXA-XXXX-XXXX-XXXX)" style="margin-top:8px;font-family:Consolas,monospace;text-transform:uppercase">`);
     if (st.can.updates) h += opt("voxa_updates", "Aggiornamenti annuali", st.updatesUntil && Date.parse(st.updatesUntil) > Date.now() ? "parte dalla scadenza attuale, si rinnova da solo, disdici quando vuoi" : "un anno di nuove versioni per tutti i tuoi PC, si rinnova da solo");
     $("options").innerHTML = h || `<p class="muted">Niente da comprare da questo PC.</p>`;
+    $("consent").classList.toggle("hide", !h);
     $("options").querySelectorAll("button[data-p]").forEach(b => b.onclick = () => buy(b.dataset.p, email, b));
+    syncConsent();
     const pl = $("portal"); if (pl) pl.onclick = async e => { e.preventDefault(); try { location.href = (await post("/api/portal", { email })).url; } catch (x) { err(x.message); } };
   }
 
+  const consented = () => $("c-terms").checked && $("c-now").checked;
+  function syncConsent() {
+    $("options").querySelectorAll("button[data-p]").forEach(b => { b.disabled = !consented(); b.title = consented() ? "" : "Spunta le due caselle qui sopra"; });
+  }
+  $("c-terms").onchange = $("c-now").onchange = syncConsent;
+
   async function buy(product, email, btn) {
     if (!cfg.ready) { err("Pagamenti non ancora configurati."); return; }
+    if (!consented()) { err("Per procedere spunta le due caselle: contratto di licenza e fornitura immediata."); return; }
     err(""); btn.disabled = true;
     try {
       const from = product === "voxa_transfer" ? ($("from")?.value || "").trim().toUpperCase() : undefined;
-      location.href = (await post("/api/checkout", { product, email, machine, from })).url;
+      location.href = (await post("/api/checkout", { product, email, machine, from, consent: { terms: true, immediate: true } })).url;
     } catch (e) { err(e.message); btn.disabled = false; }
   }
 
