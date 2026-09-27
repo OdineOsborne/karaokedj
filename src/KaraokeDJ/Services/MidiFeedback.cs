@@ -23,6 +23,15 @@ public sealed class LedPalette
     [System.Text.Json.Serialization.JsonPropertyName("button")] public int? Button { get; set; }
     /// <summary>VU meter della console: un CC con valore 0…Max (Inpulse 500: B1 40 deck A, B2 40 deck B, B0 40/41 master).</summary>
     [System.Text.Json.Serialization.JsonPropertyName("vu")] public List<VuOut> Vu { get; set; } = new();
+    /// <summary>LED accesi fissi (colori dei pad nei modi della console): si vede cosa c'è sotto ogni modo.</summary>
+    [System.Text.Json.Serialization.JsonPropertyName("static")] public List<StaticLed> Static { get; set; } = new();
+}
+
+public sealed class StaticLed
+{
+    [System.Text.Json.Serialization.JsonPropertyName("channel")] public int Channel { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("number")] public int Number { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("value")] public int Value { get; set; }
 }
 
 public sealed class VuOut

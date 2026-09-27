@@ -34,6 +34,488 @@
     "number": 65,
     "max": 124
    }
+  ],
+  "static": [
+   {
+    "channel": 7,
+    "number": 32,
+    "value": 80
+   },
+   {
+    "channel": 7,
+    "number": 33,
+    "value": 80
+   },
+   {
+    "channel": 7,
+    "number": 34,
+    "value": 80
+   },
+   {
+    "channel": 7,
+    "number": 35,
+    "value": 80
+   },
+   {
+    "channel": 7,
+    "number": 36,
+    "value": 80
+   },
+   {
+    "channel": 7,
+    "number": 37,
+    "value": 80
+   },
+   {
+    "channel": 7,
+    "number": 38,
+    "value": 80
+   },
+   {
+    "channel": 7,
+    "number": 39,
+    "value": 80
+   },
+   {
+    "channel": 7,
+    "number": 64,
+    "value": 31
+   },
+   {
+    "channel": 7,
+    "number": 65,
+    "value": 31
+   },
+   {
+    "channel": 7,
+    "number": 66,
+    "value": 31
+   },
+   {
+    "channel": 7,
+    "number": 67,
+    "value": 31
+   },
+   {
+    "channel": 7,
+    "number": 68,
+    "value": 31
+   },
+   {
+    "channel": 7,
+    "number": 69,
+    "value": 31
+   },
+   {
+    "channel": 7,
+    "number": 70,
+    "value": 31
+   },
+   {
+    "channel": 7,
+    "number": 71,
+    "value": 31
+   },
+   {
+    "channel": 7,
+    "number": 80,
+    "value": 99
+   },
+   {
+    "channel": 7,
+    "number": 81,
+    "value": 99
+   },
+   {
+    "channel": 7,
+    "number": 82,
+    "value": 99
+   },
+   {
+    "channel": 7,
+    "number": 83,
+    "value": 99
+   },
+   {
+    "channel": 7,
+    "number": 84,
+    "value": 99
+   },
+   {
+    "channel": 7,
+    "number": 85,
+    "value": 99
+   },
+   {
+    "channel": 7,
+    "number": 86,
+    "value": 99
+   },
+   {
+    "channel": 7,
+    "number": 87,
+    "value": 99
+   },
+   {
+    "channel": 7,
+    "number": 96,
+    "value": 64
+   },
+   {
+    "channel": 7,
+    "number": 97,
+    "value": 64
+   },
+   {
+    "channel": 7,
+    "number": 98,
+    "value": 64
+   },
+   {
+    "channel": 7,
+    "number": 99,
+    "value": 64
+   },
+   {
+    "channel": 7,
+    "number": 100,
+    "value": 64
+   },
+   {
+    "channel": 7,
+    "number": 101,
+    "value": 64
+   },
+   {
+    "channel": 7,
+    "number": 102,
+    "value": 64
+   },
+   {
+    "channel": 7,
+    "number": 103,
+    "value": 64
+   },
+   {
+    "channel": 7,
+    "number": 112,
+    "value": 28
+   },
+   {
+    "channel": 7,
+    "number": 113,
+    "value": 28
+   },
+   {
+    "channel": 7,
+    "number": 114,
+    "value": 28
+   },
+   {
+    "channel": 7,
+    "number": 115,
+    "value": 28
+   },
+   {
+    "channel": 7,
+    "number": 116,
+    "value": 28
+   },
+   {
+    "channel": 7,
+    "number": 117,
+    "value": 28
+   },
+   {
+    "channel": 7,
+    "number": 118,
+    "value": 28
+   },
+   {
+    "channel": 7,
+    "number": 119,
+    "value": 28
+   },
+   {
+    "channel": 8,
+    "number": 32,
+    "value": 80
+   },
+   {
+    "channel": 8,
+    "number": 33,
+    "value": 80
+   },
+   {
+    "channel": 8,
+    "number": 34,
+    "value": 80
+   },
+   {
+    "channel": 8,
+    "number": 35,
+    "value": 80
+   },
+   {
+    "channel": 8,
+    "number": 36,
+    "value": 80
+   },
+   {
+    "channel": 8,
+    "number": 37,
+    "value": 80
+   },
+   {
+    "channel": 8,
+    "number": 38,
+    "value": 80
+   },
+   {
+    "channel": 8,
+    "number": 39,
+    "value": 80
+   },
+   {
+    "channel": 8,
+    "number": 64,
+    "value": 31
+   },
+   {
+    "channel": 8,
+    "number": 65,
+    "value": 31
+   },
+   {
+    "channel": 8,
+    "number": 66,
+    "value": 31
+   },
+   {
+    "channel": 8,
+    "number": 67,
+    "value": 31
+   },
+   {
+    "channel": 8,
+    "number": 68,
+    "value": 31
+   },
+   {
+    "channel": 8,
+    "number": 69,
+    "value": 31
+   },
+   {
+    "channel": 8,
+    "number": 70,
+    "value": 31
+   },
+   {
+    "channel": 8,
+    "number": 71,
+    "value": 31
+   },
+   {
+    "channel": 8,
+    "number": 80,
+    "value": 99
+   },
+   {
+    "channel": 8,
+    "number": 81,
+    "value": 99
+   },
+   {
+    "channel": 8,
+    "number": 82,
+    "value": 99
+   },
+   {
+    "channel": 8,
+    "number": 83,
+    "value": 99
+   },
+   {
+    "channel": 8,
+    "number": 84,
+    "value": 99
+   },
+   {
+    "channel": 8,
+    "number": 85,
+    "value": 99
+   },
+   {
+    "channel": 8,
+    "number": 86,
+    "value": 99
+   },
+   {
+    "channel": 8,
+    "number": 87,
+    "value": 99
+   },
+   {
+    "channel": 8,
+    "number": 96,
+    "value": 64
+   },
+   {
+    "channel": 8,
+    "number": 97,
+    "value": 64
+   },
+   {
+    "channel": 8,
+    "number": 98,
+    "value": 64
+   },
+   {
+    "channel": 8,
+    "number": 99,
+    "value": 64
+   },
+   {
+    "channel": 8,
+    "number": 100,
+    "value": 64
+   },
+   {
+    "channel": 8,
+    "number": 101,
+    "value": 64
+   },
+   {
+    "channel": 8,
+    "number": 102,
+    "value": 64
+   },
+   {
+    "channel": 8,
+    "number": 103,
+    "value": 64
+   },
+   {
+    "channel": 8,
+    "number": 112,
+    "value": 28
+   },
+   {
+    "channel": 8,
+    "number": 113,
+    "value": 28
+   },
+   {
+    "channel": 8,
+    "number": 114,
+    "value": 28
+   },
+   {
+    "channel": 8,
+    "number": 115,
+    "value": 28
+   },
+   {
+    "channel": 8,
+    "number": 116,
+    "value": 28
+   },
+   {
+    "channel": 8,
+    "number": 117,
+    "value": 28
+   },
+   {
+    "channel": 8,
+    "number": 118,
+    "value": 28
+   },
+   {
+    "channel": 8,
+    "number": 119,
+    "value": 28
+   },
+   {
+    "channel": 7,
+    "number": 16,
+    "value": 92
+   },
+   {
+    "channel": 7,
+    "number": 17,
+    "value": 92
+   },
+   {
+    "channel": 7,
+    "number": 18,
+    "value": 92
+   },
+   {
+    "channel": 7,
+    "number": 19,
+    "value": 92
+   },
+   {
+    "channel": 7,
+    "number": 20,
+    "value": 48
+   },
+   {
+    "channel": 7,
+    "number": 21,
+    "value": 48
+   },
+   {
+    "channel": 7,
+    "number": 22,
+    "value": 48
+   },
+   {
+    "channel": 7,
+    "number": 23,
+    "value": 48
+   },
+   {
+    "channel": 8,
+    "number": 16,
+    "value": 92
+   },
+   {
+    "channel": 8,
+    "number": 17,
+    "value": 92
+   },
+   {
+    "channel": 8,
+    "number": 18,
+    "value": 92
+   },
+   {
+    "channel": 8,
+    "number": 19,
+    "value": 92
+   },
+   {
+    "channel": 8,
+    "number": 20,
+    "value": 48
+   },
+   {
+    "channel": 8,
+    "number": 21,
+    "value": 48
+   },
+   {
+    "channel": 8,
+    "number": 22,
+    "value": 48
+   },
+   {
+    "channel": 8,
+    "number": 23,
+    "value": 48
+   }
   ]
  },
  "mappings": [
@@ -57,9 +539,63 @@
   },
   {
    "type": "note",
+   "channel": 4,
+   "number": 0,
+   "action": "preview"
+  },
+  {
+   "type": "note",
    "channel": 1,
    "number": 3,
    "action": "automix"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 20,
+   "action": "onair.echo"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 21,
+   "action": "onair.reverb"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 22,
+   "action": "onair.flanger"
+  },
+  {
+   "type": "note",
+   "channel": 1,
+   "number": 23,
+   "action": "onair.echoout"
+  },
+  {
+   "type": "note",
+   "channel": 4,
+   "number": 20,
+   "action": "onair.phaser"
+  },
+  {
+   "type": "note",
+   "channel": 4,
+   "number": 21,
+   "action": "onair.crush"
+  },
+  {
+   "type": "note",
+   "channel": 4,
+   "number": 22,
+   "action": "onair.gate"
+  },
+  {
+   "type": "note",
+   "channel": 4,
+   "number": 23,
+   "action": "onair.fxreset"
   },
   {
    "type": "note",
@@ -114,6 +650,13 @@
    "channel": 2,
    "number": 44,
    "action": "a.loopexit"
+  },
+  {
+   "type": "cc",
+   "channel": 2,
+   "number": 14,
+   "action": "a.loopresize",
+   "relative": true
   },
   {
    "type": "note",
@@ -250,26 +793,98 @@
   {
    "type": "note",
    "channel": 7,
-   "number": 19,
+   "number": 16,
    "action": "a.loop1"
   },
   {
    "type": "note",
    "channel": 7,
-   "number": 20,
+   "number": 17,
    "action": "a.loop2"
   },
   {
    "type": "note",
    "channel": 7,
-   "number": 21,
+   "number": 18,
    "action": "a.loop4"
   },
   {
    "type": "note",
    "channel": 7,
-   "number": 22,
+   "number": 19,
    "action": "a.loop8"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 20,
+   "action": "a.loophalf"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 21,
+   "action": "a.loopdouble"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 22,
+   "action": "a.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 23,
+   "action": "a.jumpback4"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 32,
+   "action": "a.jumpback8"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 33,
+   "action": "a.jumpback4"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 34,
+   "action": "a.jumpfwd4"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 35,
+   "action": "a.jumpfwd8"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 36,
+   "action": "a.back10"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 37,
+   "action": "a.fwd10"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 38,
+   "action": "a.playcue"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 39,
+   "action": "a.stop"
   },
   {
    "type": "note",
@@ -294,6 +909,174 @@
    "channel": 7,
    "number": 67,
    "action": "a.keyup"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 68,
+   "action": "a.keyreset"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 69,
+   "action": "a.keymatch"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 70,
+   "action": "a.keylock"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 71,
+   "action": "a.temporeset"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 80,
+   "action": "a.echo"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 81,
+   "action": "a.reverb"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 82,
+   "action": "a.flanger"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 83,
+   "action": "a.phaser"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 84,
+   "action": "a.crush"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 85,
+   "action": "a.gate"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 86,
+   "action": "a.vocaloff"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 87,
+   "action": "a.fxreset"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 96,
+   "action": "a.killlow"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 97,
+   "action": "a.killmid"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 98,
+   "action": "a.killhigh"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 99,
+   "action": "a.eqreset"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 100,
+   "action": "a.filterreset"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 101,
+   "action": "a.brake"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 102,
+   "action": "a.backspin"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 103,
+   "action": "a.spinback"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 112,
+   "action": "mix.blend"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 113,
+   "action": "mix.bass"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 114,
+   "action": "mix.filter"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 115,
+   "action": "mix.echo"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 116,
+   "action": "mix.cut"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 117,
+   "action": "mix.brake"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 118,
+   "action": "mix.fade"
+  },
+  {
+   "type": "note",
+   "channel": 7,
+   "number": 119,
+   "action": "mix.auto"
   },
   {
    "type": "note",
@@ -348,6 +1131,13 @@
    "channel": 3,
    "number": 44,
    "action": "b.loopexit"
+  },
+  {
+   "type": "cc",
+   "channel": 3,
+   "number": 14,
+   "action": "b.loopresize",
+   "relative": true
   },
   {
    "type": "note",
@@ -484,26 +1274,98 @@
   {
    "type": "note",
    "channel": 8,
-   "number": 19,
+   "number": 16,
    "action": "b.loop1"
   },
   {
    "type": "note",
    "channel": 8,
-   "number": 20,
+   "number": 17,
    "action": "b.loop2"
   },
   {
    "type": "note",
    "channel": 8,
-   "number": 21,
+   "number": 18,
    "action": "b.loop4"
   },
   {
    "type": "note",
    "channel": 8,
-   "number": 22,
+   "number": 19,
    "action": "b.loop8"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 20,
+   "action": "b.loophalf"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 21,
+   "action": "b.loopdouble"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 22,
+   "action": "b.loopexit"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 23,
+   "action": "b.jumpback4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 32,
+   "action": "b.jumpback8"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 33,
+   "action": "b.jumpback4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 34,
+   "action": "b.jumpfwd4"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 35,
+   "action": "b.jumpfwd8"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 36,
+   "action": "b.back10"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 37,
+   "action": "b.fwd10"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 38,
+   "action": "b.playcue"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 39,
+   "action": "b.stop"
   },
   {
    "type": "note",
@@ -528,6 +1390,174 @@
    "channel": 8,
    "number": 67,
    "action": "b.keyup"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 68,
+   "action": "b.keyreset"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 69,
+   "action": "b.keymatch"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 70,
+   "action": "b.keylock"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 71,
+   "action": "b.temporeset"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 80,
+   "action": "b.echo"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 81,
+   "action": "b.reverb"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 82,
+   "action": "b.flanger"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 83,
+   "action": "b.phaser"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 84,
+   "action": "b.crush"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 85,
+   "action": "b.gate"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 86,
+   "action": "b.vocaloff"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 87,
+   "action": "b.fxreset"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 96,
+   "action": "b.killlow"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 97,
+   "action": "b.killmid"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 98,
+   "action": "b.killhigh"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 99,
+   "action": "b.eqreset"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 100,
+   "action": "b.filterreset"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 101,
+   "action": "b.brake"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 102,
+   "action": "b.backspin"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 103,
+   "action": "b.spinback"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 112,
+   "action": "mix.blend"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 113,
+   "action": "mix.bass"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 114,
+   "action": "mix.filter"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 115,
+   "action": "mix.echo"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 116,
+   "action": "mix.cut"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 117,
+   "action": "mix.brake"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 118,
+   "action": "mix.fade"
+  },
+  {
+   "type": "note",
+   "channel": 8,
+   "number": 119,
+   "action": "mix.auto"
   },
   {
    "type": "note",
@@ -676,12 +1706,6 @@
    "number": 8,
    "action": "b.jogtouch",
    "relative": true
-  },
-  {
-   "type": "note",
-   "channel": 4,
-   "number": 0,
-   "action": "preview"
   }
  ]
 }

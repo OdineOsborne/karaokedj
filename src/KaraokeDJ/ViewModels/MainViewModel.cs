@@ -1426,6 +1426,18 @@ public sealed partial class MainViewModel : ObservableObject
     private static double BpmDistance(double bpm, double target) =>
         bpm <= 0 ? double.MaxValue : new[] { 1.0, 2.0, 0.5 }.Min(m => Math.Abs(bpm * m - target));
 
+    private string? _styleOverride;
+    private DateTime _styleOverrideAt;
+
+    /// <summary>Il deck che il pubblico sente di più: in riproduzione, pesato per fader e crossfader.</summary>
+    private DeckViewModel? OnAirDeck()
+    {
+        double Level(DeckViewModel d) => d.IsPlaying ? d.Fader * d.Deck.CrossGain : -1;
+        double a = Level(DeckA), b = Level(DeckB);
+        if (a < 0 && b < 0) return null;
+        return a >= b ? DeckA : DeckB;
+    }
+
     /// <summary>BPM effettivi del deck (BPM del brano × tempo), 0 se sconosciuti.</summary>
     private static double EffectiveBpm(DeckViewModel d) =>
         d.Track?.Bpm > 0 ? d.Track.Bpm * (1.0 + d.TempoPercent / 100.0) : 0;
@@ -2486,6 +2498,23 @@ public sealed partial class MainViewModel : ObservableObject
     /// </summary>
     public void ExecuteAction(string action, bool pressed, double norm = 1, bool continuous = false)
     {
+        // effetti sul deck che si sente: i 4 tasti FX della console non sono di un deck, e in serata non si
+        // deve pensare a quale dei due sta suonando
+        if (action.StartsWith("onair."))
+        {
+            var air = OnAirDeck();
+            if (air == null) { if (pressed) StatusText = "Effetto: nessun deck sta suonando"; return; }
+            action = (air == DeckA ? "a." : "b.") + action[6..];
+        }
+        // passaggio al prossimo in coda con una tecnica scelta sul momento (pad PASSAGGI della console)
+        if (action.StartsWith("mix."))
+        {
+            if (!pressed) return;
+            var tech = action[4..];
+            _styleOverride = tech == "auto" ? "auto" : tech; _styleOverrideAt = DateTime.UtcNow;
+            PlayNextCommand.Execute(null);
+            return;
+        }
         var deck = action.StartsWith("a.") ? DeckA : action.StartsWith("b.") ? DeckB : null;
         var sub = deck != null ? action[2..] : action;
 
@@ -2534,6 +2563,11 @@ public sealed partial class MainViewModel : ObservableObject
                         deck.LoopBeatsCommand.Execute(sizes[Math.Clamp((int)(norm * sizes.Length), 0, sizes.Length - 1)]
                             .ToString(System.Globalization.CultureInfo.InvariantCulture));
                     }
+                    break;
+                case "loopresize":
+                    // encoder: 1..63 = verso destra (×2), 65..127 = verso sinistra (÷2)
+                    if (!deck.LoopOn) { deck.LoopBeatsCommand.Execute("4"); break; }
+                    if (norm > 0.5) deck.LoopHalfCommand.Execute(null); else deck.LoopDoubleCommand.Execute(null);
                     break;
                 case "jumpback4": deck.BeatJump("-4"); break;
                 case "jumpfwd4": deck.BeatJump("4"); break;

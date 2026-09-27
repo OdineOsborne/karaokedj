@@ -162,7 +162,12 @@ public partial class MainViewModel
         ControllerConnected = true;
         MixerKnobsVisible = !HasHardwareMixer(preset);
         // stessa console anche in uscita, per i LED dei pad (se non c'è o non risponde, pazienza)
-        if (Settings.ControllerLeds) { Leds.Open(name); _ledState = ""; } else Leds.Close();
+        if (Settings.ControllerLeds)
+        {
+            Leds.Open(name); _ledState = "";
+            foreach (var l in preset?.Leds?.Static ?? new()) Leds.Set(new MidiKey("note", l.Channel, l.Number), l.Value);
+        }
+        else Leds.Close();
         ControllerStatus = preset != null
             ? $"{preset.Name} — pronta, {Midi.Count} controlli mappati ({preset.Provenance})" + (preset.Incomplete ? " ⚠ senza play/cue: assegnali a mano" : "")
             : $"{name} — nessun preset: scegli la console qui sotto o usa \"Impara\"";

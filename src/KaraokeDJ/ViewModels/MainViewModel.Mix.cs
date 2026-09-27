@@ -144,7 +144,9 @@ public sealed partial class MainViewModel
         bool canBeatMatch = !karaoke && BpmMatch && !BpmLock && inNative > 0 && outBpmNative > 0 && bpmDiffPct <= 12;
 
         // tecnica
-        string style = TransitionStyle;
+        // un pad PASSAGGI della console sceglie la tecnica di questo passaggio (vale una volta, per 15 secondi)
+        string style = _styleOverride != null && (DateTime.UtcNow - _styleOverrideAt).TotalSeconds < 15 ? _styleOverride : TransitionStyle;
+        _styleOverride = null;
         string tech;
         if (karaoke || style == "fade") tech = "fade";
         else if (!canBeatMatch) tech = Random.Shared.Next(2) == 0 ? "echo" : "brake";
