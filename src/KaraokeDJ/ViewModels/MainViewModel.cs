@@ -201,6 +201,7 @@ public sealed partial class MainViewModel : ObservableObject
         LoadLicense();
         Keys.Load(Settings.KeyMappings, useDefaultsIfEmpty: true);
         StartControllerWatch();
+        StartCloudWatch();
         UsageStats.Load();
         if (Settings.UsageStatsOptIn)
         {
@@ -1354,7 +1355,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (IsAnalyzing) { _analyzeCts?.Cancel(); return; }
         // anche i brani analizzati prima della 1.6 vanno rifatti: non hanno energia/brillantezza (servono ai suggerimenti)
-        var todo = Tracks.Where(t => !t.Analyzed || t.Energy <= 0).ToList();
+        var todo = Tracks.Where(t => t.NeedsAnalysis).ToList();
         if (todo.Count == 0) { StatusText = "Tutti i brani sono già analizzati"; return; }
         _analyzeCts = new CancellationTokenSource();
         IsAnalyzing = true;
@@ -2898,6 +2899,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Mostra un QR grande sul proiettore per <paramref name="seconds"/> secondi (0 = finché non viene nascosto).</summary>
     public async void ShowQrOnProjector(string url, string caption, int seconds)
     {
+        if (!CloudQrAllowed(url)) return;
         _qrCts?.Cancel();
         var cts = _qrCts = new CancellationTokenSource();
         QrOverlayImage = Views.RemoteWindow.MakeQr(url, 12);

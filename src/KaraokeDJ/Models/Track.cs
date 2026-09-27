@@ -171,6 +171,11 @@ public sealed class Track
     [JsonIgnore] public bool IsKaraoke => Kind != TrackKind.Audio;
     [JsonIgnore] public bool IsVideo => Kind == TrackKind.Video;
     [JsonIgnore] public bool IsMidi => Kind == TrackKind.Midi;
+    /// <summary>
+    /// Da analizzare: mai fatto, oppure analizzato prima della 1.6 (senza energia). I MIDI non hanno suono da
+    /// misurare e l'energia resta 0: senza questa eccezione "Analizza tutti" rifaceva ogni volta 15.000 karaoke.
+    /// </summary>
+    [JsonIgnore] public bool NeedsAnalysis => !Analyzed || (Energy <= 0 && !IsMidi);
     [JsonIgnore] public bool IsLrc => Kind == TrackKind.Lrc;
     [JsonIgnore] public bool IsCdg => Kind is TrackKind.Cdg or TrackKind.CdgZip;
 

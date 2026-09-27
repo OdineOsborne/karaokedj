@@ -373,7 +373,7 @@ public partial class App : Application
         await System.Threading.Tasks.Task.Delay(1500);
         // "force": rifà tutto (serve quando cambia il modo di calcolare qualcosa, es. l'aggancio della griglia)
         if (force) foreach (var t in vm.Tracks) t.Analyzed = false;
-        int todo = vm.Tracks.Count(t => !t.Analyzed || t.Energy <= 0);
+        int todo = vm.Tracks.Count(t => t.NeedsAnalysis);
         Console.Error.WriteLine($"ANALISI: {todo} brani da fare su {vm.Tracks.Count}");
         var t0 = DateTime.UtcNow;
         string last = "";

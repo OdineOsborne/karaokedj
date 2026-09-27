@@ -93,6 +93,17 @@ public static class Preflight
             ? new(CheckLevel.Ok, "Console", vm.ControllerStatus)
             : new CheckResult(CheckLevel.Warn, "Console", "nessuna collegata", "Se la usi in serata, collegala adesso e prova play, fader e piatti"));
 
+        // ---- cloud: prenotazioni col QR, scaletta dal telefono, licenze (provato in sottofondo ogni 2 minuti)
+        string when = vm.CloudCheckedAt is { } at ? $" (provato alle {at:HH:mm})" : "";
+        list.Add(vm.CloudOk switch
+        {
+            true => new(CheckLevel.Ok, "Cloud", "raggiungibile: prenotazioni col QR e scaletta dal telefono funzionano" + when),
+            false => new CheckResult(vm.PublicRequestsOn ? CheckLevel.Fail : CheckLevel.Warn, "Cloud",
+                $"{vm.CloudDetail}{when}: QR delle prenotazioni e scaletta dal telefono non funzionano",
+                "Controlla la connessione a internet. Se internet c'è, il servizio è giù: stasera le prenotazioni si fanno a voce (il QR non viene mostrato)"),
+            null => new CheckResult(CheckLevel.Warn, "Cloud", "prova in corso", "Riapri il controllo tra qualche secondo"),
+        });
+
         // ---- diario errori
         list.Add(CrashLog.Count == 0
             ? new(CheckLevel.Ok, "Errori registrati", "nessuno da quando è aperta l'app")
