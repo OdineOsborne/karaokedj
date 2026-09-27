@@ -118,6 +118,9 @@ public sealed class LibraryService
                     t.Analyzed = existing.Analyzed;
                     t.IntroEndSec = existing.IntroEndSec; t.OutroStartSec = existing.OutroStartSec; t.CuesManual = existing.CuesManual; t.CueSec = existing.CueSec; t.BeatOffsetSec = existing.BeatOffsetSec; t.BeatManual = existing.BeatManual;
                     t.PlayCount = existing.PlayCount; t.LastPlayedUtc = existing.LastPlayedUtc;
+                    // il genere della libreria vince sul tag del file: i tag dei file erano spesso sbagliati ("Blues" su
+                    // basi italiane, "Rap" sulla bachata) e sono stati corretti nel database (27/9/2026)
+                    if (!string.IsNullOrWhiteSpace(existing.Genre)) t.Genre = existing.Genre;
                     t.Dedication = existing.Dedication; t.DedicationTitle = existing.DedicationTitle;
                     t.InstrumentalPath = existing.InstrumentalPath; t.VocalsPath = existing.VocalsPath; t.StemsDir = existing.StemsDir; t.IsSuno = existing.IsSuno;
                 }
