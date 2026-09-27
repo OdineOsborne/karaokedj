@@ -469,7 +469,8 @@ public partial class App : Application
                 sb.AppendLine(t == null ? $"NON TROVATO: {q} (brani {vm.Tracks.Count}; senza filtri: {any?.Display} kind {any?.Kind} missing {any?.Missing})" : $"{t.Display} · {t.Bpm:0.0} BPM · intro {t.IntroEndSec:0} · uscita {t.OutroStartSec:0} · sezioni {(t.Sections?.Count ?? 0)} (affid. {t.SectionsScore:0.0})");
                 if (t != null) tracks.Add(t);
             }
-            var p = KaraokeDJ.Services.Studio.StudioDj.Build(tracks, new() { Snippets = snippets }, "Prova studio");
+            var p = await System.Threading.Tasks.Task.Run(() => KaraokeDJ.Services.Studio.StudioDj.Build(tracks, new() { Snippets = snippets }, "Prova studio",
+                t => KaraokeDJ.Audio.FineWaveform.GetOrComputeAsync(t.Id, KaraokeDJ.Services.LibraryService.PrepareForPlayback(t).audioPath, default).GetAwaiter().GetResult()));
             sb.AppendLine($"progetto {p.Bpm:0.0} BPM, durata {p.EndSec:0} s");
             foreach (var c in p.Clips)
                 sb.AppendLine($"  {c.StartSec,7:0.0}–{c.EndSec,7:0.0}  [{p.Lane(c.LaneId)?.Name}] {c.Label}  file {c.InSec:0.0}–{c.OutSec:0.0}  tempo {c.Tempo:0.000}  {(c.TransitionIn ?? "")} {c.TransitionInSec:0.0}s");

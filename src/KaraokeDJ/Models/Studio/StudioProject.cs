@@ -41,6 +41,7 @@ public sealed class StudioProject
         WriteIndented = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         PropertyNameCaseInsensitive = true,
+        NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,   // AutoGainDb = NaN vuol dire "da misurare"
         Converters = { new JsonStringEnumConverter() },
     };
 
@@ -110,6 +111,17 @@ public sealed class StudioClip
     public List<Automation> Autos { get; set; } = new();
     /// <summary>Passaggio in entrata scelto dall'assistente (solo etichetta: gli effetti veri sono nelle automazioni).</summary>
     public string? TransitionIn { get; set; }
+    /// <summary>
+    /// Punti scelti dall'assistente (secondi del file): <see cref="EntrySec"/> deve cadere alla fine del passaggio in
+    /// entrata (il drop), <see cref="ExitSec"/> all'inizio di quello in uscita (dove comincia il finale). Finché
+    /// <see cref="AutoRange"/> è vero l'assistente ricalcola i tagli; toccati a mano, restano quelli.
+    /// </summary>
+    public double EntrySec { get; set; }
+    public double ExitSec { get; set; }
+    public double FileDurationSec { get; set; }
+    public bool AutoRange { get; set; }
+    /// <summary>ExitSec viene dalla forma d'onda (ultimo punto pieno): il passaggio finisce lì, non comincia lì.</summary>
+    public bool LoudEndIsExit { get; set; }
     public double TransitionInSec { get; set; }
 
     /// <summary>Durata del pezzo di file suonato, loop compresi (secondi del file).</summary>

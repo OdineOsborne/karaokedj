@@ -40,6 +40,7 @@ public static class StudioDj
         Bpm = t.Bpm,
         BeatAnchorSec = t.Beats is { Length: > 0 } ? t.Beats[0] : Math.Max(0, t.BeatOffsetSec),
         AutoGainDb = double.NaN,
+        FileDurationSec = t.DurationSec,
     };
 
     /// <summary>Un tempo sul battere più vicino della griglia del brano (secondi del file).</summary>
@@ -78,8 +79,35 @@ public static class StudioDj
         public double Bpm { get; set; }
     }
 
+    /// <summary>
+    /// Dove un brano è "pieno" (dalla forma d'onda fine, 50 colonne al secondo: picco e bassi): l'ultimo secondo
+    /// ancora forte prima della sfumatura finale, e la prima battuta in cui entrano i bassi.
+    /// </summary>
+    public static (double loudEnd, double bassIn) Levels(byte[]? fine, double dur)
+    {
+        if (fine == null || fine.Length < 200) return (-1, -1);
+        int cols = fine.Length / 2, cps = Audio.FineWaveform.ColumnsPerSec;
+        // media mobile di 1 s del picco
+        var lvl = new double[cols]; double acc = 0;
+        for (int i = 0; i < cols; i++) { acc += fine[i * 2]; if (i >= cps) acc -= fine[(i - cps) * 2]; lvl[i] = acc / Math.Min(i + 1, cps); }
+        var sorted = lvl.Where(v => v > 2).OrderBy(v => v).ToArray();
+        if (sorted.Length == 0) return (-1, -1);
+        double median = sorted[sorted.Length / 2];
+        int last = cols - 1;
+        while (last > cols / 2 && lvl[last] < median * 0.6) last--;
+        // bassi: media di 2 s, prima volta sopra metà del massimo
+        var bass = new double[cols]; acc = 0; int w = cps * 2;
+        for (int i = 0; i < cols; i++) { acc += fine[i * 2 + 1]; if (i >= w) acc -= fine[(i - w) * 2 + 1]; bass[i] = acc / Math.Min(i + 1, w); }
+        double bmax = bass.Max();
+        int first = 0;
+        while (first < cols / 2 && bass[first] < bmax * 0.5) first++;
+        double bassIn = first >= cols / 2 ? -1 : Math.Max(0, first - w) / (double)cps;
+        return (last / (double)cps, bassIn);
+    }
+
     /// <summary>Costruisce il mix da una lista di brani, nell'ordine dato.</summary>
-    public static StudioProject Build(IList<Track> tracks, BuildOptions o, string name)
+    /// <param name="fineOf">forma d'onda fine del brano (per trovare dove è pieno); null = si usano intro/finale dell'analisi</param>
+    public static StudioProject Build(IList<Track> tracks, BuildOptions o, string name, Func<Track, byte[]?>? fineOf = null)
     {
         var p = new StudioProject { Name = name };
         var a = p.AddLane(LaneA, LaneKind.Music);
@@ -97,6 +125,13 @@ public static class StudioDj
             p.Clips.Add(c);
             ApplyWarpOne(p, c);
             ChooseRange(c, t, o, isFirst: prev == null);
+            if (!o.Snippets && fineOf != null)
+            {
+                var (loudEnd, bassIn) = Levels(fineOf(t), t.DurationSec);
+                if (loudEnd > t.DurationSec * 0.5) c.ExitSec = loudEnd;       // qui il passaggio deve essere già finito
+                c.LoudEndIsExit = loudEnd > t.DurationSec * 0.5;
+                if (prev != null && bassIn >= 0) c.EntrySec = bassIn;
+            }
             if (prev == null) { c.StartSec = 0; prev = c; continue; }
             string preset = o.Transition != "auto" ? o.Transition : AutoPreset(prev, c, auto++, o.Snippets);
             Connect(p, prev, c, preset, null);
@@ -111,17 +146,20 @@ public static class StudioDj
         ApplyWarp(tmp);
     }
 
-    /// <summary>Pezzo usato: brano intero (dall'intro all'uscita) o il ritornello più forte, tagliati sulle battute.</summary>
+    /// <summary>
+    /// Pezzo usato e punti del passaggio: brano intero (si entra sul drop dopo l'intro, si esce dove comincia il
+    /// finale) o il ritornello più forte. I tagli veri li fa <see cref="Connect"/>, che conosce la durata del passaggio.
+    /// </summary>
     private static void ChooseRange(StudioClip c, Track t, BuildOptions o, bool isFirst)
     {
         double dur = t.DurationSec > 0 ? t.DurationSec : 240;
+        c.AutoRange = true;
         if (!o.Snippets)
         {
-            c.InSec = isFirst ? 0 : Math.Max(0, SnapBeat(c, Math.Max(0, IntroEnd(t) - 32 * c.FileBeatSec), 4));
-            // si esce dove comincia il finale (più 32 battiti per il passaggio): gli ultimi secondi di sfumatura
-            // del disco sotto un blend si sentono come un buco
+            c.EntrySec = isFirst ? 0 : IntroEnd(t);
             double outro = t.OutroStartSec > dur * 0.6 ? t.OutroStartSec : t.FinalSectionStart(dur);
-            c.OutSec = outro > 0 ? Math.Min(dur, outro + 32 * c.FileBeatSec) : dur;
+            c.ExitSec = outro > 0 ? outro : Math.Max(dur * 0.8, dur - 30);
+            c.InSec = 0; c.OutSec = dur;
             return;
         }
         // spezzone: il ritornello (se l'analisi l'ha trovato), altrimenti il primo pezzo "pieno" dopo l'intro
@@ -132,9 +170,10 @@ public static class StudioDj
             if (chorus != null) start = chorus.Start;
         }
         if (start < 0) start = Math.Max(IntroEnd(t), dur * 0.3);
-        // si entra una frase prima del ritornello, così il passaggio cade sulla strofa e il ritornello arriva pieno
-        c.InSec = Math.Max(0, SnapBeat(c, start - 16 * c.FileBeatSec, 4));
-        c.OutSec = Math.Min(dur, SnapBeat(c, c.InSec + o.SnippetSec * c.Tempo, 4));
+        c.EntrySec = SnapBeat(c, start, 4);
+        c.ExitSec = Math.Min(dur - 2, SnapBeat(c, c.EntrySec + o.SnippetSec * c.Tempo, 4));
+        c.InSec = Math.Max(0, c.EntrySec - 16 * c.FileBeatSec);
+        c.OutSec = dur;
     }
 
     private static double IntroEnd(Track t) => t.IntroEndSec > 1 ? t.IntroEndSec : 0;
@@ -158,6 +197,19 @@ public static class StudioDj
         int nb = beats ?? pr.DefaultBeats;
         double beatOut = outC.Bpm > 0 ? 60.0 / outC.EffectiveBpm : 0.5;
         double ov = Math.Min(nb * beatOut, Math.Min(outC.LengthSec, inC.LengthSec) * 0.8);
+        // tagli scelti dall'assistente: l'uscita comincia a lasciare dove parte il suo finale, e il brano nuovo entra
+        // in modo che il suo drop arrivi alla fine del passaggio (niente code sfumate sopra intro vuote)
+        if (outC.AutoRange && outC.ExitSec > outC.InSec)
+        {
+            // ExitSec è l'inizio del finale (il passaggio parte lì) o, dalla forma d'onda, l'ultimo punto pieno
+            // (il passaggio deve finire lì)
+            double end = outC.LoudEndIsExit ? outC.ExitSec : SnapBeat(outC, outC.ExitSec, 4) + ov * outC.Tempo;
+            outC.OutSec = outC.FileDurationSec > 0 ? Math.Min(outC.FileDurationSec, end) : end;
+        }
+        if (inC.AutoRange && inC.EntrySec > 0)
+            inC.InSec = Math.Max(0, SnapBeat(inC, inC.EntrySec, 4) - ov * inC.Tempo);
+        if (inC.AutoRange && inC.EntrySec > 0 && inC.InSec <= 0 && inC.Bpm > 0)
+            inC.InSec = Math.Max(0, inC.BeatAnchorSec);   // intro più corta del passaggio: si parte dal primo battere
         // la fine dell'uscita cade su una battuta del brano in uscita: tagliamo lì
         if (outC.Bpm > 0 && ov > 0)
         {
