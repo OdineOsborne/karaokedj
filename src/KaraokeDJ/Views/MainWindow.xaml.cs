@@ -499,6 +499,20 @@ public partial class MainWindow : Window
 
     private void Support_Click(object sender, RoutedEventArgs e) => new SupportWindow(Vm) { Owner = this }.ShowDialog();
 
+    private StudioWindow? _studio;
+
+    private void Studio_Click(object sender, RoutedEventArgs e)
+    {
+        if (_studio == null || !_studio.IsLoaded)
+        {
+            // niente Owner: lo Studio è una finestra grande, da tenere anche su un altro schermo
+            _studio = new StudioWindow(Vm);
+            _studio.Closed += (_, _) => _studio = null;
+            _studio.Show();
+        }
+        else _studio.Activate();
+    }
+
     private RhythmWindow? _rhythm;
 
     private void Rhythm_Click(object sender, RoutedEventArgs e)

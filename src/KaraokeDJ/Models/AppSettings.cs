@@ -3,6 +3,8 @@
 public sealed class AppSettings
 {
     public List<string> LibraryFolders { get; set; } = new();
+    /// <summary>Ultimo progetto aperto nello Studio (si riapre da lì).</summary>
+    public string? StudioLastProject { get; set; }
     public string? OutputDeviceId { get; set; }
     /// <summary>Seconda uscita per la cuffia (pre-ascolto). Vuoto = nessuna.</summary>
     public string? CueDeviceId { get; set; }

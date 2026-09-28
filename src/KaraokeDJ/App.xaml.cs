@@ -120,6 +120,34 @@ public partial class App : Application
             }
             // MIXFONIA_SHOT_WINDOW=impostazioni|preserata: fotografa quella finestra invece della principale
             var which = Environment.GetEnvironmentVariable("MIXFONIA_SHOT_WINDOW");
+            if (which == "studio")
+            {
+                // MIXFONIA_STUDIO_TRACKS="pezzo titolo;pezzo titolo;…": l'assistente costruisce il mix prima della foto
+                for (int k = 0; k < 120 && Vm!.Tracks.Count < 100; k++) await System.Threading.Tasks.Task.Delay(500);
+                var stw = new Views.StudioWindow(Vm!);
+                stw.Show();
+                var list = Environment.GetEnvironmentVariable("MIXFONIA_STUDIO_TRACKS");
+                if (!string.IsNullOrWhiteSpace(list))
+                {
+                    foreach (var q in list.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                    {
+                        var t = Vm!.Tracks.Where(x => !x.IsKaraoke && File.Exists(x.FilePath) && x.Display.Contains(q, StringComparison.OrdinalIgnoreCase)).OrderByDescending(x => x.Bpm > 0).FirstOrDefault();
+                        if (t != null) stw.ViewModel.Setlist.Add(t);
+                    }
+                    await stw.ViewModel.BuildMixCommand.ExecuteAsync(null);
+                    stw.ViewModel.Seek(100);
+                    var tr = stw.ViewModel.Project.Clips.FirstOrDefault(c => c.TransitionIn != null);
+                    if (Environment.GetEnvironmentVariable("MIXFONIA_STUDIO_SEL") == "clip") { stw.ViewModel.SelectedClip = stw.ViewModel.Project.Clips.Skip(1).FirstOrDefault(); stw.ViewModel.AutomationParam = "low"; }
+                    else stw.ViewModel.TransitionClip = tr;
+                }
+                await System.Threading.Tasks.Task.Delay(3500);
+                stw.FitForShot();
+                await System.Threading.Tasks.Task.Delay(3000);
+                ShotOf(stw, path);
+                Console.Error.WriteLine("SHOT OK " + path);
+                Shutdown(0);
+                return;
+            }
             if (!string.IsNullOrWhiteSpace(which))
             {
                 Window w = which == "preserata" ? new Views.PreflightWindow(Vm!) { Owner = win } : new Views.SettingsWindow(Vm!) { Owner = win };
@@ -163,6 +191,7 @@ public partial class App : Application
                 new Views.RemoteWindow(Vm) { Owner = win },
                 new Views.ShortcutPopup(Vm, "a.play") { Owner = win },
                 new Views.PreflightWindow(Vm) { Owner = win },
+                new Views.StudioWindow(Vm) { WindowState = WindowState.Normal },
             };
             foreach (var w in wins) { w.Show(); await System.Threading.Tasks.Task.Delay(300); }
             Vm.IsProjectorOpen = true;

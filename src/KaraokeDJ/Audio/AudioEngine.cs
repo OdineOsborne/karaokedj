@@ -35,6 +35,7 @@ public sealed class AudioEngine : IDisposable
         _mixer.AddMixerInput(Rhythm);
         Mic = new MicInput();
         _mixer.AddMixerInput(Mic);
+        _mixer.AddMixerInput(new StudioTap(this));
         // la registrazione prende il mix prima del volume master: quello che e stato suonato,
         // indipendentemente da quanto era alta la sala
         Recorder = new NightRecorder(_mixer);
@@ -212,6 +213,7 @@ public sealed class AudioEngine : IDisposable
             _e.MasterRing.ReadAdd(buffer, offset, count, gm);
             // pre-ascolto dalla libreria: sempre udibile in cuffia (non segue il mix cue/master), mai nel master
             if (_e.PreviewOn) _e.PreviewRing.ReadAdd(buffer, offset, count, Volume * 0.9f);
+            if (_e.StudioPlaying && !_e.StudioOnMaster) _e.StudioRing.ReadAdd(buffer, offset, count, Volume);
             return count;
         }
     }
@@ -281,6 +283,64 @@ public sealed class AudioEngine : IDisposable
         var c = _pvCts; _pvCts = null;
         c?.Cancel();
         PreviewRing.Clear();
+    }
+
+    // ---------------------------------------------------------------- Studio (anteprima del mix in preparazione)
+
+    /// <summary>
+    /// Lo Studio suona in cuffia (in serata, senza disturbare la sala) o sul master (a casa, senza cuffia
+    /// configurata). Come il pre-ascolto, si calcola in un thread suo dentro un anello di mezzo secondo.
+    /// </summary>
+    public SampleRing StudioRing { get; } = new(SourceFactory.SampleRate * 2 * 2, SourceFactory.SampleRate * 2);
+    private CancellationTokenSource? _stCts;
+    public volatile bool StudioOnMaster;
+    public bool StudioPlaying => _stCts != null;
+    /// <summary>Secondi già calcolati e non ancora ascoltati (per mostrare la posizione giusta).</summary>
+    public double StudioBufferedSec => StudioRing.Count / (2.0 * SourceFactory.SampleRate);
+
+    public void StartStudio(ISampleProvider source, bool onMaster)
+    {
+        StopStudio();
+        StudioOnMaster = onMaster;
+        StudioRing.Clear();
+        var cts = new CancellationTokenSource();
+        _stCts = cts;
+        new Thread(() =>
+        {
+            var buf = new float[2048];
+            try
+            {
+                while (!cts.IsCancellationRequested)
+                {
+                    if (StudioRing.Count > SourceFactory.SampleRate / 2) { Thread.Sleep(8); continue; }   // ~250 ms di scorta
+                    int n = source.Read(buf, 0, buf.Length);
+                    if (n == 0) break;
+                    StudioRing.Write(buf, 0, n);
+                }
+            }
+            catch { /* un errore nello Studio non deve mai toccare la musica in sala */ }
+            finally { if (_stCts == cts) _stCts = null; }
+        }) { IsBackground = true, Name = "Studio", Priority = ThreadPriority.AboveNormal }.Start();
+    }
+
+    public void StopStudio()
+    {
+        var c = _stCts; _stCts = null;
+        c?.Cancel();
+        StudioRing.Clear();
+    }
+
+    private sealed class StudioTap : ISampleProvider
+    {
+        private readonly AudioEngine _e;
+        public StudioTap(AudioEngine e) => _e = e;
+        public WaveFormat WaveFormat => SourceFactory.Format;
+        public int Read(float[] buffer, int offset, int count)
+        {
+            Array.Clear(buffer, offset, count);
+            if (_e.StudioPlaying && _e.StudioOnMaster) _e.StudioRing.ReadAdd(buffer, offset, count, 1f);
+            return count;
+        }
     }
 
     // ---------------------------------------------------------------- uscita principale
