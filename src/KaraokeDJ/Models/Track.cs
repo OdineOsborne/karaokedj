@@ -175,7 +175,11 @@ public sealed class Track
     /// Da analizzare: mai fatto, oppure analizzato prima della 1.6 (senza energia). I MIDI non hanno suono da
     /// misurare e l'energia resta 0: senza questa eccezione "Analizza tutti" rifaceva ogni volta 15.000 karaoke.
     /// </summary>
-    [JsonIgnore] public bool NeedsAnalysis => !Analyzed || (Energy <= 0 && !IsMidi);
+    /// <summary>
+    /// Da analizzare: mai fatto, oppure fatto senza risultato (disco staccato, file illeggibile). Gli effetti sonori
+    /// di pochi secondi non hanno un'energia misurabile: dopo il primo tentativo non si riprovano a ogni avvio.
+    /// </summary>
+    [JsonIgnore] public bool NeedsAnalysis => !Analyzed || (Energy <= 0 && !IsMidi && DurationSec >= 30);
     [JsonIgnore] public bool IsLrc => Kind == TrackKind.Lrc;
     [JsonIgnore] public bool IsCdg => Kind is TrackKind.Cdg or TrackKind.CdgZip;
 

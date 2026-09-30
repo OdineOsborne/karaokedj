@@ -516,9 +516,9 @@ public sealed partial class MainViewModel : ObservableObject
                 folders = true;
                 if (!Settings.LibraryFolders.Contains(p, StringComparer.OrdinalIgnoreCase)) Settings.LibraryFolders.Add(p);
             }
-            else if (File.Exists(p) && Library.AddFile(p) != null) added++;
+            else if (File.Exists(p) && Library.AddFile(p) is { } t) { added++; if (Settings.AutoAnalyze) AnalyzeInBackground(t); }
         }
-        if (added > 0) { RefreshTracks(); Library.Save(); StatusText = added == 1 ? "Aggiunto 1 brano alla libreria" : $"Aggiunti {added} brani alla libreria"; }
+        if (added > 0) { RefreshTracks(); Library.Save(); StatusText = (added == 1 ? "Aggiunto 1 brano alla libreria" : $"Aggiunti {added} brani alla libreria") + (Settings.AutoAnalyze ? " · analisi in corso…" : ""); }
         if (folders) { SaveSettings(); await RescanAsync(); }
         else if (added == 0) StatusText = "Niente da aggiungere: trascina file audio, video o karaoke";
     }
@@ -562,8 +562,8 @@ public sealed partial class MainViewModel : ObservableObject
             // 2) i doppioni non si toccano: in libreria se ne vede uno solo (CollapseDuplicates); il pulsante Doppioni serve per liberare spazio
 
             // 3) analisi BPM/tonalità/forma d'onda di tutti i brani non ancora analizzati, in background
-            if (!IsAnalyzing && Tracks.Any(t => !t.Analyzed)) _ = AnalyzeMissingAsync();
-            StatusText = $"Libreria: {Tracks.Count} brani" + (cleaned > 0 ? $" · {cleaned} titoli sistemati" : "") + (Tracks.Any(t => !t.Analyzed) ? " · analisi in corso…" : "");
+            if (!IsAnalyzing && Tracks.Any(t => t.NeedsAnalysis)) _ = AnalyzeMissingAsync();
+            StatusText = $"Libreria: {Tracks.Count} brani" + (cleaned > 0 ? $" · {cleaned} titoli sistemati" : "") + (Tracks.Any(t => t.NeedsAnalysis) ? " · analisi in corso…" : "");
         }
         catch (OperationCanceledException) { StatusText = "Scansione annullata"; }
         catch (Exception ex) { StatusText = "Errore scansione: " + ex.Message; }
@@ -1424,7 +1424,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (IsAnalyzing) { _analyzeCts?.Cancel(); return; }
         // anche i brani analizzati prima della 1.6 vanno rifatti: non hanno energia/brillantezza (servono ai suggerimenti)
-        var todo = Tracks.Where(t => t.NeedsAnalysis).ToList();
+        var todo = Tracks.Where(t => t.NeedsAnalysis && !t.Missing).ToList();
         if (todo.Count == 0) { StatusText = "Tutti i brani sono già analizzati"; return; }
         _analyzeCts = new CancellationTokenSource();
         IsAnalyzing = true;
@@ -2920,6 +2920,8 @@ public sealed partial class MainViewModel : ObservableObject
         LibraryView.Refresh();
         try { await Task.Run(() => Library.Db.Optimize()); } catch { }
         if (missing > 0) StatusText = $"Libreria pronta ({sw.ElapsedMilliseconds} ms) · {missing} brani non raggiungibili ora (disco scollegato?): nascosti, non cancellati";
+        // brani nuovi o rimasti senza analisi (disco staccato l'ultima volta): si analizzano da soli, uno alla volta
+        if (Settings.AutoAnalyze && !IsAnalyzing && Tracks.Any(t => t.NeedsAnalysis && !t.Missing)) _ = AnalyzeMissingAsync();
     }
 
     /// <summary>Sorveglia le cartelle della libreria: i file nuovi/rinominati/cancellati entrano ed escono da soli, senza riscansione.</summary>
