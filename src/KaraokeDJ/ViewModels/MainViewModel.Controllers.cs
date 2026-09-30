@@ -32,11 +32,12 @@ public partial class MainViewModel
     /// si nascondono, come fa Serato: quello spazio va alla libreria. Il tasto 🎚 le riporta quando servono.
     /// </summary>
     [ObservableProperty] private bool _mixerKnobsVisible = true;
-    [ObservableProperty] private double _mixerMeterHeight = 190;
+    // manopole su due colonne (3 righe): i fader si accorciano con loro, e i deck guadagnano altezza
+    [ObservableProperty] private double _mixerMeterHeight = 124;
     [ObservableProperty] private double _masterMeterHeight = 146;
     partial void OnMixerKnobsVisibleChanged(bool value)
     {
-        MixerMeterHeight = value ? 190 : 110;
+        MixerMeterHeight = value ? 124 : 96;
         MasterMeterHeight = value ? 146 : 86;
     }
 

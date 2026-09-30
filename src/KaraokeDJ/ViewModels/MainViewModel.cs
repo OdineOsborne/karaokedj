@@ -1652,13 +1652,16 @@ public sealed partial class MainViewModel : ObservableObject
         Suggestions.Clear();
         if (r == null) { SuggestionsLabel = ""; return; }
         var queued = new HashSet<string>(Queue.Select(q => q.Track.Id));
+        // la canzone, non il file: niente altre copie del brano che suona, né la stessa canzone due volte in lista
+        var seenSongs = new HashSet<string>(Queue.Select(q => SongKey(q.Track))) { SongKey(r) };
         using var pass = ScoringPass(r);
         var all = Tracks
-            .Where(t => t.Id != r.Id && !queued.Contains(t.Id) && !t.PlayedThisSession && !t.IsKaraoke)
+            .Where(t => t.Id != r.Id && !queued.Contains(t.Id) && !t.PlayedThisSession && !t.IsKaraoke && !seenSongs.Contains(SongKey(t)))
             .Select(t => { var (s, why, off) = SuggestScoreWhy(r, t); return (t, s: s * (t.Analyzed ? 1.0 : 0.6), why, off); })
             .Where(x => x.s > 0)
             .OrderByDescending(x => x.s)
             .ThenBy(x => x.t.PlayCount)
+            .Where(x => seenSongs.Add(SongKey(x.t)))
             .ToList();
 
         // prima scelta: brani dello stesso mondo musicale e con un punteggio decente
