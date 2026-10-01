@@ -55,6 +55,22 @@
                             <ComboBox x:Name="MicCombo" DisplayMemberPath="Name" SelectedValuePath="Id"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,8">
+                            <TextBlock Text="Curva crossfader" Width="140" VerticalAlignment="Top" Margin="0,2,0,0"
+                                       ToolTip="Quanto della corsa del crossfader serve per sfumare da un deck all'altro, per le posizioni MIX e SCRATCH del selettore della console.&#10;100 % = sfuma su tutta la corsa; 50 % = al centro tutti e due pieni, sfuma nell'ultima metà; pochi % = taglio netto agli estremi.&#10;Si sente subito: muovi il crossfader mentre regoli."/>
+                            <StackPanel>
+                                <DockPanel>
+                                    <TextBlock Text="MIX" Width="52" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="XfMixLabel" DockPanel.Dock="Right" Width="44" TextAlignment="Right" VerticalAlignment="Center"/>
+                                    <Slider x:Name="XfMixSlider" Minimum="5" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" ValueChanged="XfSlider_Changed"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,4,0,0">
+                                    <TextBlock Text="SCRATCH" Width="52" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="XfScratchLabel" DockPanel.Dock="Right" Width="44" TextAlignment="Right" VerticalAlignment="Center"/>
+                                    <Slider x:Name="XfScratchSlider" Minimum="1" Maximum="25" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="XfSlider_Changed"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,8">
                             <TextBlock Text="Cartella download" Width="140" VerticalAlignment="Center" ToolTip="Dove salvare MP3/video scaricati (sottocartelle per playlist e Suno)"/>
                             <Button DockPanel.Dock="Right" Content="Sfoglia…" Click="BrowseDownload_Click" Margin="6,0,0,0"/>
                             <TextBox x:Name="DownloadFolderBox"/>

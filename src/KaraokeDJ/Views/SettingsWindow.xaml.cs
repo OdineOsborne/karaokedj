@@ -48,6 +48,10 @@ public partial class SettingsWindow : Window
         CueCombo.ItemsSource = cueDevices;
         CueCombo.SelectedValue = cueDevices.Any(d => d.Id == (vm.Settings.CueDeviceId ?? "")) ? (vm.Settings.CueDeviceId ?? "") : "";
         UsageBox.IsChecked = vm.Settings.UsageStatsOptIn;
+        XfMixSlider.Value = Math.Round(vm.Settings.CrossfaderMixWidth * 100);
+        XfScratchSlider.Value = Math.Round(vm.Settings.CrossfaderScratchWidth * 100);
+        _xfReady = true;
+        XfSlider_Changed(this, null!);
                 ScaleCombo.ItemsSource = ScaleOptions;
         ScaleCombo.SelectedItem = ScaleOptions.FirstOrDefault(o => Math.Abs(o.Value - vm.Settings.UiScale) < 0.001) ?? ScaleOptions[0];
         ScaleNow.Text = vm.UiScaleLabel;
@@ -418,6 +422,19 @@ public partial class SettingsWindow : Window
             InfoLabel.Text = row.Name + ": fatto";
         }
         catch (Exception ex) { InfoLabel.Text = "Errore: " + ex.Message; }
+    }
+
+    private bool _xfReady;
+    /// <summary>La curva si applica subito (si sente muovendo il crossfader) ed è salvata nelle impostazioni.</summary>
+    private void XfSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_xfReady) return;
+        XfMixLabel.Text = $"{XfMixSlider.Value:0} %";
+        XfScratchLabel.Text = $"{XfScratchSlider.Value:0} %";
+        _vm.Settings.CrossfaderMixWidth = XfMixSlider.Value / 100;
+        _vm.Settings.CrossfaderScratchWidth = XfScratchSlider.Value / 100;
+        _vm.Engine.CrossfaderMixWidth = _vm.Settings.CrossfaderMixWidth;
+        _vm.Engine.CrossfaderScratchWidth = _vm.Settings.CrossfaderScratchWidth;
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)

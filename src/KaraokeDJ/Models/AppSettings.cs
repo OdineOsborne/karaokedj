@@ -39,6 +39,10 @@ public sealed class AppSettings
     public bool KeyCompatFilter { get; set; }
     public int ProjectorScreenIndex { get; set; } = -1; // -1 = primo schermo non principale
     public double CrossfadeSeconds { get; set; } = 6;
+    /// <summary>Curva del crossfader: parte della corsa in cui si sfuma (posizione MIX e SCRATCH del selettore).</summary>
+    public double CrossfaderMixWidth { get; set; } = 0.5;
+    public double CrossfaderScratchWidth { get; set; } = 0.06;
+    public string CrossfaderCurve { get; set; } = "mix";
     public bool AutoMix { get; set; }
     public bool AutoMixUseCues { get; set; } = true;
     /// <summary>Analizza automaticamente (BPM, tonalità, forma d'onda) i brani nuovi dopo la scansione.</summary>

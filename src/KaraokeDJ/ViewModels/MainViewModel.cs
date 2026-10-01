@@ -71,6 +71,10 @@ public sealed partial class MainViewModel : ObservableObject
         AutoMixUseCues = Settings.AutoMixUseCues;
         AutoMixEndless = Settings.AutoMixEndless;
         AutoMixBpmRange = Settings.AutoMixBpmRange;
+        // curva del crossfader come l'aveva lasciata il DJ (selettore della console e larghezze nelle impostazioni)
+        Engine.CrossfaderMixWidth = Settings.CrossfaderMixWidth;
+        Engine.CrossfaderScratchWidth = Settings.CrossfaderScratchWidth;
+        Engine.CrossfaderCurve = Settings.CrossfaderCurve;
         // prima il momento, poi i generi (come "applicati dal momento"): caricare i generi salvati sembrava una modifica
         // a mano e all'avvio il momento diventava sempre "Personalizzato"
         var savedMoment = Settings.AutoMixMoment;
@@ -2763,6 +2767,7 @@ public sealed partial class MainViewModel : ObservableObject
                 if (curve != Engine.CrossfaderCurve)
                 {
                     Engine.CrossfaderCurve = curve;
+                    Settings.CrossfaderCurve = curve;
                     StatusText = curve switch
                     {
                         "off" => "Crossfader escluso: si mixa con i fader di canale",
