@@ -830,6 +830,30 @@ public sealed partial class MainViewModel : ObservableObject
         Crossfader = target == DeckB ? 1 : -1;
     }
 
+    /// <summary>
+    /// PASSA DAL CUE: il brano già caricato sull'altro piatto entra dal suo cue, a tempo, sul prossimo battere di
+    /// quello che suona (senza cue: dal punto dove è fermo). Pensato per un pad della console.
+    /// </summary>
+    [RelayCommand]
+    public void MixFromCue()
+    {
+        var playing = DeckA.IsPlaying && (!DeckB.IsPlaying || Crossfader <= 0) ? DeckA : DeckB.IsPlaying ? DeckB : null;
+        var target = playing == DeckA ? DeckB : playing == DeckB ? DeckA : (DeckA.HasTrack ? DeckA : DeckB);
+        if (target.Track == null) { StatusText = "Passa dal CUE: carica prima un brano sull'altro piatto"; return; }
+        double cue = target.HasCue ? target.CueSec : target.Deck.PositionSec;
+        if (playing == null || playing.Track == null)
+        {
+            target.Deck.Seek(cue);
+            target.Deck.Play();
+            Crossfader = target == DeckB ? 1 : -1;
+            return;
+        }
+        if (IsMixing) { StatusText = "Passa dal CUE: c'è già un passaggio in corso"; return; }
+        _autoMixTriggeredFor = playing;   // l'automix non deve rifare il passaggio
+        StatusText = $"Passa dal CUE: {target.Track.Display} da {TimeSpan.FromSeconds(cue):m\\:ss\\.f}";
+        _ = MixToAsync(playing, target, startNow: true, fromCueSec: cue);
+    }
+
     [RelayCommand] private void CrossfadeToA() => StartCrossfade(-1);
     [RelayCommand] private void CrossfadeToB() => StartCrossfade(1);
 
@@ -2731,6 +2755,7 @@ public sealed partial class MainViewModel : ObservableObject
             case "loadA": LoadSelectedToACommand.Execute(null); break;
             case "loadB": LoadSelectedToBCommand.Execute(null); break;
             case "browse": if (continuous) { int v = (int)Math.Round(norm * 127); MoveLibrarySelection(v == 0 ? 0 : v < 64 ? v : v - 128); } break;
+            case "mixfromcue": MixFromCueCommand.Execute(null); break;
             case "xfcurve" when continuous:
             {
                 // selettore a tre posizioni della console: sinistra sfumata, centro taglio, destra crossfader escluso

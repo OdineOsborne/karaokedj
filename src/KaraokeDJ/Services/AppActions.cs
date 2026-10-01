@@ -56,6 +56,7 @@ public static class AppActions
         new("onair.echoout", "Deck che si sente: ECHO OUT", false), new("onair.fxreset", "Deck che si sente: spegni tutti gli effetti", false),
         new("loadA", "Carica il brano selezionato su A", false), new("loadB", "Carica il brano selezionato su B", false),
         new("preview", "Libreria: pre-ascolto in cuffia del selezionato (on/off)", false),
+        new("mixfromcue", "Passa dal CUE: l'altro piatto entra dal suo cue, a tempo", false),
         new("xfcurve", "Crossfader: curva (selettore mix / scratch / off)", true),
         new("browse", "Libreria: scorri (encoder)", true), new("browseup", "Libreria: su", false), new("browsedown", "Libreria: giù", false), new("browseload", "Libreria: carica sul deck libero", false),
         new("rhythm.play", "Ritmi: avvia/ferma", false), new("rhythm.tap", "Ritmi: tap tempo", false), new("rhythm.resync", "Ritmi: riparti dall'1", false), new("rhythm.volume", "Ritmi: volume", true),

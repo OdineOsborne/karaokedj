@@ -137,7 +137,8 @@ public sealed partial class MainViewModel
     // ------------------------------------------------------------------ pianificazione
 
     /// <summary>Sceglie tecnica, durata e punti di mix per il passaggio da <paramref name="outgoing"/> a <paramref name="incoming"/>.</summary>
-    private async Task<MixPlan> PlanMixAsync(DeckViewModel outgoing, DeckViewModel incoming, bool startNow)
+    /// <param name="fromCueSec">"Passa dal CUE": il brano in arrivo deve farsi sentire esattamente da qui (il cue del DJ)</param>
+    private async Task<MixPlan> PlanMixAsync(DeckViewModel outgoing, DeckViewModel incoming, bool startNow, double fromCueSec = -1)
     {
         var to = outgoing.Track!; var ti = incoming.Track!;
         var plan = new MixPlan { Out = outgoing, In = incoming, Dir = incoming == DeckB ? 1 : -1 };
@@ -161,6 +162,8 @@ public sealed partial class MainViewModel
         // metà delle volte) in pista suona come un errore: resta solo se il DJ lo chiede
         else if (!canBeatMatch) tech = style == "brake" ? "brake" : "echo";
         else if (style is "blend" or "bass" or "filter" or "echo" or "cut" or "brake") tech = style;
+        // dal cue: il DJ ha scelto il punto, il passaggio deve essere corto e pulito (bassi che si scambiano)
+        else if (fromCueSec >= 0) tech = "bass";
         else if (style == "glide") tech = "blend";
         else
         {
@@ -181,7 +184,7 @@ public sealed partial class MainViewModel
             plan.LenSec = Math.Max(1, CrossfadeSeconds);
             double outStart = to.OutroStartSec > 0 && to.OutroStartSec < to.DurationSec - plan.LenSec ? to.OutroStartSec : to.DurationSec - plan.LenSec - 0.5;
             plan.OutStartSec = startNow ? outgoing.Deck.PositionSec : Math.Max(outgoing.Deck.PositionSec, outStart);
-            plan.InStartSec = ti.IntroEndSec > 2 && !ti.IsKaraoke ? Math.Max(0, ti.IntroEndSec - 1) : 0;
+            plan.InStartSec = fromCueSec >= 0 ? fromCueSec : ti.IntroEndSec > 2 && !ti.IsKaraoke ? Math.Max(0, ti.IntroEndSec - 1) : 0;
             plan.Why = "dissolvenza semplice";
             return plan;
         }
@@ -222,6 +225,8 @@ public sealed partial class MainViewModel
         }
         double inStart = dropIn - barsBeforeDrop * barInFile;
         if (inStart < 0) { inStart = SnapToBar(0, plan.InAnchor, plan.InBeat / inBarScale); if (inStart < 0) inStart = 0; }
+        // dal cue: il cue cade nel momento in cui il brano si fa sentire (subito, o dopo l'echo/taglio dell'uscita)
+        if (fromCueSec >= 0) inStart = Math.Max(0, fromCueSec - plan.InAudibleAt * plan.Bars * barInFile);
         plan.InStartSec = inStart;
 
         // tempo: in arrivo agganciato ai BPM effettivi dell'uscita, poi scivola al suo tempo naturale
@@ -380,7 +385,7 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>Passaggio "da DJ" verso il deck indicato, se possibile; altrimenti dissolvenza classica.</summary>
-    private async Task MixToAsync(DeckViewModel outgoing, DeckViewModel incoming, bool startNow)
+    private async Task MixToAsync(DeckViewModel outgoing, DeckViewModel incoming, bool startNow, double fromCueSec = -1)
     {
         if (outgoing.Track == null || incoming.Track == null) { StartCrossfade(incoming == DeckB ? 1 : -1); return; }
         if (!outgoing.IsPlaying) { Crossfader = incoming == DeckB ? 1 : -1; incoming.Deck.Play(); return; }
@@ -389,7 +394,7 @@ public sealed partial class MainViewModel
         // i due brani devono essere in memoria: solo lì il salto all'attacco è esatto (dal file sbaglia fino a mezzo secondo)
         await Task.WhenAny(Task.WhenAll(incoming.Deck.MemoryReady, outgoing.Deck.MemoryReady), Task.Delay(8000));
         if (!incoming.Deck.InMemory) StatusText = "Mix: brano non ancora in memoria, l'attacco può essere meno preciso";
-        var plan = await PlanMixAsync(outgoing, incoming, startNow);
+        var plan = await PlanMixAsync(outgoing, incoming, startNow, fromCueSec);
         StartMix(plan);
     }
 

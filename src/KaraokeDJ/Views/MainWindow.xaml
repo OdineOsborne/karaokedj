@@ -233,8 +233,10 @@
                                       IsEnabled="{Binding AutoMix}" ToolTip="Finisce il brano in corso e si ferma lì, senza perdere le impostazioni. Ripremi per riprendere."/>
                         <Button Content="⏹ STOP" Command="{Binding AutoMixStopCommand}" Style="{StaticResource SmallButton}" Height="24" Padding="8,0" FontSize="10.5" Margin="0,0,4,0"
                                 ToolTip="Ferma subito: annulla il passaggio in corso e spegne l'auto-mix"/>
-                        <Button Content="⏭ MIXA ORA" Command="{Binding PlayNextCommand}" Style="{StaticResource SmallButton}" Height="24" Padding="8,0" FontSize="10.5" Margin="0,0,14,0"
+                        <Button Content="⏭ MIXA ORA" Command="{Binding PlayNextCommand}" Style="{StaticResource SmallButton}" Height="24" Padding="8,0" FontSize="10.5" Margin="0,0,4,0"
                                 ToolTip="Fa partire subito il passaggio al prossimo in coda (Ctrl+N)"/>
+                        <Button Content="⏯ DAL CUE" Command="{Binding MixFromCueCommand}" v:Shortcut.Action="mixfromcue" Style="{StaticResource SmallButton}" Height="24" Padding="8,0" FontSize="10.5" Margin="0,0,14,0"
+                                ToolTip="Passa dal CUE: il brano caricato sull'altro piatto entra dal suo punto di cue, a tempo, sul prossimo battere.&#10;Tasto destro per legarlo a un pad o a un tasto."/>
                         <!-- l'interruttore era una casella "dalla coda": nessuno capiva che accendeva l'automix -->
                         <ToggleButton IsChecked="{Binding AutoMix}" v:Shortcut.Action="automix" Height="24" Padding="10,0" FontSize="10.5" FontWeight="SemiBold" MinWidth="0" Margin="0,0,10,0"
                                       ToolTip="Accende l'automix: a fine brano parte da solo il prossimo in coda, con il passaggio da DJ.&#10;Con &quot;mai fermarsi&quot;, a coda vuota sceglie lui fra i suggeriti.">
