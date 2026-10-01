@@ -56,6 +56,9 @@ public sealed class AppSettings
     public double AutoMixBpmRange { get; set; } = 8;
     /// <summary>Momento della serata scelto per l'automix (vedi MainViewModel.Moments).</summary>
     public string AutoMixMoment { get; set; } = "libero";
+    /// <summary>Automix da una playlist (vuoto = dal momento della serata).</summary>
+    public string? AutoMixPlaylistId { get; set; }
+    public bool AutoMixPlaylistInOrder { get; set; }
     /// <summary>Generi della serata per l'automix (testo, separati da virgola).</summary>
     public string SetGenres { get; set; } = "";
     /// <summary>Generi creati a mano dall'utente: compaiono sempre negli elenchi.</summary>

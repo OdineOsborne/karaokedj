@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -14,5 +14,6 @@ public sealed partial class Playlist : ObservableObject
     [JsonIgnore] public string Display => $"{Name} ({TrackIds.Count})";
 
     public void NotifyCountChanged() => OnPropertyChanged(nameof(Display));
+    public override string ToString() => Display;
     partial void OnNameChanged(string value) => OnPropertyChanged(nameof(Display));
 }

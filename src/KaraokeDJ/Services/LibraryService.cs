@@ -1,4 +1,4 @@
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using KaraokeDJ.Audio;
 using KaraokeDJ.Models;
 
@@ -62,6 +62,8 @@ public sealed class LibraryService
     /// <summary>Aggiunge (o aggiorna) un singolo file, es. dopo un download.</summary>
     public Track? AddFile(string path)
     {
+        // anche i file che arrivano dalla sorveglianza delle cartelle passano dagli stessi filtri della scansione
+        if (!IsCandidate(path)) return null;
         var t = BuildTrack(path);
         if (t != null) { _byPath[path] = t; _db.Upsert(t); }
         return t;
@@ -132,13 +134,16 @@ public sealed class LibraryService
         }, ct);
     }
 
-    private static bool IsCandidate(string path)
+    public static bool IsCandidate(string path)
     {
         var name = Path.GetFileName(path);
         if (name.StartsWith("._") || name.StartsWith(".")) return false; // AppleDouble / nascosti
         // Cestino di Windows e cartelle di sistema: non sono brani
         if (path.Contains(@"\$Recycle.Bin\", StringComparison.OrdinalIgnoreCase) || path.Contains(@"\System Volume Information\", StringComparison.OrdinalIgnoreCase)) return false;
         if ((name.StartsWith("$R") || name.StartsWith("$I")) && name.Length >= 8 && name.Skip(2).Take(6).All(char.IsLetterOrDigit)) return false;
+        // file provvisori dei download (yt-dlp scrive "Brano.temp.mp3" e poi lo rinomina): aprirli per leggerli li teneva
+        // bloccati, lo scaricatore non riusciva a toglierli e ogni brano finiva in libreria due volte
+        if (System.Text.RegularExpressions.Regex.IsMatch(name, @"\.(temp|part|ytdl|tmp)(\.[a-z0-9]{2,4})?$|\.f\d{2,4}\.[a-z0-9]{2,4}$", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) return false;
         // versioni strumentali (base senza voce, stem Demucs, ecc.): non sono brani da scaletta
         if (System.Text.RegularExpressions.Regex.IsMatch(name, @"[(\[]\s*instrumental\s*[)\]]", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) return false;
         try { if ((File.GetAttributes(path) & (FileAttributes.Hidden | FileAttributes.System)) != 0) return false; } catch { }

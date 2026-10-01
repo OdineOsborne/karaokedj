@@ -452,6 +452,14 @@ public partial class App : Application
         {
             vm.Queue.Clear();
             vm.MomentId = moment;
+            // MIXFONIA_PLAYLIST="pezzo del nome": automix da quella playlist (MIXFONIA_INORDER=1 per l'ordine della playlist)
+            var plName = Environment.GetEnvironmentVariable("MIXFONIA_PLAYLIST");
+            if (!string.IsNullOrEmpty(plName))
+            {
+                vm.AutoMixPlaylistInOrder = Environment.GetEnvironmentVariable("MIXFONIA_INORDER") == "1";
+                vm.AutoMixPlaylist = vm.Playlists.FirstOrDefault(p => p.Name.Contains(plName, StringComparison.OrdinalIgnoreCase));
+                sb.AppendLine($"playlist: {vm.AutoMixPlaylist?.Name ?? "NON TROVATA"}");
+            }
             vm.AutoMixEndless = true;
             vm.AutoMix = true;
             vm.PlanAutoMix();
@@ -470,6 +478,7 @@ public partial class App : Application
         finally
         {
             vm.AutoMix = false;
+            vm.AutoMixPlaylist = null;
             vm.Queue.Clear(); foreach (var q in before) vm.Queue.Add(q);
         }
         try { System.IO.File.WriteAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "mixfonia-scaletta.log"), sb.ToString()); } catch { }

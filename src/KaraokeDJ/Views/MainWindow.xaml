@@ -256,6 +256,15 @@
                         <TextBlock Text="Momento" Style="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <ComboBox ItemsSource="{Binding MomentList}" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding MomentId}" FontSize="11" Padding="6,2" MinWidth="120" VerticalAlignment="Center" Margin="0,0,6,0"
                                   ToolTip="Momento della serata: decide generi, fascia di BPM e intenzione (tenere, alzare, calmare) quando l'automix sceglie da solo.&#10;Cambiando momento l'automix si sposta a gradini, senza salti di ritmo."/>
+                        <TextBlock Text="Playlist" Style="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" Margin="8,0,6,0"/>
+                        <ComboBox ItemsSource="{Binding AutoMixPlaylistChoices}" SelectedItem="{Binding AutoMixPlaylistChoice}" FontSize="11" Padding="6,2" MinWidth="130" MaxWidth="220" VerticalAlignment="Center" Margin="0,0,6,0"
+                                  ToolTip="L'automix suona questa playlist (per esempio quella della festeggiata) invece di scegliere dal momento.&#10;Finita la playlist torna da solo al momento della serata.">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate><TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis"/></DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <CheckBox IsChecked="{Binding AutoMixPlaylistInOrder}" Content="in ordine" VerticalAlignment="Center" Margin="0,0,6,0"
+                                  ToolTip="Acceso: la playlist suona nel suo ordine. Spento: l'automix sceglie dentro la playlist il brano che si lega meglio (BPM, tonalità, energia)."/>
                         <TextBlock DockPanel.Dock="Right" Text="{Binding MixStatus}" Style="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" Margin="12,0,0,0" MaxWidth="260" TextTrimming="CharacterEllipsis"/>
                         <TextBlock Text="{Binding SetGenres}" Style="{StaticResource Muted}" FontSize="10.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="200"
                                    ToolTip="Generi del momento. Per scriverli a mano: Avanzate → Generi."/>

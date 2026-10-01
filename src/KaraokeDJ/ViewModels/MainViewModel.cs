@@ -201,6 +201,7 @@ public sealed partial class MainViewModel : ObservableObject
         RefreshTracks();
         LoadQueue();
         LoadPlaylists();
+        RestoreAutoMixPlaylist();
         ResolveFillPlaylist();
         JamendoSource.ClientId = Settings.JamendoClientId;
         Plugins.Load(TrackExists, s => StatusText = s);
@@ -983,6 +984,20 @@ public sealed partial class MainViewModel : ObservableObject
         if (pool.Count == 0) return (null, "");
 
         var setGenres = SetGenreList();
+        // playlist scelta per l'automix: comanda lei (il momento e i generi della serata non contano)
+        if (AutoMixPlaylist is { } pl)
+        {
+            var left = PlaylistRemaining(onDecks, songs);
+            if (left.Count > 0)
+            {
+                if (AutoMixPlaylistInOrder) return (left[0], $"playlist «{pl.Name}», in ordine");
+                var ids = left.Select(t => t.Id).ToHashSet();
+                pool = pool.Where(t => ids.Contains(t.Id)).ToList();
+                setGenres = new();
+            }
+            else Say($"Automix: la playlist «{pl.Name}» è finita, torno al momento «{CurrentMoment.Name}»");
+        }
+        bool fromPlaylist = AutoMixPlaylist != null && pool.Count > 0 && pool.All(t => AutoMixPlaylist.TrackIds.Contains(t.Id));
         var fresh = pool.Where(t => !t.PlayedThisSession && !Feedback.IsRejectedNow(t)).ToList();
         // Range BPM: anche nello stesso genere un brano troppo lontano rompe il ritmo della pista (e con "aggancia
         // BPM" andrebbe stirato troppo). Conta anche metà/doppio tempo. Se nel range non c'è niente si prende il
@@ -990,7 +1005,7 @@ public sealed partial class MainViewModel : ObservableObject
         // fascia BPM del momento (es. pista piena 122–132): dentro la fascia si resta vicini al ritmo attuale,
         // così passando da "cena" a "pista" l'automix sale a gradini invece di saltare
         var moment = CurrentMoment;
-        if (moment.HasWindow && fresh.Count > 0)
+        if (moment.HasWindow && fresh.Count > 0 && !fromPlaylist)
         {
             var inWin = fresh.Where(t => moment.InWindow(t.Bpm)).ToList();
             if (inWin.Count > 0) fresh = inWin;
@@ -1051,6 +1066,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (pick != null) why = current == null ? "primo brano" : "nessun riferimento utile: brano meno suonato";
         }
         if (pick == null) { pick = pool.OrderBy(t => t.LastPlayedUtc ?? DateTime.MinValue).FirstOrDefault(Present); why = "tutti già suonati: riparto dal più vecchio"; }
+        if (pick != null && fromPlaylist) why = $"playlist «{AutoMixPlaylist!.Name}» · " + why;
         return (pick, why);
     }
 
