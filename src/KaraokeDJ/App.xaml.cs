@@ -71,6 +71,9 @@ public partial class App : Application
         // --scalettatest <momento>: la scaletta che l'automix preparerebbe (la coda viene rimessa com'era)
         int stIdx = Array.IndexOf(e.Args, "--scalettatest");
         if (stIdx >= 0) RunPlanTest(e.Args.ElementAtOrDefault(stIdx + 1) ?? "libero");
+        // --localgridtest "pezzo titolo;…": misura dei battiti sul posto in più punti del brano (devono combaciare)
+        int lgIdx = Array.IndexOf(e.Args, "--localgridtest");
+        if (lgIdx >= 0 && lgIdx + 1 < e.Args.Length) RunLocalGridTest(e.Args[lgIdx + 1]);
         int studioIdx = Array.IndexOf(e.Args, "--studiotest");
         if (studioIdx >= 0 && studioIdx + 1 < e.Args.Length) RunStudioTest(e.Args[studioIdx + 1], e.Args.Contains("spezzoni"));
         // --gridtest [quanti]: quanto la griglia dei battiti sta davvero sui colpi del brano
@@ -537,6 +540,39 @@ public partial class App : Application
         }
         catch (Exception ex) { sb.AppendLine("ERRORE " + ex); }
         try { System.IO.File.WriteAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "mixfonia-studio.log"), sb.ToString()); } catch { }
+        Shutdown(0);
+    }
+
+    private async void RunLocalGridTest(string list)
+    {
+        var vm = Vm!;
+        for (int w = 0; w < 120 && vm.Tracks.Count < 100; w++) await System.Threading.Tasks.Task.Delay(500);
+        var sb = new System.Text.StringBuilder();
+        foreach (var q in list.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var t = vm.Tracks.FirstOrDefault(x => !x.IsKaraoke && File.Exists(x.FilePath) && x.Display.Contains(q, StringComparison.OrdinalIgnoreCase) && x.Bpm > 0);
+            if (t == null) { sb.AppendLine("NON TROVATO " + q); continue; }
+            var mem = await System.Threading.Tasks.Task.Run(() => KaraokeDJ.Audio.MemoryTrack.Decode(t.FilePath, default));
+            if (mem == null) { sb.AppendLine("non decodificato " + t.Display); continue; }
+            sb.AppendLine($"{t.Display}  (analisi {t.Bpm:0.0} BPM, respiro {t.BeatDriftPercent:0.0}%)");
+            KaraokeDJ.Audio.LocalGrid.Result? first = null;
+            foreach (var at in new[] { 40.0, 70.0, 100.0, 130.0, 160.0 })
+            {
+                if (at + 12 > t.DurationSec) break;
+                var g = KaraokeDJ.Audio.LocalGrid.Measure(mem.MonoWindow(at, 12), at, t.Bpm);
+                string fit = "";
+                if (first is { } f && f.Reliable && g.Reliable)
+                {
+                    // il battito trovato qui deve cadere sulla griglia misurata al primo punto
+                    double beats = (g.AnchorSec - f.AnchorSec) / (60 / f.Bpm);
+                    double err = (beats - Math.Round(beats)) * 60 / f.Bpm * 1000;
+                    fit = $"  scarto dalla griglia del primo punto {err,6:+0;-0} ms";
+                }
+                sb.AppendLine($"   a {at,4:0}s  {g.Bpm,6:0.00} BPM  fiducia {g.Confidence,4:0.0} {(g.Reliable ? "ok" : "NO")}  battito a {g.AnchorSec:0.000}{fit}");
+                if (first == null && g.Reliable) first = g;
+            }
+        }
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-localgrid.log"), sb.ToString()); } catch { }
         Shutdown(0);
     }
 

@@ -143,27 +143,45 @@ public sealed partial class MainViewModel
         var to = outgoing.Track!; var ti = incoming.Track!;
         var plan = new MixPlan { Out = outgoing, In = incoming, Dir = incoming == DeckB ? 1 : -1 };
         bool karaoke = to.IsKaraoke || ti.IsKaraoke;
+        double outTempoNow = outgoing.Deck.Tempo;
+        double now = outgoing.Deck.PositionSec;
+
+        // griglie dell'analisi (servono comunque per trovare uscita e drop), poi misura sul posto sull'audio in memoria
+        var fineOut = await EnsureGridAsync(to);
+        var fineIn = await EnsureGridAsync(ti);
         double outBpmNative = to.Bpm, inBpmNative = ti.Bpm;
+        double outAnchor = to.BeatOffsetSec >= 0 ? to.BeatOffsetSec : 0, inAnchor = ti.BeatOffsetSec >= 0 ? ti.BeatOffsetSec : 0;
+        // punti indicativi: dove esce il brano in uscita e dove si farà sentire quello in arrivo
+        double outGuess = startNow || outBpmNative <= 0 ? now : Math.Max(now, FindMixOut(to, fineOut, outAnchor, 60.0 / outBpmNative, 9));
+        double inGuess = fromCueSec >= 0 ? fromCueSec : inBpmNative > 0 ? FindMixIn(ti, fineIn, inAnchor, 60.0 / inBpmNative) : 0;
+        LocalGrid.Result gOut = default, gIn = default;
+        if (!karaoke && outBpmNative > 0 && inBpmNative > 0 && outgoing.Deck.Memory is { } memOut && incoming.Deck.Memory is { } memIn)
+        {
+            double o0 = Math.Max(0, outGuess - 3), i0 = Math.Max(0, inGuess - 2);
+            double ob = outBpmNative, ib = inBpmNative;
+            (gOut, gIn) = await Task.Run(() => (LocalGrid.Measure(memOut.MonoWindow(o0, 12), o0, ob), LocalGrid.Measure(memIn.MonoWindow(i0, 12), i0, ib)));
+            if (gOut.Reliable) { outBpmNative = gOut.Bpm; outAnchor = gOut.AnchorSec; }
+            if (gIn.Reliable) { inBpmNative = gIn.Bpm; inAnchor = gIn.AnchorSec; }
+        }
+        bool gridOk = gOut.Reliable && gIn.Reliable;
 
         // BPM del brano in arrivo riportati vicino a quelli in uscita (×1, ×2, ×½)
         double inNative = inBpmNative;
         if (inBpmNative > 0 && outBpmNative > 0)
             foreach (var mult in new[] { 2.0, 0.5 }) if (Math.Abs(inBpmNative * mult - outBpmNative) < Math.Abs(inNative - outBpmNative)) inNative = inBpmNative * mult;
         double bpmDiffPct = (inNative > 0 && outBpmNative > 0) ? Math.Abs(inNative / outBpmNative - 1) * 100 : 100;
-        bool canBeatMatch = !karaoke && BpmMatch && !BpmLock && inNative > 0 && outBpmNative > 0 && bpmDiffPct <= 12;
+        // a tempo solo se i battiti sono stati misurati davvero su tutti e due i brani: con una griglia sbagliata
+        // due brani sovrapposti "galoppano", ed è peggio di un passaggio senza aggancio
+        bool canBeatMatch = !karaoke && BpmMatch && !BpmLock && inNative > 0 && outBpmNative > 0 && bpmDiffPct <= 12 && gridOk;
 
-        // tecnica
-        // un pad PASSAGGI della console sceglie la tecnica di questo passaggio (vale una volta, per 15 secondi)
+        // tecnica: un pad PASSAGGI la sceglie per questo passaggio (vale una volta, per 15 secondi) e va rispettata
         string style = _styleOverride != null && (DateTime.UtcNow - _styleOverrideAt).TotalSeconds < 15 ? _styleOverride : TransitionStyle;
         _styleOverride = null;
         string tech;
         if (karaoke || style == "fade") tech = "fade";
-        // BPM troppo lontani per agganciare: echo-out, che copre lo stacco. Il brake a sorpresa (era scelto a caso
-        // metà delle volte) in pista suona come un errore: resta solo se il DJ lo chiede
-        else if (!canBeatMatch) tech = style == "brake" ? "brake" : "echo";
         else if (style is "blend" or "bass" or "filter" or "echo" or "cut" or "brake") tech = style;
-        // dal cue: il DJ ha scelto il punto, il passaggio deve essere corto e pulito (bassi che si scambiano)
-        else if (fromCueSec >= 0) tech = "bass";
+        else if (!canBeatMatch) tech = "echo";                  // automatico senza aggancio possibile: echo, che copre lo stacco
+        else if (fromCueSec >= 0) tech = "bass";                // dal cue: corto e pulito
         else if (style == "glide") tech = "blend";
         else
         {
@@ -173,9 +191,10 @@ public sealed partial class MainViewModel
         }
         plan.Technique = tech;
         plan.Bars = tech switch { "blend" => 16, "bass" => 16, "filter" => 8, "echo" => 4, "cut" => 2, "brake" => 2, _ => 0 };
-        // MIXA ORA: il brano in uscita è a metà, con la voce. 16 battute (mezzo minuto) di due voci sovrapposte si
-        // sentono: il DJ che preme "ora" vuole il cambio in pochi secondi
+        // MIXA ORA: 16 battute (mezzo minuto) di due voci sovrapposte si sentono: il DJ che preme "ora" vuole il cambio in pochi secondi
         if (startNow && plan.Bars > 8) plan.Bars = 8;
+        // blend/bassi/filtro senza aggancio (BPM lontani o battiti non misurabili): si fanno lo stesso, ma brevi
+        if (!canBeatMatch && tech is "blend" or "bass" or "filter") plan.Bars = 4;
         plan.InAudibleAt = tech switch { "echo" => 0.75, "cut" => 0.5, "brake" => 0.5, _ => 0 };
         plan.BeatMatch = canBeatMatch && tech != "fade";
 
@@ -189,22 +208,17 @@ public sealed partial class MainViewModel
             return plan;
         }
 
-        // griglie
-        var fineOut = await EnsureGridAsync(to);
-        var fineIn = await EnsureGridAsync(ti);
-        double outTempoNow = outgoing.Deck.Tempo;
         plan.OutBeat = 60.0 / outBpmNative;
-        plan.OutAnchor = to.BeatOffsetSec >= 0 ? to.BeatOffsetSec : 0;
-        plan.InBeat = 60.0 / inBpmNative;
-        plan.InAnchor = ti.BeatOffsetSec >= 0 ? ti.BeatOffsetSec : 0;
+        plan.OutAnchor = outAnchor;
+        plan.InBeat = 60.0 / Math.Max(1, inBpmNative);
+        plan.InAnchor = inAnchor;
         // battute in arrivo: se il brano in arrivo è a ×2/×½ la sua "battuta" dura il doppio/metà in confronto
-        double inBarScale = inNative / inBpmNative; // 2 → il brano in arrivo è lento (½): una battuta di mix = mezza sua battuta
+        double inBarScale = inBpmNative > 0 ? inNative / inBpmNative : 1;
         double barOutFile = plan.OutBeat * 4;
         plan.LenSec = plan.Bars * barOutFile / outTempoNow;
 
         // punto di uscita: sul battere, dove calano i bassi (o almeno "Bars" battute prima della fine)
         double outStartFile = FindMixOut(to, fineOut, plan.OutAnchor, plan.OutBeat, plan.Bars + 1);
-        double now = outgoing.Deck.PositionSec;
         if (startNow || outStartFile < now + 0.2)
         {
             outStartFile = NextBar(now + 0.15 * outTempoNow, plan.OutAnchor, plan.OutBeat);
@@ -212,17 +226,13 @@ public sealed partial class MainViewModel
             double phrase = NextPhrase(now + 0.15 * outTempoNow, plan.OutAnchor, plan.OutBeat);
             if ((phrase - now) / outTempoNow <= 5) outStartFile = phrase;
         }
+        else outStartFile = SnapToBar(outStartFile, plan.OutAnchor, plan.OutBeat);
         plan.OutStartSec = outStartFile;
 
         // punto di ingresso: il drop del brano in arrivo deve cadere a InAudibleAt del passaggio
-        double dropIn = FindMixIn(ti, fineIn, plan.InAnchor, plan.InBeat);
+        double dropIn = inGuess > 0 ? SnapToBar(inGuess, plan.InAnchor, plan.InBeat) : FindMixIn(ti, fineIn, plan.InAnchor, plan.InBeat);
         double barInFile = plan.InBeat * 4 / inBarScale;                     // una battuta "di mix" in secondi di file del brano in arrivo
-        double barsBeforeDrop = plan.Bars * plan.InAudibleAt;                 // battute di mix dall'inizio del passaggio al drop
-        if (plan.InAudibleAt == 0)
-        {
-            // tecniche che entrano subito: il drop arriva alla fine del passaggio (l'intro suona sotto l'uscita)
-            barsBeforeDrop = plan.Bars;
-        }
+        double barsBeforeDrop = plan.InAudibleAt == 0 ? plan.Bars : plan.Bars * plan.InAudibleAt;
         double inStart = dropIn - barsBeforeDrop * barInFile;
         if (inStart < 0) { inStart = SnapToBar(0, plan.InAnchor, plan.InBeat / inBarScale); if (inStart < 0) inStart = 0; }
         // dal cue: il cue cade nel momento in cui il brano si fa sentire (subito, o dopo l'echo/taglio dell'uscita)
@@ -235,7 +245,8 @@ public sealed partial class MainViewModel
         plan.InTempo1 = 1.0;
         plan.OutTempo0 = outTempoNow;
         plan.OutTempo1 = plan.BeatMatch ? Math.Clamp(outTempoNow * inNative / outBpmEff, 0.75, 1.25) : outTempoNow;
-        plan.Why = $"{TechniqueLabel(tech)} · {plan.Bars} battute · {outBpmEff:0} → {inNative:0} BPM" + (plan.BeatMatch ? " · beat agganciati" : "");
+        string grid = gridOk ? $" · battiti misurati ({gOut.Bpm:0.#}/{gIn.Bpm:0.#})" : " · battiti non misurabili: senza aggancio";
+        plan.Why = $"{TechniqueLabel(tech)} · {plan.Bars} battute · {outBpmEff:0} → {inNative:0} BPM" + (plan.BeatMatch ? " · beat agganciati" : "") + grid;
         return plan;
     }
 
@@ -323,13 +334,18 @@ public sealed partial class MainViewModel
             case "echo":
                 if (prog < p.InAudibleAt) Crossfader = -p.Dir;
                 else Crossfader = -p.Dir + 2 * p.Dir * Math.Clamp((prog - p.InAudibleAt) / 0.08, 0, 1);
-                if (!p.EchoFired && prog >= p.InAudibleAt - 0.02) { p.EchoFired = true; p.Out.EchoOutCommand.Execute(null); }
+                if (!p.EchoFired && prog >= p.InAudibleAt - 0.02) { p.EchoFired = true; p.Out.Deck.IgnoreCrossfader = true; p.Out.EchoOutCommand.Execute(null); }
                 break;
             case "cut":
                 Crossfader = prog < p.InAudibleAt ? -p.Dir : p.Dir;
                 break;
             case "brake":
-                if (!p.BrakeFired && prog >= p.InAudibleAt - 0.12) { p.BrakeFired = true; p.Out.BrakeCommand.Execute(null); }
+                if (!p.BrakeFired && prog >= p.InAudibleAt - 0.12)
+                {
+                    p.BrakeFired = true; p.Out.Deck.IgnoreCrossfader = true; p.Out.BrakeCommand.Execute(null);
+                    var d = p.Out.Deck;
+                    _ = Task.Delay(2500).ContinueWith(_ => d.IgnoreCrossfader = false);
+                }
                 Crossfader = prog < p.InAudibleAt ? -p.Dir : p.Dir;
                 break;
             default: // fade
@@ -362,11 +378,16 @@ public sealed partial class MainViewModel
         _mix = null;
         Crossfader = p.Dir;
         var o = p.Out; var i = p.In;
-        if (o.IsPlaying) o.Deck.Pause();
-        if (o.HasTrack) o.Deck.Seek(0);
+        // echo-out in corso: la coda finisce da sola (poi il deck si ferma e l'eco torna com'era)
+        bool tail = o.EchoOutRunning;
+        if (!tail)
+        {
+            if (o.IsPlaying) o.Deck.Pause();
+            if (o.HasTrack) o.Deck.Seek(0);
+            o.Deck.Fx.Reset();
+        }
         if (_autoMixTriggeredFor == o) _autoMixTriggeredFor = null;
-        o.EqLow = 0; o.FilterValue = 0; o.GainDb = 0; o.Deck.Fx.Reset(); o.TempoPercent = 0;
-        if (o.EchoOutRunning) o.CancelEchoOutCommand.Execute(null);
+        o.EqLow = 0; o.FilterValue = 0; o.GainDb = 0; o.TempoPercent = 0;
         i.EqLow = 0; i.FilterValue = 0; i.GainDb = 0;
         i.Deck.Tempo = p.InTempo1; i.TempoPercent = (p.InTempo1 - 1) * 100;
         MixStatus = "";

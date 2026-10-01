@@ -73,9 +73,10 @@ public partial class MainViewModel
         {
             string p = d == DeckA ? "a." : "b.";
             int on = pal.Button ?? colour;
-            Leds.Set(Midi.KeyFor(p + "play"), d.IsPlaying ? on : MidiFeedback.Off);
+            // su tutti i tasti che fanno PLAY/CUE (normale e SHIFT): prima si accendeva solo il primo trovato, a volte quello sbagliato
+            foreach (var k in Midi.KeysFor(p + "play")) Leds.Set(k, d.IsPlaying ? on : MidiFeedback.Off);
             // CUE acceso a deck carico e fermo: si vede subito quale deck è pronto a partire
-            Leds.Set(Midi.KeyFor(p + "cue"), d.HasTrack && !d.IsPlaying ? on : MidiFeedback.Off);
+            foreach (var k in Midi.KeysFor(p + "cue")) Leds.Set(k, d.HasTrack && !d.IsPlaying ? on : MidiFeedback.Off);
             for (int i = 0; i < 8; i++)
                 Leds.Set(Midi.KeyFor($"{p}hotcue{i + 1}"), d.Track?.HotCue(i) >= 0 ? colour : MidiFeedback.Off);
         }

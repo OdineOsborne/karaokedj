@@ -106,6 +106,8 @@ public sealed class MidiService : IDisposable
     public MidiKey? KeyFor(string action) => _map.FirstOrDefault(kv => kv.Value == action).Key
                                           ?? _shiftMap.FirstOrDefault(kv => kv.Value == action).Key;
     public bool IsShiftAction(string action) => _shiftMap.Any(kv => kv.Value == action);
+    /// <summary>Tutti i controlli assegnati a un'azione (la Inpulse ha PLAY sia sul canale normale sia su quello con SHIFT).</summary>
+    public List<MidiKey> KeysFor(string action) => _map.Where(kv => kv.Value == action).Select(kv => kv.Key).ToList();
     public string? ActionFor(MidiKey key) =>
         ShiftHeld && _shiftMap.TryGetValue(key, out var sa) ? sa : _map.TryGetValue(key, out var a) ? a : null;
     public bool IsInverted(string action) => KeyFor(action) is { } k && _invert.Contains(k);

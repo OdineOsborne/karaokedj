@@ -1,4 +1,4 @@
-using KaraokeDJ.Audio;
+﻿using KaraokeDJ.Audio;
 using KaraokeDJ.Models;
 using KaraokeDJ.ViewModels;
 
@@ -14,7 +14,10 @@ public static class GridTest
 {
     public static async Task<string> RunAsync(MainViewModel vm, int max)
     {
-        var tracks = vm.Tracks.Where(t => t.Analyzed && t.Bpm > 0 && !string.IsNullOrEmpty(t.FilePath) && File.Exists(t.FilePath)).Take(max).ToList();
+        // MIXFONIA_GRID_FILTER="pezzo del percorso": solo quei brani (per provare una cartella precisa)
+        var filter = Environment.GetEnvironmentVariable("MIXFONIA_GRID_FILTER");
+        var tracks = vm.Tracks.Where(t => t.Analyzed && t.Bpm > 0 && !string.IsNullOrEmpty(t.FilePath) && File.Exists(t.FilePath)
+                && (string.IsNullOrEmpty(filter) || t.FilePath.Contains(filter, StringComparison.OrdinalIgnoreCase))).Take(max).ToList();
         if (tracks.Count == 0) return "grid: nessun brano analizzato";
         var lines = new List<string>();
         double totOk = 0; int counted = 0, wrongBpm = 0;

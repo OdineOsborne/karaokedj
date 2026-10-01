@@ -42,6 +42,7 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var d in new[] { DeckA, DeckB })
         {
             d.TrackEnded += OnDeckEnded;
+            d.GridRefined += (dv, t) => { Library.Save(t); StatusText = $"Griglia corretta sull'audio: {t.Display} · {t.Bpm:0.##} BPM"; };
             d.TrackLoaded += dv => { if (_autoMixTriggeredFor == dv) _autoMixTriggeredFor = null; UpdateProjectorState(); UpdateSuggestions(); };
             d.Played += OnTrackPlayed;
             d.CuesChanged += dv => { if (dv.Track != null) Library.Save(dv.Track); LibraryView.Refresh(); };

@@ -73,6 +73,8 @@ public sealed class Track
     public void SetHotCue(int i, double sec) { if (HotCues == null || HotCues.Length < 8) HotCues = EmptyHotCues(); if (i >= 0 && i < 8) HotCues[i] = sec; }
     /// <summary>Fase della griglia dei battiti: secondi del primo "1" (-1 = non ancora stimata).</summary>
     public double BeatOffsetSec { get; set; } = -1;
+    /// <summary>BPM e griglia corretti misurando i colpi sull'audio in memoria (vedi LocalGrid): non si rifà.</summary>
+    public bool GridMeasured { get; set; }
 
     /// <summary>
     /// Griglia fluida: istanti dei battiti in secondi (dall'analisi). Quando c'è, comanda lei;

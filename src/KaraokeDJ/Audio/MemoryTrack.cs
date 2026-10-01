@@ -47,6 +47,17 @@ public sealed class MemoryTrack : WaveStream, ISampleProvider
         }
     }
 
+    /// <summary>Un pezzo del brano in mono (per misurare i battiti), senza toccare la posizione di lettura.</summary>
+    public float[] MonoWindow(double fromSec, double lenSec)
+    {
+        long f0 = Math.Clamp((long)(fromSec * SourceFactory.SampleRate), 0, _frames);
+        long f1 = Math.Clamp((long)((fromSec + lenSec) * SourceFactory.SampleRate), f0, _frames);
+        var m = new float[f1 - f0];
+        const float k = 1f / 65536f;
+        for (long i = f0; i < f1; i++) m[i - f0] = (_pcm[i * 2] + _pcm[i * 2 + 1]) * k;
+        return m;
+    }
+
     public override WaveFormat WaveFormat => Fmt;
     public override long Length => _frames * Fmt.BlockAlign;
     public override long Position

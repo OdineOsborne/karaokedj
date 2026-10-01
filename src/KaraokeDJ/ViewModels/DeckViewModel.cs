@@ -571,6 +571,7 @@ public sealed partial class DeckViewModel : ObservableObject
         EchoOutRunning = true;
         var fx = Deck.Fx;
         bool prevEcho = EchoOn; double prevFb = EchoFeedback, prevMix = EchoMix;
+        _echoPrev = (prevEcho, prevFb, prevMix);
         UpdateEchoTime();
         EchoFeedback = 0.72; EchoMix = 0.9; EchoOn = true;
         // ~80 ms di segnale diretto per "caricare" l'eco, poi si toglie il dry
@@ -587,7 +588,10 @@ public sealed partial class DeckViewModel : ObservableObject
             fx.Reset();
         }
         EchoOutRunning = false;
+        Deck.IgnoreCrossfader = false;
     }
+
+    private (bool on, double fb, double mix) _echoPrev;
 
     /// <summary>Annulla un echo-out in corso (es. se il DJ ci ripensa).</summary>
     [RelayCommand]
@@ -596,6 +600,10 @@ public sealed partial class DeckViewModel : ObservableObject
         if (!EchoOutRunning) return;
         EchoOutRunning = false;
         Deck.Fx.Dry = 1f;
+        // l'eco torna com'era prima: interrotto a metà restava acceso (feedback alto) e "impastava" il brano dopo
+        EchoOn = _echoPrev.on; EchoFeedback = _echoPrev.fb; EchoMix = _echoPrev.mix;
+        Deck.Fx.Reset();
+        Deck.IgnoreCrossfader = false;
     }
 
     public string KeyLabel => KeyShift == 0 ? "0" : (KeyShift > 0 ? $"+{KeyShift}" : KeyShift.ToString());
@@ -708,6 +716,7 @@ public sealed partial class DeckViewModel : ObservableObject
             Tick();
             TrackLoaded?.Invoke(this);
             StartFineWaveform(track, audioPath);
+            _ = RefineGridAsync(track);
         }
         catch (Exception ex)
         {
@@ -715,6 +724,55 @@ public sealed partial class DeckViewModel : ObservableObject
             Eject();
             throw;
         }
+    }
+
+    /// <summary>Il deck ha corretto BPM e griglia del brano: va salvato in libreria.</summary>
+    public event Action<DeckViewModel, Track>? GridRefined;
+
+    /// <summary>
+    /// L'analisi sbaglia spesso il BPM dell'1-1,5 % (Popstar 147,7 invece di 146): la griglia sul brano risulta sfasata
+    /// e i passaggi a tempo "galoppano". Col brano in memoria si misurano i colpi al 30, 50 e 70 % del brano; se le
+    /// misure combaciano fra loro, BPM e griglia vengono sostituiti (e salvati, una volta sola per brano).
+    /// </summary>
+    private async Task RefineGridAsync(Track track)
+    {
+        try
+        {
+            if (track.IsKaraoke || track.Bpm <= 0 || track.BeatManual || track.GridMeasured) return;
+            await Deck.MemoryReady;
+            var mem = Deck.Memory;
+            if (mem == null || Track != track) return;
+            double dur = track.DurationSec > 0 ? track.DurationSec : Deck.DurationSec;
+            double guess = track.Bpm;
+            var points = new[] { 0.3, 0.5, 0.7 }.Select(f => dur * f).Where(t => t > 5 && t + 12 < dur).ToArray();
+            var res = await Task.Run(() => points.Select(t => Audio.LocalGrid.Measure(mem.MonoWindow(t, 12), t, guess)).Where(r => r.Reliable).ToArray());
+            if (res.Length < 2 || Track != track) return;
+            double bpm = res.Select(r => r.Bpm).OrderBy(b => b).ElementAt(res.Length / 2);
+            if (res.Any(r => Math.Abs(r.Bpm / bpm - 1) > 0.006)) return;          // il tempo cambia lungo il brano: si lascia stare
+            var refR = res.OrderBy(r => Math.Abs(r.Bpm - bpm)).First();
+            double beat = 60 / bpm;
+            // i battiti trovati negli altri punti devono cadere sulla stessa griglia
+            foreach (var r in res)
+            {
+                double k = (r.AnchorSec - refR.AnchorSec) / beat;
+                if (Math.Abs(k - Math.Round(k)) * beat > 0.06) return;
+            }
+            double bar = beat * 4;
+            // il "1" della battuta: ogni misura dà la sua stima, vince quella su cui concordano di più
+            var votes = new int[4];
+            foreach (var r in res) votes[(((int)Math.Round((r.AnchorSec - refR.AnchorSec) / beat)) % 4 + 4) % 4]++;
+            int shift = Array.IndexOf(votes, votes.Max());
+            double one = refR.AnchorSec + shift * beat;
+            double anchor0 = one - Math.Floor(one / bar) * bar;   // il primo "1" del brano
+            track.Bpm = Math.Round(bpm, 2);
+            track.BeatOffsetSec = Math.Round(anchor0, 3);
+            track.Beats = null;                                                       // la griglia "fluida" era quella sbagliata
+            track.GridMeasured = true;
+            NativeBpm = track.Bpm; Beats = null; BeatOffsetSec = track.BeatOffsetSec;
+            RefreshAnalysisLabels();
+            GridRefined?.Invoke(this, track);
+        }
+        catch { /* una misura non riuscita non deve disturbare il deck */ }
     }
 
     [RelayCommand]

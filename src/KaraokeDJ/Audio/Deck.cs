@@ -55,7 +55,12 @@ public sealed class Deck : ISampleProvider
     /// <summary>Fader di linea del canale (0…1), come sulla console: separato dal gain (trim).</summary>
     public float Fader { get => _fader; set => _fader = Math.Clamp(value, 0f, 1f); }
     private float _fader = 1f;
-    public float EffectiveGain => _volume * _crossGain * Duck * _fader;
+    public float EffectiveGain => _volume * (IgnoreCrossfader ? 1f : _crossGain) * Duck * _fader;
+    /// <summary>
+    /// Il crossfader non conta per questo deck: durante la coda di un echo-out o di un brake il passaggio ha già
+    /// portato il crossfader sul brano nuovo, ma la coda deve finire di suonare invece di essere tagliata.
+    /// </summary>
+    public volatile bool IgnoreCrossfader;
     /// <summary>Pre-ascolto in cuffia (PFL): il segnale post-FX e pre-fader finisce nell'anello letto dall'uscita cuffia.</summary>
     public volatile bool CueOn;
     public SampleRing CueRing { get; } = new(SourceFactory.SampleRate * 2, SourceFactory.SampleRate / 5 * 2);
@@ -144,6 +149,7 @@ public sealed class Deck : ISampleProvider
     /// <summary>Completato quando il brano è in memoria (o quando si è rinunciato): da qui i salti sono esatti.</summary>
     public Task MemoryReady { get; private set; } = Task.CompletedTask;
     public bool InMemory => _reader is MemoryTrack;
+    public MemoryTrack? Memory => _reader as MemoryTrack;
 
     private void StartMemoryDecode(Track track, string audioPath)
     {
