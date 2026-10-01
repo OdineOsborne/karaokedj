@@ -38,6 +38,13 @@ public sealed partial class MainViewModel
         /// non emergere piano dopo qualche secondo. Il crossfader va a metà nel primo battito, poi lo scambio.
         /// </summary>
         public bool QuickIn;
+        /// <summary>
+        /// Prima esce, poi entra (echo, brake, filtro, taglio lanciati dal DJ): l'effetto di uscita parte subito e il
+        /// brano nuovo si fa sentire dal suo cue quando l'effetto è praticamente finito, sul battere e pieno.
+        /// </summary>
+        public bool ExitThenEnter;
+        /// <summary>Frazione del passaggio in cui parte l'effetto di uscita (−1 = poco prima che entri il nuovo).</summary>
+        public double EffectAt = -1;
         public double PhaseCorr;                // correzione di tempo per l'aggancio di fase (fattore additivo)
     }
 
@@ -208,6 +215,15 @@ public sealed partial class MainViewModel
         if (!canBeatMatch && tech is "blend" or "bass" or "filter") plan.Bars = 4;
         plan.InAudibleAt = tech switch { "echo" => 0.75, "cut" => 0.5, "brake" => 0.5, _ => 0 };
         plan.BeatMatch = canBeatMatch && tech != "fade";
+        if (startNow && tech is "echo" or "brake" or "filter" or "cut")
+        {
+            // lanciato dal DJ con un effetto di uscita: l'effetto subito, il nuovo entra quando è finito.
+            // Niente sovrapposizione: non serve agganciare i tempi, conta solo entrare sul battere
+            (plan.Bars, plan.InAudibleAt) = tech switch { "echo" => (2, 0.5), "brake" => (1, 0.75), "filter" => (2, 0.5), _ => (1, 0.0) };
+            plan.EffectAt = 0;
+            plan.ExitThenEnter = true;
+            plan.BeatMatch = false;
+        }
 
         if (tech == "fade" || outBpmNative <= 0)
         {
@@ -263,6 +279,12 @@ public sealed partial class MainViewModel
         plan.InTempo1 = 1.0;
         plan.OutTempo0 = outTempoNow;
         plan.OutTempo1 = plan.BeatMatch ? Math.Clamp(outTempoNow * inNative / outBpmEff, 0.75, 1.25) : outTempoNow;
+        if (plan.ExitThenEnter)
+        {
+            // il brano nuovo deve trovarsi esattamente sul cue (o sul drop) nell'istante in cui entra
+            double target = fromCueSec >= 0 ? fromCueSec : dropIn;
+            plan.InStartSec = Math.Max(0, target - plan.InAudibleAt * plan.LenSec * plan.InTempo0);
+        }
         string grid = gridOk ? $" · battiti misurati ({gOut.Bpm:0.#}/{gIn.Bpm:0.#})" : " · battiti non misurabili: senza aggancio";
         plan.Why = $"{TechniqueLabel(tech)} · {plan.Bars} battute · {outBpmEff:0} → {inNative:0} BPM" + (plan.BeatMatch ? " · beat agganciati" : "") + grid;
         return plan;
@@ -349,6 +371,11 @@ public sealed partial class MainViewModel
                 p.In.EqLow = prog < 0.5 ? -14 : 0;
                 p.Out.EqLow = prog < 0.5 ? 0 : -14;
                 break;
+            case "filter" when p.ExitThenEnter:
+                // il vecchio si svuota verso l'alto, poi stacco pieno sul nuovo
+                p.Out.FilterValue = 0.9 * Math.Clamp(prog / Math.Max(0.05, p.InAudibleAt), 0, 1);
+                Crossfader = prog < p.InAudibleAt ? -p.Dir : p.Dir;
+                break;
             case "filter":
                 Crossfader = -p.Dir + 2 * p.Dir * xf;
                 p.Out.FilterValue = 0.9 * Math.Clamp(prog / 0.9, 0, 1);            // high-pass che sale
@@ -357,13 +384,13 @@ public sealed partial class MainViewModel
             case "echo":
                 if (prog < p.InAudibleAt) Crossfader = -p.Dir;
                 else Crossfader = -p.Dir + 2 * p.Dir * Math.Clamp((prog - p.InAudibleAt) / 0.08, 0, 1);
-                if (!p.EchoFired && prog >= p.InAudibleAt - 0.02) { p.EchoFired = true; p.Out.Deck.IgnoreCrossfader = true; p.Out.EchoOutCommand.Execute(null); }
+                if (!p.EchoFired && prog >= (p.EffectAt >= 0 ? p.EffectAt : p.InAudibleAt - 0.02)) { p.EchoFired = true; p.Out.Deck.IgnoreCrossfader = true; p.Out.EchoOutCommand.Execute(null); }
                 break;
             case "cut":
                 Crossfader = prog < p.InAudibleAt ? -p.Dir : p.Dir;
                 break;
             case "brake":
-                if (!p.BrakeFired && prog >= p.InAudibleAt - 0.12)
+                if (!p.BrakeFired && prog >= (p.EffectAt >= 0 ? p.EffectAt : p.InAudibleAt - 0.12))
                 {
                     p.BrakeFired = true; p.Out.Deck.IgnoreCrossfader = true; p.Out.BrakeCommand.Execute(null);
                     var d = p.Out.Deck;
