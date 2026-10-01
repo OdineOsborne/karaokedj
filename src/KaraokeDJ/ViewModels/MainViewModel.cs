@@ -2260,6 +2260,38 @@ public sealed partial class MainViewModel : ObservableObject
         StatusText = $"Importato da Suno: {track.Display}" + (track.Dedication != null ? " (con dedica)" : "");
     }
 
+    // ---- pagina /messaggi: gli invitati scrivono dal telefono (QR sul proiettore) ----
+
+    public string MessagesPageUrl => $"{CloudBaseUrl}/messaggi?s={Remote.SessionId}";
+
+    [RelayCommand]
+    private void ShowMessagesQr()
+    {
+        if (!Remote.IsRunning) Remote.Start();
+        string who = string.IsNullOrWhiteSpace(Celebration.Name) ? "la festa" : Celebration.Name;
+        ShowQrOnProjector(MessagesPageUrl, $"Scrivi un messaggio per {who}", 30);
+        StatusText = "QR messaggi sul proiettore: " + MessagesPageUrl;
+    }
+
+    [RelayCommand]
+    private void ShowSongQr()
+    {
+        if (!Remote.IsRunning) Remote.Start();
+        string who = string.IsNullOrWhiteSpace(Celebration.Name) ? "la festa" : Celebration.Name;
+        ShowQrOnProjector(MessagesPageUrl + "&k=canzone", $"Aiutaci a scrivere la canzone per {who}!", 30);
+        StatusText = "QR canzone sul proiettore: " + MessagesPageUrl + "&k=canzone";
+    }
+
+    private void AddWebMessage(RemoteCommand c)
+    {
+        var text = (c.Note ?? "").Trim();
+        if (text.Length < 2) return;
+        bool song = c.Title == "canzone";
+        Celebration.Messages.Add(new GuestMessage { From = (c.Singer ?? "").Trim(), Text = (song ? "🎵 " : "") + text, Source = song ? "web, per la canzone" : "web" });
+        SaveCelebration();
+        StatusText = (song ? "Idea per la canzone da " : "Messaggio da ") + (c.Singer ?? "un invitato") + ": " + (text.Length > 60 ? text[..60] + "…" : text);
+    }
+
     [RelayCommand]
     private void AddGuestMessage()
     {
@@ -3131,6 +3163,7 @@ public sealed partial class MainViewModel : ObservableObject
             suggestions = Suggestions.Take(6).Select(t => new { id = t.Id, title = t.Title, artist = t.Artist }).ToList(),
             autoMix = AutoMix,
             libVersion = Remote.LibraryVersion,
+            party = new { name = Celebration.Name },
         };
     }
 
@@ -3153,6 +3186,7 @@ public sealed partial class MainViewModel : ObservableObject
             case "next": PlayNextCommand.Execute(null); StatusText = "Dal telefono: mix now"; break;
             case "fadeA": StartCrossfade(-1); break;
             case "request": AddRequest(c); break;
+            case "message": AddWebMessage(c); break;
         }
     }
 

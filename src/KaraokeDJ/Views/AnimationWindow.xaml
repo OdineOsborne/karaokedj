@@ -39,6 +39,10 @@
                 <DockPanel Grid.Row="2" Margin="0,0,0,6">
                     <TextBlock Text="💬 PARLACI DI LUI / LEI / LORO" Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center"/>
                     <Button DockPanel.Dock="Right" Content="＋ Messaggio" Style="{StaticResource SmallButton}" Command="{Binding AddGuestMessageCommand}"/>
+                    <Button DockPanel.Dock="Right" Content="📲 QR canzone" Style="{StaticResource SmallButton}" Command="{Binding ShowSongQrCommand}" Margin="0,0,6,0"
+                            ToolTip="Sul proiettore il QR della pagina dove gli invitati mandano ricordi, soprannomi, aneddoti per il testo della canzone"/>
+                    <Button DockPanel.Dock="Right" Content="📲 QR messaggi" Style="{StaticResource SmallButton}" Command="{Binding ShowMessagesQrCommand}" Margin="0,0,6,0"
+                            ToolTip="Sul proiettore il QR della pagina dove gli invitati scrivono un messaggio per il festeggiato: arrivano qui da soli"/>
                     <TextBlock Text="{Binding Celebration.Messages.Count, StringFormat={} ({0})}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="4,0"/>
                 </DockPanel>
                 <ListBox Grid.Row="3" ItemsSource="{Binding Celebration.Messages}" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -50,7 +54,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBox Grid.Column="0" Text="{Binding From, UpdateSourceTrigger=PropertyChanged}" ToolTip="Da parte di (opzionale)" Margin="0,0,4,0"/>
+                                <TextBox Grid.Column="0" Text="{Binding From, UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding Source, StringFormat=Da parte di (arrivato: {0})}" Margin="0,0,4,0"/>
                                 <TextBox Grid.Column="1" Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="30" ToolTip="Cosa vuoi dire al festeggiato? Aneddoti, soprannomi, difetti simpatici…"/>
                                 <Button Grid.Column="2" Content="✕" Style="{StaticResource SmallButton}" Margin="4,0,0,0"
                                         Command="{Binding DataContext.RemoveGuestMessageCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
@@ -59,7 +63,7 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
                 <TextBlock Grid.Row="4" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,8,0,0"
-                           Text="Quando ci sarà la pagina web con il QR, i messaggi degli invitati arriveranno qui da soli. Intanto puoi inserirli a mano o dettarli."/>
+                           Text="Con «QR messaggi» e «QR canzone» gli invitati scrivono dal telefono e i loro testi arrivano qui da soli (🎵 = per la canzone). Puoi anche inserirli a mano."/>
             </Grid>
         </Border>
 

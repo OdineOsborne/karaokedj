@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     }
     const session = req.query?.s;
     // ---- pagina pubblica /canta: senza PIN, solo lettura + prenotazioni (la sessione stessa è il segreto) ----
-    if (op === "plib" || op === "pstate" || op === "preq") {
+    if (op === "plib" || op === "pstate" || op === "preq" || op === "pmsg") {
       if (!ok(session)) return res.status(400).json({ error: "sessione" });
       const meta = await getSession(session);
       if (!meta) return res.status(404).json({ error: "Serata non attiva" });
@@ -42,7 +42,17 @@ export default async function handler(req, res) {
         const st = (await getState(session)) || {};
         const now = [st.decks?.a, st.decks?.b].filter(d => d && d.playing && d.title).map(d => (d.singer ? d.singer + " — " : "") + d.title + (d.artist ? " · " + d.artist : ""));
         const next = (st.queue || []).slice(0, 5).map(q => (q.singer ? q.singer + " — " : "") + q.title + (q.artist ? " · " + q.artist : ""));
-        return res.json({ now, next });
+        // il festeggiato (pagina /messaggi): solo il nome, niente altro dei dati della serata
+        const party = st.party && st.party.name ? { name: String(st.party.name).slice(0, 40) } : null;
+        return res.json({ now, next, party });
+      }
+      if (op === "pmsg") {               // pagina /messaggi: messaggio per il festeggiato o idea per la canzone
+        const b = body(req);
+        const name = String(b.name || "").trim().slice(0, 40), text = String(b.text || "").trim().slice(0, 240);
+        const kind = b.kind === "canzone" ? "canzone" : "messaggio";
+        if (!name || text.length < 2) return res.status(400).json({ error: "nome e testo" });
+        await pushCommand(session, { cmd: "message", singer: name, note: text, title: kind, at: Date.now() });
+        return res.json({ ok: true });
       }
       const b = body(req);
       const singer = String(b.singer || "").trim().slice(0, 40), note = String(b.note || "").trim().slice(0, 140), title = String(b.title || "").trim().slice(0, 120);

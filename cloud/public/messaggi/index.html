@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Un messaggio per la festa</title>
+<link rel="icon" href="/brand/icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#0B0B0F; --panel:#15151d; --text:#F4F4F8; --muted:#9a9ab0; --violet:#8A2BFF; --cyan:#00E5FF; --pink:#FF2D6D; --ok:#3DFFA0 }
+  * { box-sizing:border-box }
+  body { margin:0; background:radial-gradient(900px 500px at 30% 0%, #2A1560 0%, var(--bg) 60%), var(--bg); color:var(--text); font-family:Montserrat, system-ui, sans-serif; padding:14px; max-width:560px; margin:0 auto }
+  h1 { margin:6px 0 2px; font-size:26px; font-weight:900; letter-spacing:1px; background:linear-gradient(90deg,var(--violet),var(--cyan),var(--pink)); -webkit-background-clip:text; background-clip:text; color:transparent }
+  .tag { color:var(--muted); font-size:11px; letter-spacing:3px; font-weight:600; margin-bottom:14px }
+  .card { background:var(--panel); border-radius:16px; padding:16px; margin-bottom:12px }
+  .card h3 { margin:0 0 4px; font-size:16px }
+  .card p { margin:0 0 10px; color:var(--muted); font-size:13px; line-height:1.45 }
+  label { display:block; margin:10px 0 4px; font-size:12px; color:var(--muted) }
+  input, textarea { width:100%; background:#0D0D12; color:var(--text); border:1px solid #2A2A38; border-radius:10px; padding:12px; font:inherit; font-size:16px }
+  input:focus, textarea:focus { outline:none; border-color:var(--violet) }
+  .tabs { display:flex; gap:8px; margin:4px 0 2px }
+  .tabs button { flex:1; background:#1B1B24; border:1px solid #2A2A38; color:var(--text); border-radius:10px; padding:10px 8px; font:inherit; font-weight:700; font-size:13px; cursor:pointer }
+  .tabs button.on { background:linear-gradient(135deg,var(--violet),var(--cyan)); border-color:transparent }
+  .btn { width:100%; margin-top:14px; background:linear-gradient(135deg,var(--violet),var(--cyan)); color:#fff; border:0; border-radius:10px; padding:13px 14px; font:inherit; font-weight:800; font-size:16px; cursor:pointer }
+  .btn:disabled { opacity:.5 }
+  .ok { color:var(--ok); font-weight:800; text-align:center; padding:18px 10px; font-size:18px }
+  .err { color:var(--pink); font-weight:600; min-height:1em; margin-top:8px }
+  .count { text-align:right; color:var(--muted); font-size:11px; margin-top:4px }
+</style>
+</head>
+<body>
+  <img src="/brand/wordmark.png" alt="Mixfonia" style="height:34px;display:block;margin:6px 0 4px">
+  <h1 id="title">UN MESSAGGIO PER LA FESTA</h1>
+  <div class="tag">MIXFONIA · FESTA</div>
+
+  <div class="card" id="form">
+    <div class="tabs">
+      <button id="tMsg" class="on" onclick="mode('messaggio')">💬 Messaggio</button>
+      <button id="tSong" onclick="mode('canzone')">🎵 Per la canzone</button>
+    </div>
+    <p id="explain" style="margin-top:10px"></p>
+    <label>Il tuo nome</label>
+    <input id="name" maxlength="40" placeholder="es. Marco">
+    <label id="textLabel">Messaggio</label>
+    <textarea id="text" rows="4" maxlength="240"></textarea>
+    <div class="count" id="count">0/240</div>
+    <button class="btn" id="send" onclick="send()">Invia</button>
+    <div class="err" id="err"></div>
+  </div>
+<script>
+  const session = new URLSearchParams(location.search).get("s") || "";
+  const $ = s => document.querySelector(s);
+  let kind = "messaggio", who = "";
+  try { $("#name").value = localStorage.getItem("mixfonia.singer") || ""; } catch {}
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  function mode(k) {
+    kind = k;
+    $("#tMsg").classList.toggle("on", k === "messaggio");
+    $("#tSong").classList.toggle("on", k === "canzone");
+    const p = who ? who : "il festeggiato";
+    if (k === "messaggio") {
+      $("#explain").textContent = `Scrivi un augurio o una dedica per ${p}: i messaggi più belli finiscono sullo schermo durante la festa.`;
+      $("#textLabel").textContent = "Messaggio";
+      $("#text").placeholder = `es. Buon compleanno ${who || ""}! Sei unica 💜`.replace("  ", " ");
+    } else {
+      $("#explain").textContent = `Stiamo scrivendo una canzone per ${p}! Mandaci un ricordo, un soprannome, una frase tipica, una cosa che fa ridere: con le vostre parole nasce il testo.`;
+      $("#textLabel").textContent = "Un ricordo, una parola, un aneddoto";
+      $("#text").placeholder = "es. Quella volta in gita che si è persa a Roma…";
+    }
+  }
+  $("#text").oninput = () => $("#count").textContent = $("#text").value.length + "/240";
+
+  async function send() {
+    const name = $("#name").value.trim(), text = $("#text").value.trim();
+    if (!name) { $("#err").textContent = "Scrivi il tuo nome."; return; }
+    if (text.length < 2) { $("#err").textContent = "Scrivi qualcosa."; return; }
+    try { localStorage.setItem("mixfonia.singer", name); } catch {}
+    $("#send").disabled = true; $("#err").textContent = "";
+    try {
+      const r = await fetch(`/api/setlist?op=pmsg&s=${encodeURIComponent(session)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, text, kind }) });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error || r.status);
+      $("#form").innerHTML = `<div class="ok">✓ Grazie ${esc(name)}!<br><small style="font-weight:600;color:var(--muted)">${kind === "canzone" ? "Le tue parole finiranno nella canzone." : "Il tuo messaggio è arrivato al DJ."}</small></div><button class="btn" onclick="location.reload()">Scrivine un altro</button>`;
+    } catch (e) { $("#err").textContent = "Non inviato: " + e.message; $("#send").disabled = false; }
+  }
+
+  async function load() {
+    if (!session) { $("#err").textContent = "Link non valido: inquadra il QR mostrato sullo schermo."; return; }
+    try {
+      const s = await (await fetch(`/api/setlist?op=pstate&s=${encodeURIComponent(session)}`)).json();
+      if (s.error) { $("#err").textContent = s.error; }
+      if (s.party && s.party.name) {
+        who = s.party.name;
+        $("#title").textContent = `PER ${who.toUpperCase()}`;
+        document.title = `Un messaggio per ${who}`;
+      }
+    } catch { $("#err").textContent = "Servizio non raggiungibile."; }
+    mode(new URLSearchParams(location.search).get("k") === "canzone" ? "canzone" : "messaggio");
+  }
+  load();
+</script>
+</body>
+</html>
