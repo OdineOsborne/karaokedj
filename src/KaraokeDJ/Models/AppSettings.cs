@@ -62,6 +62,8 @@ public sealed class AppSettings
     public string AutoMixMoment { get; set; } = "libero";
     /// <summary>Automix da una playlist (vuoto = dal momento della serata).</summary>
     public string? AutoMixPlaylistId { get; set; }
+    /// <summary>Ultimo allineamento delle playlist "Importata · …" con le cartelle di _Nuovi.</summary>
+    public DateTime ImportPlaylistsSyncedUtc { get; set; }
     public bool AutoMixPlaylistInOrder { get; set; }
     /// <summary>Generi della serata per l'automix (testo, separati da virgola).</summary>
     public string SetGenres { get; set; } = "";

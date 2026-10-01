@@ -2993,6 +2993,8 @@ public sealed partial class MainViewModel : ObservableObject
         LibraryView.Refresh();
         try { await Task.Run(() => Library.Db.Optimize()); } catch { }
         if (missing > 0) StatusText = $"Libreria pronta ({sw.ElapsedMilliseconds} ms) · {missing} brani non raggiungibili ora (disco scollegato?): nascosti, non cancellati";
+        // le cartelle delle importazioni diventano playlist
+        SyncImportPlaylists();
         // brani nuovi o rimasti senza analisi (disco staccato l'ultima volta): si analizzano da soli, uno alla volta
         if (Settings.AutoAnalyze && !IsAnalyzing && Tracks.Any(t => t.NeedsAnalysis && !t.Missing)) _ = AnalyzeMissingAsync();
     }
@@ -3078,6 +3080,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             LibraryCount = Tracks.Count;
             CollapseDuplicates();
+            SyncImportPlaylists();   // i brani appena scaricati entrano nella playlist della loro importazione
             LibraryView.Refresh();
             _remote?.LibraryChanged();
             StatusText = $"Libreria aggiornata: +{added} −{removed}";
