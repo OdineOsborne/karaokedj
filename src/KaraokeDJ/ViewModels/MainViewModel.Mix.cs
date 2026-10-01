@@ -33,6 +33,11 @@ public sealed partial class MainViewModel
         // stato di esecuzione
         public double T;                        // secondi di uscita trascorsi dall'inizio del passaggio (può essere negativo: attesa del battere)
         public bool Started, EchoFired, BrakeFired, Done;
+        /// <summary>
+        /// Passaggio lanciato dal DJ (pad, DAL CUE, MIXA ORA): il brano nuovo si deve sentire subito dal suo punto,
+        /// non emergere piano dopo qualche secondo. Il crossfader va a metà nel primo battito, poi lo scambio.
+        /// </summary>
+        public bool QuickIn;
         public double PhaseCorr;                // correzione di tempo per l'aggancio di fase (fattore additivo)
     }
 
@@ -105,6 +110,12 @@ public sealed partial class MainViewModel
         double bar = beat * 4;
         double k = Math.Ceiling((sec - anchor) / bar - 1e-6);
         return anchor + k * bar;
+    }
+
+    private static double NextBeat(double sec, double anchor, double beat)
+    {
+        double k = Math.Ceiling((sec - anchor) / beat - 1e-6);
+        return anchor + k * beat;
     }
 
     /// <summary>Il prossimo inizio di frase (4 battute dall'ancora della griglia).</summary>
@@ -202,6 +213,7 @@ public sealed partial class MainViewModel
         {
             plan.LenSec = Math.Max(1, CrossfadeSeconds);
             double outStart = to.OutroStartSec > 0 && to.OutroStartSec < to.DurationSec - plan.LenSec ? to.OutroStartSec : to.DurationSec - plan.LenSec - 0.5;
+            plan.QuickIn = startNow;
             plan.OutStartSec = startNow ? outgoing.Deck.PositionSec : Math.Max(outgoing.Deck.PositionSec, outStart);
             plan.InStartSec = fromCueSec >= 0 ? fromCueSec : ti.IntroEndSec > 2 && !ti.IsKaraoke ? Math.Max(0, ti.IntroEndSec - 1) : 0;
             plan.Why = "dissolvenza semplice";
@@ -219,10 +231,16 @@ public sealed partial class MainViewModel
 
         // punto di uscita: sul battere, dove calano i bassi (o almeno "Bars" battute prima della fine)
         double outStartFile = FindMixOut(to, fineOut, plan.OutAnchor, plan.OutBeat, plan.Bars + 1);
-        if (startNow || outStartFile < now + 0.2)
+        if (startNow)
+        {
+            // lanciato dal DJ: sul prossimo battito (al massimo mezzo secondo), non sulla battuta o sulla frase.
+            // Aspettare la frase faceva partire il brano nuovo "in silenzio" e il cue si sentiva secondi dopo
+            outStartFile = NextBeat(now + 0.12 * outTempoNow, plan.OutAnchor, plan.OutBeat);
+            plan.QuickIn = true;
+        }
+        else if (outStartFile < now + 0.2)
         {
             outStartFile = NextBar(now + 0.15 * outTempoNow, plan.OutAnchor, plan.OutBeat);
-            // meglio sull'inizio di una frase (ogni 4 battute), dove il brano cambia da solo, se arriva entro pochi secondi
             double phrase = NextPhrase(now + 0.15 * outTempoNow, plan.OutAnchor, plan.OutBeat);
             if ((phrase - now) / outTempoNow <= 5) outStartFile = phrase;
         }
@@ -295,6 +313,11 @@ public sealed partial class MainViewModel
 
         double prog = Math.Clamp(p.T / p.LenSec, 0, 1);
         double s = prog * prog * (3 - 2 * prog);
+        // DJ: metà corsa entro il primo battito, il resto nell'ultima metà del passaggio
+        double quickBeat = p.OutBeat > 0 ? p.OutBeat / Math.Max(0.5, p.Out.Deck.Tempo) / Math.Max(0.1, p.LenSec) : 0.05;
+        double xq = prog < 0.5 ? 0.5 * Math.Clamp(prog / Math.Max(0.02, quickBeat), 0, 1)
+                               : 0.5 + 0.5 * SmoothStep((prog - 0.5) / 0.5);
+        double xf = p.QuickIn ? xq : s;
 
         // tempo: scivola fra i due brani (mantenendo l'aggancio: entrambi cambiano insieme)
         if (p.BeatMatch)
@@ -316,18 +339,18 @@ public sealed partial class MainViewModel
         switch (p.Technique)
         {
             case "blend":
-                Crossfader = -p.Dir + 2 * p.Dir * s;
+                Crossfader = -p.Dir + 2 * p.Dir * xf;
                 p.In.EqLow = -10 * (1 - Math.Clamp(prog / 0.6, 0, 1));
                 p.Out.EqLow = -10 * Math.Clamp((prog - 0.4) / 0.6, 0, 1);
                 break;
             case "bass":
-                Crossfader = -p.Dir + 2 * p.Dir * s;
+                Crossfader = -p.Dir + 2 * p.Dir * xf;
                 // scambio dei bassi secco a metà (sul battere più vicino ci pensa il progresso a battute)
                 p.In.EqLow = prog < 0.5 ? -14 : 0;
                 p.Out.EqLow = prog < 0.5 ? 0 : -14;
                 break;
             case "filter":
-                Crossfader = -p.Dir + 2 * p.Dir * s;
+                Crossfader = -p.Dir + 2 * p.Dir * xf;
                 p.Out.FilterValue = 0.9 * Math.Clamp(prog / 0.9, 0, 1);            // high-pass che sale
                 p.In.FilterValue = -0.85 * (1 - Math.Clamp(prog / 0.8, 0, 1));    // low-pass che si apre
                 break;
@@ -349,12 +372,14 @@ public sealed partial class MainViewModel
                 Crossfader = prog < p.InAudibleAt ? -p.Dir : p.Dir;
                 break;
             default: // fade
-                Crossfader = -p.Dir + 2 * p.Dir * s;
+                Crossfader = -p.Dir + 2 * p.Dir * xf;
                 break;
         }
 
         if (prog >= 1) FinishMix(p);
     }
+
+    private static double SmoothStep(double x) { x = Math.Clamp(x, 0, 1); return x * x * (3 - 2 * x); }
 
     /// <summary>Aggancio di fase: misura lo scarto fra i battiti dei due deck e corregge il tempo del brano in arrivo (come il nudge sul jog).</summary>
     private void PhaseLock(MixPlan p)
