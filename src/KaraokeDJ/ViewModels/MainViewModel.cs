@@ -2609,7 +2609,12 @@ public sealed partial class MainViewModel : ObservableObject
             if (!pressed) return;
             var tech = action[4..];
             _styleOverride = tech == "auto" ? "auto" : tech; _styleOverrideAt = DateTime.UtcNow;
-            PlayNextCommand.Execute(null);
+            // brano già preparato sull'altro piatto (caricato, fermo, non ancora suonato stasera): si passa a quello,
+            // dal suo cue, con la tecnica del pad. Altrimenti il prossimo in coda, come MIXA ORA
+            var onAir = DeckA.IsPlaying && (!DeckB.IsPlaying || Crossfader <= 0) ? DeckA : DeckB.IsPlaying ? DeckB : null;
+            var other = onAir == DeckA ? DeckB : onAir == DeckB ? DeckA : null;
+            if (other is { Track: { } prepared } && !other.IsPlaying && !prepared.PlayedThisSession) MixFromCue();
+            else PlayNextCommand.Execute(null);
             return;
         }
         var deck = action.StartsWith("a.") ? DeckA : action.StartsWith("b.") ? DeckB : null;
