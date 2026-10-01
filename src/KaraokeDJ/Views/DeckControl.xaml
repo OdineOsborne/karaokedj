@@ -76,9 +76,10 @@
                 <RowDefinition Height="Auto"/>   <!-- 8 stems -->
                 <RowDefinition Height="Auto"/>   <!-- 9 tonalità -->
                 <RowDefinition Height="Auto"/>   <!-- 10 tag -->
+                <RowDefinition Height="Auto"/>   <!-- 11 griglia -->
             </Grid.RowDefinitions>
 
-            <Border Grid.Row="0" Grid.RowSpan="11" Panel.ZIndex="99" IsHitTestVisible="False" CornerRadius="3" BorderThickness="2" Margin="-6"
+            <Border Grid.Row="0" Grid.RowSpan="12" Panel.ZIndex="99" IsHitTestVisible="False" CornerRadius="3" BorderThickness="2" Margin="-6"
                     BorderBrush="{Binding Accent, ElementName=Root}" Background="#1AFFFFFF"
                     Visibility="{Binding IsDropTarget, Converter={StaticResource BoolToVis}}">
                 <TextBlock Text="CARICA QUI" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="22" FontWeight="SemiBold"
@@ -299,6 +300,8 @@
                 <ToggleButton Style="{StaticResource SectionToggle}" Content="FX" IsChecked="{Binding FxVisible}" ToolTip="Effetti: filtro, echo, riverbero, flanger, phaser, crush, gate, voce off"/>
                 <ToggleButton Style="{StaticResource SectionToggle}" Content="STEMS" IsChecked="{Binding StemsVisible}" ToolTip="Isola voce, batteria, basso, resto (Demucs AI)"/>
                 <ToggleButton Style="{StaticResource SectionToggle}" Content="TONALITÀ" IsChecked="{Binding KeyVisible}" ToolTip="Trasposizione ±12 semitoni, match armonico"/>
+                <ToggleButton Style="{StaticResource SectionToggle}" Content="GRIGLIA" IsChecked="{Binding GridEditVisible}" Visibility="{Binding HasTrack, Converter={StaticResource BoolToVis}}"
+                              ToolTip="Correggi la griglia dei battiti (come in Serato/rekordbox): sposta, metti il «1», BPM, misura sull'audio"/>
                 <ToggleButton Style="{StaticResource SectionToggle}" Content="TAG" IsChecked="{Binding TagsVisible}" Visibility="{Binding HasTrack, Converter={StaticResource BoolToVis}}" ToolTip="Generi del brano"/>
                 <TextBlock Text="{Binding KeyLabel, StringFormat=tonalità {0}}" Style="{StaticResource Muted}" FontSize="9.5" VerticalAlignment="Center" Margin="6,0,0,0"/>
             </StackPanel>
@@ -403,6 +406,36 @@
                         Command="{Binding DataContext.KeyMatchCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
                         ToolTip="Mixing armonico: trasporta (max ±3 semitoni) in una tonalità compatibile con l'altro deck"/>
             </DockPanel>
+            <!-- griglia dei battiti: correzioni a mano, restano salvate sul brano -->
+            <Border Grid.Row="11" Background="{StaticResource InnerPanelBrush}" CornerRadius="2" Padding="8,6" Margin="0,6,0,0" Visibility="{Binding GridEditVisible, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <WrapPanel ItemHeight="28">
+                        <TextBlock Text="GRIGLIA" Style="{StaticResource SectionTitle}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <Button Content="📏 MISURA QUI" Style="{StaticResource StripBtn}" Foreground="{StaticResource AccentBrush}" Command="{Binding MeasureGridHereCommand}" local:Shortcut.Action="gridmeasure"
+                                ToolTip="Misura i battiti sull'audio nei 12 secondi dalla posizione attuale (meglio su un pezzo con la cassa) e rifà BPM e griglia"/>
+                        <Button Content="1 QUI" Style="{StaticResource StripBtn}" Command="{Binding BeatHereNowCommand}" local:Shortcut.Action="griddownbeat"
+                                ToolTip="La posizione attuale è il «1» della battuta (metti in pausa sul colpo, o premi a tempo mentre suona)"/>
+                        <Button Content="◀◀" Style="{StaticResource StripBtn}" Command="{Binding GridNudgeCommand}" CommandParameter="-20" ToolTip="Griglia 20 ms prima"/>
+                        <Button Content="◀" Style="{StaticResource StripBtn}" Command="{Binding GridNudgeCommand}" CommandParameter="-5" ToolTip="Griglia 5 ms prima"/>
+                        <Button Content="▶" Style="{StaticResource StripBtn}" Command="{Binding GridNudgeCommand}" CommandParameter="5" ToolTip="Griglia 5 ms dopo"/>
+                        <Button Content="▶▶" Style="{StaticResource StripBtn}" Command="{Binding GridNudgeCommand}" CommandParameter="20" ToolTip="Griglia 20 ms dopo"/>
+                        <Button Content="1 ◀" Style="{StaticResource StripBtn}" Command="{Binding GridShiftBeatCommand}" CommandParameter="-1" ToolTip="Il «1» un battito prima (la griglia è giusta ma la battuta parte sul battito sbagliato)"/>
+                        <Button Content="▶ 1" Style="{StaticResource StripBtn}" Command="{Binding GridShiftBeatCommand}" CommandParameter="1" ToolTip="Il «1» un battito dopo"/>
+                    </WrapPanel>
+                    <WrapPanel ItemHeight="28" Margin="0,2,0,0">
+                        <TextBlock Text="{Binding BpmLabel}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="70"/>
+                        <Button Content="÷2" Style="{StaticResource StripBtn}" Command="{Binding BpmAdjustCommand}" CommandParameter="/2"/>
+                        <Button Content="×2" Style="{StaticResource StripBtn}" Command="{Binding BpmAdjustCommand}" CommandParameter="x2"/>
+                        <Button Content="−1" Style="{StaticResource StripBtn}" Command="{Binding BpmAdjustCommand}" CommandParameter="-1"/>
+                        <Button Content="−0,1" Style="{StaticResource StripBtn}" Command="{Binding BpmAdjustCommand}" CommandParameter="-0.1"/>
+                        <Button Content="+0,1" Style="{StaticResource StripBtn}" Command="{Binding BpmAdjustCommand}" CommandParameter="+0.1"/>
+                        <Button Content="+1" Style="{StaticResource StripBtn}" Command="{Binding BpmAdjustCommand}" CommandParameter="+1"/>
+                        <Button Content="AUTO" Style="{StaticResource StripBtn}" Command="{Binding GridAutoCommand}" ToolTip="Torna alla griglia automatica (rimisurata sull'audio)"/>
+                        <TextBlock Text="{Binding GridStatus}" Style="{StaticResource Muted}" FontSize="10" VerticalAlignment="Center" Margin="8,0,0,0" TextTrimming="CharacterEllipsis" MaxWidth="260"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
             <!-- tag genere: click su un tag lo toglie, ＋ ne aggiunge (max 5) -->
             <DockPanel Grid.Row="10" Margin="0,6,0,0" Visibility="{Binding TagsVisible, Converter={StaticResource BoolToVis}}">
                 <StackPanel Orientation="Horizontal">

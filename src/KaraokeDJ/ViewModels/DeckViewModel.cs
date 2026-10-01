@@ -109,6 +109,8 @@ public sealed partial class DeckViewModel : ObservableObject
     [ObservableProperty] private bool _stemsVisible;
     [ObservableProperty] private bool _keyVisible;
     [ObservableProperty] private bool _tagsVisible;
+    [ObservableProperty] private bool _gridEditVisible;
+    [ObservableProperty] private string _gridStatus = "";
     [ObservableProperty] private bool _vocalRemove;
     [ObservableProperty] private double _vocalStrength = 1.0;
     [ObservableProperty] private double _filterValue;
@@ -223,9 +225,59 @@ public sealed partial class DeckViewModel : ObservableObject
         if (Track == null || DurationSec <= 0) return;
         double sec = fraction is double f ? f * DurationSec : Deck.PositionSec;
         Track.BeatOffsetSec = Math.Round(sec, 3);
+        GridManual("«1» messo qui");
+    }
+
+    [RelayCommand] private void BeatHereNow() => BeatHere(null);
+
+    /// <summary>
+    /// Ogni correzione a mano: la griglia "fluida" dell'analisi va tolta (era lei a essere disegnata e usata, così la
+    /// correzione non si vedeva), il brano diventa "griglia manuale" (l'analisi non la tocca più) e si salva.
+    /// </summary>
+    private void GridManual(string what)
+    {
+        if (Track == null) return;
+        Track.Beats = null;
         Track.BeatManual = true;
+        Beats = null;
+        NativeBpm = Track.Bpm;
         BeatOffsetSec = Track.BeatOffsetSec;
+        RefreshAnalysisLabels();
+        UpdateEchoTime();
+        GridStatus = what;
         CuesChanged?.Invoke(this);
+    }
+
+    /// <summary>Il «1» un battito prima o dopo: la griglia resta, cambia solo dove comincia la battuta.</summary>
+    [RelayCommand]
+    private void GridShiftBeat(string dir)
+    {
+        if (Track == null || Track.Bpm <= 0) return;
+        double beat = 60 / Track.Bpm;
+        double off = (Track.BeatOffsetSec >= 0 ? Track.BeatOffsetSec : 0) + (dir == "-1" ? -beat : beat);
+        if (off < 0) off += beat * 4;
+        Track.BeatOffsetSec = Math.Round(off, 3);
+        GridManual(dir == "-1" ? "«1» un battito prima" : "«1» un battito dopo");
+    }
+
+    /// <summary>MISURA QUI: BPM e griglia misurati sull'audio dalla posizione attuale (12 s).</summary>
+    [RelayCommand]
+    private async Task MeasureGridHere()
+    {
+        if (Track == null) return;
+        var t = Track;
+        if (Deck.Memory is not { } mem) { GridStatus = "Il brano non è ancora in memoria: riprova fra un attimo"; return; }
+        double guess = t.Bpm > 0 ? t.Bpm : 120;
+        double from = Math.Max(0, Deck.PositionSec - 1);
+        GridStatus = "Misuro…";
+        var r = await Task.Run(() => Audio.LocalGrid.Measure(mem.MonoWindow(from, 12), from, guess));
+        if (Track != t) return;
+        if (!r.Reliable) { GridStatus = $"Qui i colpi non sono chiari (fiducia {r.Confidence:0.0}): prova su un pezzo con la cassa"; return; }
+        double bar = 60 / r.Bpm * 4;
+        t.Bpm = Math.Round(r.Bpm, 2);
+        t.BeatOffsetSec = Math.Round(r.AnchorSec - Math.Floor(r.AnchorSec / bar) * bar, 3);
+        t.GridMeasured = true;
+        GridManual($"Misurata: {t.Bpm:0.##} BPM (fiducia {r.Confidence:0.0})");
     }
 
     /// <summary>Corregge i BPM del brano (es. ±0.1, ×2, ÷2) mantenendo la griglia ancorata.</summary>
@@ -240,10 +292,7 @@ public sealed partial class DeckViewModel : ObservableObject
             "x2" => bpm * 2, "/2" => bpm / 2, _ => bpm,
         };
         Track.Bpm = Math.Round(Math.Clamp(bpm, 40, 250), 2);
-        Track.BeatManual = true;
-        RefreshAnalysisLabels();
-        UpdateEchoTime();
-        CuesChanged?.Invoke(this);
+        GridManual($"BPM {Track.Bpm:0.##}");
     }
 
     /// <summary>Sposta la griglia di qualche millisecondo (es. "+10" / "-10").</summary>
@@ -253,9 +302,7 @@ public sealed partial class DeckViewModel : ObservableObject
         if (Track == null || !double.TryParse(ms, System.Globalization.CultureInfo.InvariantCulture, out var d)) return;
         double off = (Track.BeatOffsetSec >= 0 ? Track.BeatOffsetSec : 0) + d / 1000.0;
         Track.BeatOffsetSec = Math.Round(Math.Max(0, off), 3);
-        Track.BeatManual = true;
-        BeatOffsetSec = Track.BeatOffsetSec;
-        CuesChanged?.Invoke(this);
+        GridManual($"Griglia {d:+0;-0} ms");
     }
 
     /// <summary>Riporta la griglia alla stima automatica.</summary>
@@ -263,10 +310,16 @@ public sealed partial class DeckViewModel : ObservableObject
     public void GridAuto()
     {
         if (Track == null) return;
-        Track.BeatManual = false; Track.BeatOffsetSec = -1;
-        BeatOffsetSec = -1;
-        EstimateBeatGridIfNeeded(Track, FineWaveform);
-        CuesChanged?.Invoke(this);
+        var t = Track;
+        t.BeatManual = false; t.GridMeasured = false;
+        GridStatus = "Rimisuro sull'audio…";
+        _ = RefineGridAsync(t).ContinueWith(_ =>
+        {
+            if (Track != t) return;
+            if (t.GridMeasured) GridStatus = $"Misurata sull'audio: {t.Bpm:0.##} BPM";
+            else { GridStatus = "Non misurabile su questo brano: resta la griglia dell'analisi"; t.BeatOffsetSec = -1; EstimateBeatGridIfNeeded(t, FineWaveform); }
+            CuesChanged?.Invoke(this);
+        }, TaskScheduler.FromCurrentSynchronizationContext());
     }
 
     // ---------------------------------------------------------------- vinile: scratch, reverse, avanti/indietro, spin, slow

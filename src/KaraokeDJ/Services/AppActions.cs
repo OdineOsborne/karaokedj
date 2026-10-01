@@ -34,6 +34,7 @@ public static class AppActions
         ("stemvocals", "Stem voce (livello)", true, false), ("stemdrums", "Stem batteria (livello)", true, false), ("stembass", "Stem basso (livello)", true, false), ("stemother", "Stem altro (livello)", true, false),
         ("eqlow", "EQ bassi", true, false), ("eqmid", "EQ medi", true, false), ("eqhigh", "EQ alti", true, false),
         ("killlow", "Kill bassi", false, false), ("killmid", "Kill medi", false, false), ("killhigh", "Kill alti", false, false), ("eqreset", "EQ piatto", false, false),
+        ("gridmeasure", "Griglia: misura qui", false, false), ("griddownbeat", "Griglia: «1» qui", false, false),
         ("brake", "BRAKE", false, false), ("backspin", "BACKSPIN", false, false), ("spinfwd", "Girata avanti", false, false), ("spinback", "Girata indietro", false, false),
         ("rev", "REV (tieni premuto)", false, true), ("slow", "SLOW (tieni premuto)", false, true), ("fwd", "▶▶ (tieni premuto)", false, true), ("back", "◀◀ (tieni premuto)", false, true),
         ("jog", "Jog (manopola infinita)", true, false),

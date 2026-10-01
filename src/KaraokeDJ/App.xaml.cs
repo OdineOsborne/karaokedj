@@ -120,6 +120,7 @@ public partial class App : Application
             {
                 var t = Vm!.Tracks.FirstOrDefault(x => x.Display.Contains(want, StringComparison.OrdinalIgnoreCase));
                 if (t != null) Vm.LoadToDeck(Vm.DeckA, t, confirmIfPlaying: false);
+                if (Environment.GetEnvironmentVariable("MIXFONIA_SHOT_GRID") == "1") Vm.DeckA.GridEditVisible = true;
             }
             // MIXFONIA_SHOT_WINDOW=impostazioni|preserata: fotografa quella finestra invece della principale
             var which = Environment.GetEnvironmentVariable("MIXFONIA_SHOT_WINDOW");

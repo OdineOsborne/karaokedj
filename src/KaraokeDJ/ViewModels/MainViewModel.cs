@@ -2716,6 +2716,8 @@ public sealed partial class MainViewModel : ObservableObject
                 case "killhigh": deck.KillHighCommand.Execute(null); break;
                 case "eqreset": deck.EqResetCommand.Execute(null); break;
                 case "brake": deck.BrakeCommand.Execute(null); break;
+                case "gridmeasure": deck.MeasureGridHereCommand.Execute(null); break;
+                case "griddownbeat": deck.BeatHere(null); break;
                 case "backspin": deck.BackspinCommand.Execute(null); break;
                 case "spinfwd": deck.SpinForwardCommand.Execute(null); break;
                 case "spinback": deck.SpinBackCommand.Execute(null); break;
