@@ -22,6 +22,7 @@ public partial class MainWindow : Window
             {
                 vm.PropertyChanged += Vm_PropertyChanged;
                 vm.SearchFocusRequested += FocusSearch;
+                vm.LibraryMoveRequested += MoveLibrary;
                 // non aprire più grande dello schermo (portatili piccoli, schermo cambiato dall'ultima volta)
                 var wa = SystemParameters.WorkArea;
                 Width = Math.Min(vm.Settings.WindowWidth, wa.Width);
@@ -310,6 +311,19 @@ public partial class MainWindow : Window
     private static bool TypingInTextBox() => Keyboard.FocusedElement is TextBox or System.Windows.Controls.Primitives.TextBoxBase or PasswordBox;
 
     private void FocusSearch() { SearchBox.Focus(); SearchBox.SelectAll(); }
+
+    /// <summary>
+    /// Rotella BROWSE della console: si sposta la riga selezionata e la tabella scorre fino a lei. Si lavora sugli
+    /// indici della tabella: ricostruire la lista dei 32.000 brani a ogni scatto rendeva la rotella lenta.
+    /// </summary>
+    private void MoveLibrary(int delta)
+    {
+        int n = LibraryGrid.Items.Count;
+        if (n == 0) return;
+        int i = LibraryGrid.SelectedIndex < 0 ? (delta > 0 ? -1 : n) : LibraryGrid.SelectedIndex;
+        LibraryGrid.SelectedIndex = Math.Clamp(i + delta, 0, n - 1);
+        if (LibraryGrid.SelectedItem != null) LibraryGrid.ScrollIntoView(LibraryGrid.SelectedItem);
+    }
 
     // il cursore resta nella ricerca: di solito si pulisce per scrivere subito il brano dopo
     private void ClearSearch_Click(object sender, RoutedEventArgs e) { Vm.SearchText = ""; SearchBox.Focus(); }

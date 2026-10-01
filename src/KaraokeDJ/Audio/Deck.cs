@@ -1,4 +1,4 @@
-using KaraokeDJ.Models;
+﻿using KaraokeDJ.Models;
 using NAudio.Wave;
 
 namespace KaraokeDJ.Audio;
@@ -135,11 +135,42 @@ public sealed class Deck : ISampleProvider
         }
         old?.Dispose();
         Loaded?.Invoke();
+        StartMemoryDecode(track, audioPath);
+    }
+
+    // ------------------------------------------------------------------ copia in memoria (salti esatti)
+
+    private CancellationTokenSource? _memCts;
+    /// <summary>Completato quando il brano è in memoria (o quando si è rinunciato): da qui i salti sono esatti.</summary>
+    public Task MemoryReady { get; private set; } = Task.CompletedTask;
+    public bool InMemory => _reader is MemoryTrack;
+
+    private void StartMemoryDecode(Track track, string audioPath)
+    {
+        _memCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _memCts = cts;
+        MemoryReady = Task.Run(() =>
+        {
+            MemoryTrack? mem;
+            try { mem = MemoryTrack.Decode(audioPath, cts.Token); }
+            catch { return; }
+            if (mem == null || cts.IsCancellationRequested) return;
+            lock (_gate)
+            {
+                // nel frattempo è cambiato brano, o si è passati agli stem: si lascia stare
+                if (Track != track || LoadedAudioPath != audioPath || _reader is StemMixReader) return;
+                // finché non è partito si passa alla copia esatta subito; se sta suonando, la posizione del lettore
+                // continuo è giusta (non ha fatto salti): il cambio non si sente
+                SwapSource(mem, mem, audioPath);
+            }
+        }, cts.Token);
     }
 
     public void Eject()
     {
         WaveStream? old;
+        _memCts?.Cancel();
         lock (_gate)
         {
             old = _reader;

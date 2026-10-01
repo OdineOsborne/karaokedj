@@ -386,6 +386,9 @@ public sealed partial class MainViewModel
         if (!outgoing.IsPlaying) { Crossfader = incoming == DeckB ? 1 : -1; incoming.Deck.Play(); return; }
         // la griglia di un brano mai aperto si calcola adesso (qualche secondo): senza messaggio sembra che MIXA ORA non abbia preso
         MixStatus = "Mix: preparo il passaggio…";
+        // i due brani devono essere in memoria: solo lì il salto all'attacco è esatto (dal file sbaglia fino a mezzo secondo)
+        await Task.WhenAny(Task.WhenAll(incoming.Deck.MemoryReady, outgoing.Deck.MemoryReady), Task.Delay(8000));
+        if (!incoming.Deck.InMemory) StatusText = "Mix: brano non ancora in memoria, l'attacco può essere meno preciso";
         var plan = await PlanMixAsync(outgoing, incoming, startNow);
         StartMix(plan);
     }

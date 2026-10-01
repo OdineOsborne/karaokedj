@@ -318,6 +318,8 @@ public sealed partial class MainViewModel : ObservableObject
         FlushJogSeek(DeckA);
         FlushJogSeek(DeckB);
         TickPreview();
+        // con il crossfader "escluso" o a taglio l'automix non potrebbe sfumare: durante i suoi passaggi la curva è "mix"
+        Engine.ForceMixCurve = IsMixing || _crossfadeTarget != null;
         // i suggeriti seguono il brano che si sente: prima si aggiornavano all'inizio del passaggio, quando si sentiva
         // ancora quello in uscita, e restavano fermi lì per tutto il brano nuovo
         var heard = DeckA.IsPlaying || DeckB.IsPlaying ? CompatReference() : null;
@@ -2729,6 +2731,22 @@ public sealed partial class MainViewModel : ObservableObject
             case "loadA": LoadSelectedToACommand.Execute(null); break;
             case "loadB": LoadSelectedToBCommand.Execute(null); break;
             case "browse": if (continuous) { int v = (int)Math.Round(norm * 127); MoveLibrarySelection(v == 0 ? 0 : v < 64 ? v : v - 128); } break;
+            case "xfcurve" when continuous:
+            {
+                // selettore a tre posizioni della console: sinistra sfumata, centro taglio, destra crossfader escluso
+                string curve = norm < 0.25 ? "mix" : norm < 0.75 ? "scratch" : "off";
+                if (curve != Engine.CrossfaderCurve)
+                {
+                    Engine.CrossfaderCurve = curve;
+                    StatusText = curve switch
+                    {
+                        "off" => "Crossfader escluso: si mixa con i fader di canale",
+                        "scratch" => "Crossfader a taglio (scratch): tutti e due pieni, si chiude solo agli estremi",
+                        _ => "Crossfader sfumato (mix)",
+                    } + $" · valore console {(int)Math.Round(norm * 127)}";
+                }
+                break;
+            }
             case "browseup": MoveLibrarySelection(-1); break;
             case "browsedown": MoveLibrarySelection(1); break;
             case "browseload": if (SelectedTrack != null) LoadToDeck(FreeDeck(), SelectedTrack, SingerName, QueueKeyShift); break;
@@ -2820,6 +2838,7 @@ public sealed partial class MainViewModel : ObservableObject
     public void MoveLibrarySelection(int delta)
     {
         if (delta == 0) return;
+        if (LibraryMoveRequested != null) { LibraryMoveRequested(delta); return; }
         var items = LibraryView.Cast<Track>().ToList();
         if (items.Count == 0) return;
         int i = SelectedTrack != null ? items.IndexOf(SelectedTrack) : -1;
@@ -2828,6 +2847,8 @@ public sealed partial class MainViewModel : ObservableObject
         LibraryScrollRequested?.Invoke(SelectedTrack);
     }
     public event Action<Track>? LibraryScrollRequested;
+    /// <summary>La finestra sposta la selezione della tabella (e la fa scorrere): vedi MainWindow.MoveLibrary.</summary>
+    public event Action<int>? LibraryMoveRequested;
 
     /// <summary>Dal timer: se la mano è sul piatto ma non arrivano più tacche, il disco si ferma (come un vinile tenuto).</summary>
     private void TickControllerJog()

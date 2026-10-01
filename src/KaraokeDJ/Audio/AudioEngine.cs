@@ -58,7 +58,18 @@ public sealed class AudioEngine : IDisposable
 
     public float MasterVolume { get => _master.Volume; set => _master.Volume = Math.Clamp(value, 0f, 1.5f); }
 
-    /// <summary>-1 … +1. Curva a potenza costante.</summary>
+    /// <summary>
+    /// Curva del crossfader, come il selettore della console: "mix" (sfumata a potenza costante), "scratch" (taglio:
+    /// tutti e due pieni, chi si chiude si chiude solo agli ultimi millimetri), "off" (crossfader escluso, si mixa coi
+    /// fader di canale).
+    /// </summary>
+    public string CrossfaderCurve { get => _curve; set { _curve = value; Crossfader = _crossfader; } }
+    private string _curve = "mix";
+    /// <summary>Durante un passaggio automatico la curva è sempre "mix": con "off" l'automix non potrebbe sfumare.</summary>
+    public bool ForceMixCurve { get => _forceMix; set { if (_forceMix == value) return; _forceMix = value; Crossfader = _crossfader; } }
+    private bool _forceMix;
+
+    /// <summary>-1 … +1.</summary>
     public double Crossfader
     {
         get => _crossfader;
@@ -66,8 +77,21 @@ public sealed class AudioEngine : IDisposable
         {
             _crossfader = Math.Clamp(value, -1, 1);
             double t = (_crossfader + 1) / 2; // 0..1
-            DeckA.CrossGain = (float)Math.Cos(t * Math.PI / 2);
-            DeckB.CrossGain = (float)Math.Sin(t * Math.PI / 2);
+            switch (_forceMix ? "mix" : _curve)
+            {
+                case "off":
+                    DeckA.CrossGain = DeckB.CrossGain = 1f;
+                    break;
+                case "scratch":
+                    // pieni fino al 6 % dall'estremo opposto, poi chiusura rapida
+                    DeckA.CrossGain = (float)Math.Clamp((1 - t) / 0.06, 0, 1);
+                    DeckB.CrossGain = (float)Math.Clamp(t / 0.06, 0, 1);
+                    break;
+                default:
+                    DeckA.CrossGain = (float)Math.Cos(t * Math.PI / 2);
+                    DeckB.CrossGain = (float)Math.Sin(t * Math.PI / 2);
+                    break;
+            }
         }
     }
 
