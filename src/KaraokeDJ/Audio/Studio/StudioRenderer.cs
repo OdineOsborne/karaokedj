@@ -168,6 +168,8 @@ public sealed class DecodedClip
     public required float[] Data;        // interleaved stereo
     public required double StartSec;     // secondo del file del primo campione
     public double Rms;
+    /// <summary>La decodifica è arrivata alla fine del file: il pezzo è completo anche se dura qualche campione meno del previsto.</summary>
+    public bool ReachedEnd;
     public double AutoGainDb => Rms <= 1e-5 ? 0 : Math.Clamp(20 * Math.Log10(0.2 / Rms), -12, 6);
 }
 
@@ -196,7 +198,8 @@ public sealed class DecodeCache
     {
         var (from, to) = Range(c);
         foreach (var kv in _map)
-            if (kv.Key.StartsWith(path + "|") && kv.Value.StartSec <= from + 1e-6 && kv.Value.StartSec + kv.Value.Data.Length / 2.0 / SourceFactory.SampleRate >= Math.Min(to, c.OutSec + 0.01))
+            if (kv.Key.StartsWith(path + "|") && kv.Value.StartSec <= from + 1e-6
+                && (kv.Value.ReachedEnd || kv.Value.StartSec + kv.Value.Data.Length / 2.0 / SourceFactory.SampleRate >= Math.Min(to, c.OutSec + 0.01)))
                 return kv.Value;
         return null;
     }
@@ -249,8 +252,11 @@ public sealed class DecodeCache
                         sq += s * s; sqN++;
                     }
                 }
-                if (w < outp.Length) Array.Resize(ref outp, (int)(w & ~1L));
-                return new DecodedClip { Data = outp, StartSec = from, Rms = sqN > 0 ? Math.Sqrt(sq / sqN) : 0 };
+                // il decoder può dare qualche millisecondo in meno della durata dichiarata: senza questo segno una
+                // clip che arriva alla fine del brano non risultava mai pronta e lo Studio restava muto
+                bool reachedEnd = w < outp.Length;
+                if (reachedEnd) Array.Resize(ref outp, (int)(w & ~1L));
+                return new DecodedClip { Data = outp, StartSec = from, Rms = sqN > 0 ? Math.Sqrt(sq / sqN) : 0, ReachedEnd = reachedEnd };
             }
         }
         catch { return null; }
