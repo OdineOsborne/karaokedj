@@ -15,6 +15,11 @@ public sealed class StudioProject
     public string Name { get; set; } = "Nuovo mix";
     /// <summary>Tempo del progetto (griglia, e tempo a cui si portano le clip "a tempo"). 0 = dal primo brano.</summary>
     public double Bpm { get; set; }
+    /// <summary>
+    /// Velocità originale: nessuna clip viene accelerata o rallentata per stare al tempo del progetto (mix per
+    /// un momento preciso, come un matrimonio, dove i brani devono suonare come li conoscono tutti).
+    /// </summary>
+    public bool KeepTempo { get; set; }
     /// <summary>Dove cade il primo "1" della griglia del progetto (secondi di timeline).</summary>
     public double GridOffsetSec { get; set; }
     public List<StudioLane> Lanes { get; set; } = new();

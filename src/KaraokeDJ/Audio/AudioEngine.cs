@@ -225,8 +225,11 @@ public sealed class AudioEngine : IDisposable
         public WaveFormat WaveFormat => SourceFactory.Format;
         public int Read(float[] buffer, int offset, int count)
         {
-            Array.Clear(buffer, offset, count);
-            float gc = (float)Math.Cos(Mix * Math.PI / 2) * Volume, gm = (float)Math.Sin(Mix * Math.PI / 2) * Volume;
+            // NAudio ci passa un byte[] travestito da float[] (WaveBuffer): Array.Clear guarderebbe il tipo vero e
+            // azzererebbe count byte, cioè un quarto del blocco. Il resto restava sporco e sommato dava la "tromba"
+            // dello Studio e del pre-ascolto in cuffia su una scheda separata (5/10/2026). Lo Span azzera count float.
+            buffer.AsSpan(offset, count).Clear();
+            float gc =(float)Math.Cos(Mix * Math.PI / 2) * Volume, gm = (float)Math.Sin(Mix * Math.PI / 2) * Volume;
             if (_e.DeckA.CueOn) _e.DeckA.CueRing.ReadAdd(buffer, offset, count, gc); else _e.DeckA.CueRing.Clear();
             if (_e.DeckB.CueOn) _e.DeckB.CueRing.ReadAdd(buffer, offset, count, gc); else _e.DeckB.CueRing.Clear();
             _e.MasterRing.ReadAdd(buffer, offset, count, gm);
@@ -356,7 +359,7 @@ public sealed class AudioEngine : IDisposable
         public WaveFormat WaveFormat => SourceFactory.Format;
         public int Read(float[] buffer, int offset, int count)
         {
-            Array.Clear(buffer, offset, count);
+            buffer.AsSpan(offset, count).Clear();   // vedi CueProvider: mai Array.Clear su un buffer di NAudio
             if (_e.StudioPlaying && _e.StudioOnMaster) _e.StudioRing.ReadAdd(buffer, offset, count, 1f);
             return count;
         }

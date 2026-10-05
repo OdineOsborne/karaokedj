@@ -79,6 +79,15 @@
                 <TextBlock Text="BPM" Style="{StaticResource Lbl}"/>
                 <TextBox Text="{Binding ProjectBpm, UpdateSourceTrigger=LostFocus, StringFormat={}{0:0.##}}" Width="58" FontSize="13" Padding="4,3" TextAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,14,0"
                          ToolTip="Tempo del progetto: la griglia, e il tempo a cui vanno le clip «a tempo» (entro ±12 %)"/>
+                <ToggleButton IsChecked="{Binding KeepTempo}" Padding="10,4" Margin="0,0,14,0"
+                              ToolTip="Velocità dei brani: originale (nessun brano accelerato o rallentato) oppure portati al BPM del progetto per i passaggi a tempo">
+                    <ToggleButton.Style>
+                        <Style TargetType="ToggleButton" BasedOn="{StaticResource ToolToggle}">
+                            <Setter Property="Content" Value="⏩ velocità: a tempo"/>
+                            <Style.Triggers><Trigger Property="IsChecked" Value="True"><Setter Property="Content" Value="🎵 velocità: originale"/></Trigger></Style.Triggers>
+                        </Style>
+                    </ToggleButton.Style>
+                </ToggleButton>
                 <TextBlock Text="Aggancio" Style="{StaticResource Lbl}"/>
                 <ComboBox x:Name="SnapBox" Width="104" FontSize="12" SelectionChanged="Snap_Changed" Margin="0,0,14,0" ToolTip="Spostamenti e tagli si agganciano a battute o battiti (tieni premuto Alt per muovere libero)">
                     <ComboBoxItem Tag="bar" Content="Battuta" IsSelected="True"/>

@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KaraokeDJ.Audio;
@@ -340,7 +340,7 @@ public sealed partial class StudioViewModel : ObservableObject
     {
         foreach (var n in new[] { nameof(HasClip), nameof(ClipTitle), nameof(ClipInfo), nameof(ClipTempoPct), nameof(ClipWarp), nameof(ClipKey), nameof(ClipGain),
                      nameof(ClipFadeIn), nameof(ClipFadeOut), nameof(ClipSections), nameof(HasTransition), nameof(TransitionInfo), nameof(TransitionPreset), nameof(TransitionBeats),
-                     nameof(ProjectBpm), nameof(Title), nameof(ClipLoopsLabel) })
+                     nameof(ProjectBpm), nameof(KeepTempo), nameof(Title), nameof(ClipLoopsLabel) })
             OnPropertyChanged(n);
     }
 
@@ -360,7 +360,7 @@ public sealed partial class StudioViewModel : ObservableObject
             var lane = last == null ? music[0] : music.FirstOrDefault(l => l.Id != last.LaneId) ?? music[0];
             var c = StudioDj.ClipFor(t, lane.Id);
             if (Project.Bpm <= 0 && t.Bpm > 0) Project.Bpm = Math.Round(t.Bpm, 2);
-            StudioDj.ApplyWarp(new StudioProject { Bpm = Project.Bpm, Clips = { c } });
+            StudioDj.ApplyWarp(new StudioProject { Bpm = Project.Bpm, KeepTempo = Project.KeepTempo, Clips = { c } });
             Project.Clips.Add(c);
             if (last == null) { c.StartSec = 0; }
             else
@@ -385,7 +385,7 @@ public sealed partial class StudioViewModel : ObservableObject
         {
             var c = StudioDj.ClipFor(t, laneId);
             if (Project.Bpm <= 0 && t.Bpm > 0) Project.Bpm = Math.Round(t.Bpm, 2);
-            StudioDj.ApplyWarp(new StudioProject { Bpm = Project.Bpm, Clips = { c } });
+            StudioDj.ApplyWarp(new StudioProject { Bpm = Project.Bpm, KeepTempo = Project.KeepTempo, Clips = { c } });
             c.StartSec = Math.Max(0, atSec);
             Project.Clips.Add(c);
             SelectedClip = c;
@@ -610,6 +610,26 @@ public sealed partial class StudioViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Velocità originale per tutto il progetto. Accesa, ogni brano torna alla sua velocità (anche quelli ritoccati a
+    /// mano); spenta, i brani "a tempo" si riallineano al tempo del progetto. I passaggi si riscrivono alle nuove durate.
+    /// </summary>
+    public bool KeepTempo
+    {
+        get => Project.KeepTempo;
+        set
+        {
+            if (value == Project.KeepTempo) return;
+            Edit(value ? "Velocità originale: nessun brano accelerato o rallentato" : "Brani a tempo col progetto", () =>
+            {
+                Project.KeepTempo = value;
+                if (value) foreach (var c in Project.Clips.Where(c => c.TrackId != null)) { c.Warp = true; c.Tempo = 1; }
+                StudioDj.ApplyWarp(Project);
+                StudioDj.Relayout(Project);
+            });
+        }
+    }
+
     // ------------------------------------------------------------ libreria e assistente
 
     [ObservableProperty] private string _searchText = "";
@@ -654,7 +674,7 @@ public sealed partial class StudioViewModel : ObservableObject
         try
         {
             var tracks = Setlist.ToList();
-            var opt = new StudioDj.BuildOptions { Snippets = BuildSnippets, SnippetSec = SnippetSec, Transition = BuildTransition, Bpm = 0 };
+            var opt = new StudioDj.BuildOptions { Snippets = BuildSnippets, SnippetSec = SnippetSec, Transition = BuildTransition, Bpm = 0, KeepTempo = Project.KeepTempo };
             var built = await Task.Run(() => StudioDj.Build(tracks, opt, Project.Name,
                 t => FineWaveform.GetOrComputeAsync(t.Id, LibraryService.PrepareForPlayback(t).audioPath, CancellationToken.None).GetAwaiter().GetResult()));
             Stop();

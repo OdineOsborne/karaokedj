@@ -57,7 +57,7 @@ public static class StudioDj
         foreach (var c in p.Clips)
         {
             if (!c.Warp) continue;
-            if (c.Bpm <= 0 || p.Bpm <= 0) { c.Tempo = 1; continue; }
+            if (p.KeepTempo || c.Bpm <= 0 || p.Bpm <= 0) { c.Tempo = 1; continue; }
             double best = 1, bestD = double.MaxValue;
             foreach (var m in new[] { 1.0, 2.0, 0.5 })
             {
@@ -77,6 +77,8 @@ public static class StudioDj
         public string Transition { get; set; } = "auto";
         /// <summary>BPM del progetto: 0 = quelli del primo brano.</summary>
         public double Bpm { get; set; }
+        /// <summary>true = i brani restano alla loro velocità (vedi <see cref="StudioProject.KeepTempo"/>).</summary>
+        public bool KeepTempo { get; set; }
     }
 
     /// <summary>
@@ -109,7 +111,7 @@ public static class StudioDj
     /// <param name="fineOf">forma d'onda fine del brano (per trovare dove è pieno); null = si usano intro/finale dell'analisi</param>
     public static StudioProject Build(IList<Track> tracks, BuildOptions o, string name, Func<Track, byte[]?>? fineOf = null)
     {
-        var p = new StudioProject { Name = name };
+        var p = new StudioProject { Name = name, KeepTempo = o.KeepTempo };
         var a = p.AddLane(LaneA, LaneKind.Music);
         var b = p.AddLane(LaneB, LaneKind.Music);
         p.AddLane(LaneVoice, LaneKind.Voice).DucksMusic = true;
@@ -142,7 +144,7 @@ public static class StudioDj
 
     private static void ApplyWarpOne(StudioProject p, StudioClip c)
     {
-        var tmp = new StudioProject { Bpm = p.Bpm, Clips = { c } };
+        var tmp = new StudioProject { Bpm = p.Bpm, KeepTempo = p.KeepTempo, Clips = { c } };
         ApplyWarp(tmp);
     }
 
