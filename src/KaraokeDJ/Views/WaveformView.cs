@@ -31,12 +31,22 @@ public sealed class WaveformView : FrameworkElement
         DependencyProperty.Register(nameof(CueFraction), typeof(double), typeof(WaveformView), new FrameworkPropertyMetadata(-1.0, FrameworkPropertyMetadataOptions.AffectsRender));
     public static readonly DependencyProperty FineProperty =
         DependencyProperty.Register(nameof(Fine), typeof(byte[]), typeof(WaveformView), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+    public static readonly DependencyProperty BandsProperty =
+        DependencyProperty.Register(nameof(Bands), typeof(byte[]), typeof(WaveformView), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
     public static readonly DependencyProperty HotCuesProperty =
         DependencyProperty.Register(nameof(HotCues), typeof(double[]), typeof(WaveformView), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
     public static readonly DependencyProperty AccentProperty =
         DependencyProperty.Register(nameof(Accent), typeof(Brush), typeof(WaveformView), new FrameworkPropertyMetadata(Brushes.LimeGreen, FrameworkPropertyMetadataOptions.AffectsRender));
 
     private static readonly Brush BgBrush = new SolidColorBrush(Color.FromRgb(0x0B, 0x0B, 0x0D));
+    // bassi rosso, medi verde, alti azzurro: è la convenzione dei lettori DJ, e un DJ che arriva da un altro
+    // programma non deve impararla. La versione "suonato" è la stessa tinta più spenta, non grigia.
+    private static readonly Brush Low = new SolidColorBrush(Color.FromRgb(0xF2, 0x4B, 0x3A));
+    private static readonly Brush MidBand = new SolidColorBrush(Color.FromRgb(0x3C, 0xC9, 0x5E));
+    private static readonly Brush HiBand = new SolidColorBrush(Color.FromRgb(0x56, 0xAE, 0xFF));
+    private static readonly Brush LowPlayed = new SolidColorBrush(Color.FromRgb(0x6E, 0x26, 0x1E));
+    private static readonly Brush MidPlayed = new SolidColorBrush(Color.FromRgb(0x1D, 0x5A, 0x2C));
+    private static readonly Brush HiPlayedBand = new SolidColorBrush(Color.FromRgb(0x25, 0x4F, 0x78));
     private static readonly Brush BassPlayed = new SolidColorBrush(Color.FromRgb(0x3B, 0x82, 0xF6));
     private static readonly Brush HiPlayed = new SolidColorBrush(Color.FromRgb(0xE8, 0xDF, 0xC8));
     private static readonly Brush BassDim = new SolidColorBrush(Color.FromRgb(0x24, 0x3A, 0x63));
@@ -57,6 +67,7 @@ public sealed class WaveformView : FrameworkElement
     static WaveformView()
     {
         BgBrush.Freeze(); BassPlayed.Freeze(); HiPlayed.Freeze(); BassDim.Freeze(); HiDim.Freeze(); UnplayedPeak.Freeze(); UnplayedRms.Freeze(); IntroBrush.Freeze(); OutroBrush.Freeze();
+        Low.Freeze(); MidBand.Freeze(); HiBand.Freeze(); LowPlayed.Freeze(); MidPlayed.Freeze(); HiPlayedBand.Freeze();
         CursorPen.Freeze(); MarkerPen.Freeze(); BarPen.Freeze(); PhrasePen.Freeze(); CuePen.Freeze();
     }
 
@@ -88,6 +99,8 @@ public sealed class WaveformView : FrameworkElement
     /// <summary>Frazioni 0..1 degli hot cue (-1 = vuoto), disegnati come bandierine numerate.</summary>
     /// <summary>Forma d'onda fine (2 byte per colonna: picco, bassi): se presente l'onda è colorata per banda.</summary>
     public byte[]? Fine { get => (byte[]?)GetValue(FineProperty); set => SetValue(FineProperty, value); }
+    /// <summary>Tre bande per colonna (bassi, medi, alti): l'onda prende il colore di quello che suona.</summary>
+    public byte[]? Bands { get => (byte[]?)GetValue(BandsProperty); set => SetValue(BandsProperty, value); }
     public double[]? HotCues { get => (double[]?)GetValue(HotCuesProperty); set => SetValue(HotCuesProperty, value); }
     public double LoopStart { get => (double)GetValue(LoopStartProperty); set => SetValue(LoopStartProperty, value); }
     public double LoopEnd { get => (double)GetValue(LoopEndProperty); set => SetValue(LoopEndProperty, value); }
@@ -108,8 +121,36 @@ public sealed class WaveformView : FrameworkElement
         if (intro > 0) dc.DrawRectangle(IntroBrush, null, new Rect(0, 0, w * intro, h));
         if (outro < 1) dc.DrawRectangle(OutroBrush, null, new Rect(w * outro, 0, w * (1 - outro), h));
 
+        var bands = Bands;
         var fine = Fine;
-        if (fine != null && fine.Length >= 4)
+        if (bands != null && bands.Length >= 6)
+        {
+            // Onda a tre bande: ogni colonna è alta quanto la banda che in quel punto suona di più, e di quel colore.
+            // Serve a leggere il brano senza ascoltarlo: dove c'è solo rosso c'è la cassa, il verde è il corpo di voci
+            // e strumenti, il blu da solo è uno stacco o un piatto. Le parti già suonate restano colorate, solo più
+            // scure: quello che deve restare leggibile è il pezzo che DEVE ancora arrivare.
+            int bcols = bands.Length / 3;
+            double bmid = h / 2, usable = h - 4;
+            int bstep = Math.Max(1, (int)Math.Ceiling(bcols / w));
+            double bcolW = w / bcols;
+            for (int c = 0; c < bcols; c += bstep)
+            {
+                int lo = 0, md = 0, hi = 0;
+                for (int k = c; k < Math.Min(bcols, c + bstep); k++)
+                {
+                    if (bands[k * 3] > lo) lo = bands[k * 3];
+                    if (bands[k * 3 + 1] > md) md = bands[k * 3 + 1];
+                    if (bands[k * 3 + 2] > hi) hi = bands[k * 3 + 2];
+                }
+                double x = c * bcolW, bw = Math.Max(1, bcolW * bstep - 0.3);
+                bool played = (x + bw / 2) / w <= prog;
+                DrawBands(dc, x, bw, bmid,
+                    lo / 255.0 * usable, played ? LowPlayed : Low,
+                    md / 255.0 * usable, played ? MidPlayed : MidBand,
+                    hi / 255.0 * usable, played ? HiPlayedBand : HiBand);
+            }
+        }
+        else if (fine != null && fine.Length >= 4)
         {
             // due bande: i bassi (blu) sopra il resto dello spettro (chiaro), simmetrici sull'asse
             int fcols = fine.Length / 2;
@@ -228,5 +269,26 @@ public sealed class WaveformView : FrameworkElement
         if (intro > 0) dc.DrawLine(MarkerPen, new Point(w * intro, 0), new Point(w * intro, h));
         if (outro < 1) dc.DrawLine(MarkerPen, new Point(w * outro, 0), new Point(w * outro, h));
         dc.DrawLine(CursorPen, new Point(w * prog, 0), new Point(w * prog, h));
+    }
+
+    /// <summary>
+    /// Le tre bande di una colonna, simmetriche sull'asse e disegnate dalla più alta alla più bassa: così la
+    /// banda più piccola resta visibile sopra le altre invece di sparirci dentro, ed è quello che fa leggere
+    /// il colore. Niente liste né ordinamenti: qui si passa migliaia di volte per ogni disegno.
+    /// </summary>
+    internal static void DrawBands(DrawingContext dc, double x, double bw, double mid,
+                                   double h1, Brush b1, double h2, Brush b2, double h3, Brush b3)
+    {
+        for (int pass = 0; pass < 3; pass++)
+        {
+            double best = 0; Brush? brush = null; int which = 0;
+            if (h1 > best) { best = h1; brush = b1; which = 1; }
+            if (h2 > best) { best = h2; brush = b2; which = 2; }
+            if (h3 > best) { best = h3; brush = b3; which = 3; }
+            if (brush == null) return;
+            double bh = Math.Max(1, best);
+            dc.DrawRectangle(brush, null, new Rect(x, mid - bh / 2, bw, bh));
+            if (which == 1) h1 = 0; else if (which == 2) h2 = 0; else h3 = 0;
+        }
     }
 }

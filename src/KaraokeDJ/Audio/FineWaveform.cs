@@ -5,6 +5,9 @@ namespace KaraokeDJ.Audio;
 /// <summary>
 /// Forma d'onda "fine" per la vista di mixaggio: <see cref="ColumnsPerSec"/> colonne al secondo,
 /// 2 byte per colonna (picco, energia dei bassi). Calcolata in background al caricamento sul deck e messa in cache.
+/// Accanto, nello stesso passaggio di lettura, le tre bande per l'onda colorata (file .bande, vedi <see cref="LoadBands"/>):
+/// stanno in un file a parte perché il formato di .fine è letto da mezza applicazione (griglia, studio, vista di mix)
+/// e cambiargli il passo avrebbe voluto dire toccare tutto per una questione di colore.
 /// </summary>
 public static class FineWaveform
 {
@@ -12,10 +15,18 @@ public static class FineWaveform
     private static readonly SemaphoreSlim Gate = new(1, 1);
 
     public static string PathFor(string trackId) => Path.Combine(WaveformStore.Dir, trackId + ".fine");
+    public static string BandsPathFor(string trackId) => Path.Combine(WaveformStore.Dir, trackId + ".bande");
 
     public static byte[]? Load(string trackId)
     {
         try { var p = PathFor(trackId); return File.Exists(p) ? File.ReadAllBytes(p) : null; }
+        catch { return null; }
+    }
+
+    /// <summary>Tre byte per colonna (bassi, medi, alti): il colore dell'onda. Null = non ancora calcolate.</summary>
+    public static byte[]? LoadBands(string trackId)
+    {
+        try { var p = BandsPathFor(trackId); return File.Exists(p) ? File.ReadAllBytes(p) : null; }
         catch { return null; }
     }
 
@@ -24,23 +35,46 @@ public static class FineWaveform
     {
         var cached = Load(trackId);
         if (cached != null) return cached;
+        return (await ComputeAndStoreAsync(trackId, audioPath, ct)).Fine;
+    }
+
+    /// <summary>
+    /// Come sopra ma per le bande. Sta a parte apposta: chi vuole solo l'onda (lo studio, la stima della griglia)
+    /// non deve ridecodificare il file solo perché mancano i colori, che a lui non servono.
+    /// I brani già in cache hanno .fine e non .bande, e li ricalcola solo chi li mette davvero su un deck.
+    /// </summary>
+    public static async Task<byte[]?> GetOrComputeBandsAsync(string trackId, string audioPath, CancellationToken ct)
+    {
+        var cached = LoadBands(trackId);
+        if (cached != null) return cached;
+        return (await ComputeAndStoreAsync(trackId, audioPath, ct)).Bands;
+    }
+
+    private static async Task<(byte[]? Fine, byte[]? Bands)> ComputeAndStoreAsync(string trackId, string audioPath, CancellationToken ct)
+    {
         await Gate.WaitAsync(ct);
         try
         {
             return await Task.Run(() =>
             {
-                var data = Compute(audioPath, ct);
-                if (data != null)
+                var res = Compute(audioPath, ct);
+                if (res.Fine != null)
                 {
-                    try { Directory.CreateDirectory(WaveformStore.Dir); File.WriteAllBytes(PathFor(trackId), data); } catch { }
+                    try
+                    {
+                        Directory.CreateDirectory(WaveformStore.Dir);
+                        File.WriteAllBytes(PathFor(trackId), res.Fine);
+                        if (res.Bands != null) File.WriteAllBytes(BandsPathFor(trackId), res.Bands);
+                    }
+                    catch { }
                 }
-                return data;
+                return res;
             }, ct);
         }
         finally { Gate.Release(); }
     }
 
-    private static byte[]? Compute(string audioPath, CancellationToken ct)
+    private static (byte[]? Fine, byte[]? Bands) Compute(string audioPath, CancellationToken ct)
     {
         try
         {
@@ -52,9 +86,15 @@ public static class FineWaveform
                 var buf = new float[colLen * 2 * 8];
                 var peaks = new List<byte>(8192);
                 var bass = new List<byte>(8192);
-                float pk = 0; double bassSq = 0; int inCol = 0;
+                var mids = new List<float>(8192);
+                var highs = new List<float>(8192);
+                var lows = new List<float>(8192);
+                float pk = 0; double bassSq = 0, midSq = 0, hiSq = 0; int inCol = 0;
                 // passa-basso a un polo (~150 Hz) per l'energia dei bassi (mono)
                 double lp = 0, a = 1 - Math.Exp(-2 * Math.PI * 150 / sr);
+                // secondo passa-basso a 2,5 kHz: sotto c'è il corpo di voci e strumenti, sopra piatti e sibilanti.
+                // Medi = quello che sta fra i due filtri, alti = quello che resta: tre bande con due filtri.
+                double lp2 = 0, a2 = 1 - Math.Exp(-2 * Math.PI * 2500 / sr);
                 int n;
                 while ((n = provider.Read(buf, 0, buf.Length)) > 0)
                 {
@@ -65,22 +105,56 @@ public static class FineWaveform
                         float am = Math.Abs(m);
                         if (am > pk) pk = am;
                         lp += a * (m - lp);
+                        lp2 += a2 * (m - lp2);
                         bassSq += lp * lp;
+                        double md = lp2 - lp, hi = m - lp2;
+                        midSq += md * md; hiSq += hi * hi;
                         if (++inCol >= colLen)
                         {
                             peaks.Add((byte)Math.Clamp(pk * 255, 0, 255));
                             double rms = Math.Sqrt(bassSq / colLen);
                             bass.Add((byte)Math.Clamp(rms * 3 * 255, 0, 255));
-                            pk = 0; bassSq = 0; inCol = 0;
+                            // grezzi: la scala la si decide alla fine, quando si sa quanto suona forte QUESTO brano
+                            lows.Add((float)rms);
+                            mids.Add((float)Math.Sqrt(midSq / colLen));
+                            highs.Add((float)Math.Sqrt(hiSq / colLen));
+                            pk = 0; bassSq = 0; midSq = 0; hiSq = 0; inCol = 0;
                         }
                     }
                 }
                 var outp = new byte[peaks.Count * 2];
                 for (int i = 0; i < peaks.Count; i++) { outp[i * 2] = peaks[i]; outp[i * 2 + 1] = bass[i]; }
-                return outp;
+                return (outp, PackBands(lows, mids, highs, peaks.Count));
             }
         }
-        catch { return null; }
+        catch { return (null, null); }
+    }
+
+    /// <summary>
+    /// Porta le tre bande a 0..255 con UNA sola scala per tutte e tre, scelta sul brano.
+    /// Una scala fissa non va: un brano registrato piano resterebbe un filo in mezzo alla corsia e un brano
+    /// moderno sarebbe tutto schiacciato in alto. Si prende il 98° percentile del massimo fra le bande — non il
+    /// massimo, che è un colpo solo e schiaccerebbe tutto il resto — e lo si porta quasi a fondo scala.
+    /// La scala è la stessa per le tre bande, altrimenti il colore direbbe una bugia: le proporzioni fra bassi,
+    /// medi e alti devono restare quelle vere, è il loro rapporto che fa riconoscere lo stacco dal ritornello.
+    /// </summary>
+    private static byte[] PackBands(List<float> lows, List<float> mids, List<float> highs, int cols)
+    {
+        var colMax = new float[cols];
+        for (int i = 0; i < cols; i++) colMax[i] = Math.Max(lows[i], Math.Max(mids[i], highs[i]));
+        var sorted = (float[])colMax.Clone();
+        Array.Sort(sorted);
+        float p98 = sorted.Length > 0 ? sorted[(int)(sorted.Length * 0.98)] : 0;
+        // brano quasi muto o silenzio: meglio lasciare piatto che moltiplicare il rumore di fondo per mille
+        double scale = p98 > 1e-4 ? 245.0 / p98 : 0;
+        var bands = new byte[cols * 3];
+        for (int i = 0; i < cols; i++)
+        {
+            bands[i * 3] = (byte)Math.Clamp(lows[i] * scale, 0, 255);
+            bands[i * 3 + 1] = (byte)Math.Clamp(mids[i] * scale, 0, 255);
+            bands[i * 3 + 2] = (byte)Math.Clamp(highs[i] * scale, 0, 255);
+        }
+        return bands;
     }
 }
 

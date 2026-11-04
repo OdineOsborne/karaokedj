@@ -125,6 +125,14 @@ public partial class App : Application
                 var t = Vm!.Tracks.FirstOrDefault(x => x.Display.Contains(want, StringComparison.OrdinalIgnoreCase));
                 if (t != null) Vm.LoadToDeck(Vm.DeckA, t, confirmIfPlaying: false);
                 if (Environment.GetEnvironmentVariable("MIXFONIA_SHOT_GRID") == "1") Vm.DeckA.GridEditVisible = true;
+                // MIXFONIA_SHOT_AT=secondi: porta il deck lì prima di fotografare. Serve per la vista di mixaggio,
+                // che a 0:00 mostra l'intro e quindi non direbbe niente su come è disegnata l'onda.
+                var at = Environment.GetEnvironmentVariable("MIXFONIA_SHOT_AT");
+                if (t != null && double.TryParse(at, System.Globalization.CultureInfo.InvariantCulture, out var sec) && sec > 0)
+                {
+                    for (int k = 0; k < 60 && Vm.DeckA.DurationSec <= 0; k++) await System.Threading.Tasks.Task.Delay(100);
+                    Vm.DeckA.Deck.Seek(sec);
+                }
             }
             // MIXFONIA_SHOT_WINDOW=impostazioni|preserata: fotografa quella finestra invece della principale
             var which = Environment.GetEnvironmentVariable("MIXFONIA_SHOT_WINDOW");

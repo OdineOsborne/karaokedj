@@ -57,6 +57,8 @@ public sealed partial class DeckViewModel : ObservableObject
     [ObservableProperty] private double _positionSec;
     /// <summary>Forma d'onda fine (50 col/s) per la vista di mixaggio; calcolata in background al caricamento.</summary>
     [ObservableProperty] private byte[]? _fineWaveform;
+    /// <summary>Le tre bande (bassi, medi, alti) della stessa onda: danno il colore. Null = onda in tinta unita.</summary>
+    [ObservableProperty] private byte[]? _bandWaveform;
     /// <summary>BPM naturali del brano (0 = ignoti) e fattore tempo attuale, per la griglia dei battiti.</summary>
     [ObservableProperty] private double _nativeBpm;
     [ObservableProperty] private double _tempoFactor = 1.0;
@@ -858,11 +860,21 @@ public sealed partial class DeckViewModel : ObservableObject
         _fineCts?.Cancel();
         var cts = _fineCts = new CancellationTokenSource();
         FineWaveform = Audio.FineWaveform.Load(track.Id);
-        if (FineWaveform != null) { EstimateBeatGridIfNeeded(track, FineWaveform); return; }
+        BandWaveform = Audio.FineWaveform.LoadBands(track.Id);
+        // l'onda in tinta unita si vede subito; il colore arriva quando le bande sono pronte, senza far aspettare il deck
+        if (FineWaveform != null) EstimateBeatGridIfNeeded(track, FineWaveform);
+        if (FineWaveform != null && BandWaveform != null) return;
         try
         {
-            var data = await Audio.FineWaveform.GetOrComputeAsync(track.Id, audioPath, cts.Token);
-            if (!cts.IsCancellationRequested && Track == track) { FineWaveform = data; EstimateBeatGridIfNeeded(track, data); }
+            if (FineWaveform == null)
+            {
+                var data = await Audio.FineWaveform.GetOrComputeAsync(track.Id, audioPath, cts.Token);
+                if (cts.IsCancellationRequested || Track != track) return;
+                FineWaveform = data;
+                EstimateBeatGridIfNeeded(track, data);
+            }
+            var bands = await Audio.FineWaveform.GetOrComputeBandsAsync(track.Id, audioPath, cts.Token);
+            if (!cts.IsCancellationRequested && Track == track) BandWaveform = bands;
         }
         catch { }
     }

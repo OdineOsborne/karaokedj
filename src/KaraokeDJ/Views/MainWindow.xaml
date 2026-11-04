@@ -84,8 +84,9 @@
 
         <!-- ═══════════ vista di mixaggio: onde sovrapposte ═══════════ -->
         <Border Grid.Row="1" Style="{StaticResource Panel}" Padding="4" Margin="0,0,0,8" Visibility="{Binding MixViewVisible, Converter={StaticResource BoolToVis}}">
-            <v:MixWaveView Height="60"
+            <v:MixWaveView Height="112"
                            DataA="{Binding DeckA.FineWaveform}" DataB="{Binding DeckB.FineWaveform}"
+                           BandsA="{Binding DeckA.BandWaveform}" BandsB="{Binding DeckB.BandWaveform}"
                            PosA="{Binding DeckA.PositionSec}" PosB="{Binding DeckB.PositionSec}"
                            BpmA="{Binding DeckA.NativeBpm}" BpmB="{Binding DeckB.NativeBpm}"
                            TempoA="{Binding DeckA.TempoFactor}" TempoB="{Binding DeckB.TempoFactor}"
