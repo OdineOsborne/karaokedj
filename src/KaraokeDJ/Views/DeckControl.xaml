@@ -270,28 +270,36 @@
 
             <!-- ═══ hot cue 1–8 · Q · salti ═══ -->
             <DockPanel Grid.Row="4" Margin="0,0,0,6">
-                <ToggleButton DockPanel.Dock="Left" Content="Q" IsChecked="{Binding Quantize}" local:Shortcut.Action="quantize" Style="{StaticResource StripToggle}" Width="26" MinWidth="0" Padding="0"
+                <ToggleButton DockPanel.Dock="Left" Content="Q" IsChecked="{Binding Quantize}" local:Shortcut.Action="quantize" Style="{StaticResource StripToggle}" Width="26" Height="36" MinWidth="0" Padding="0"
                               ToolTip="Quantizza: hot cue, loop e salti si agganciano al battito più vicino della griglia"/>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="3,0,0,0">
-                    <Button Style="{StaticResource StripBtn}" Content="◀8" MinWidth="26" Padding="3,0" Command="{Binding BeatJumpCommand}" CommandParameter="-8" local:Shortcut.Action="jumpback8" ToolTip="Salta indietro di 8 battiti"/>
-                    <Button Style="{StaticResource StripBtn}" Content="◀4" MinWidth="26" Padding="3,0" Command="{Binding BeatJumpCommand}" CommandParameter="-4" local:Shortcut.Action="jumpback4" ToolTip="Salta indietro di 4 battiti"/>
-                    <Button Style="{StaticResource StripBtn}" Content="4▶" MinWidth="26" Padding="3,0" Command="{Binding BeatJumpCommand}" CommandParameter="4" local:Shortcut.Action="jumpfwd4" ToolTip="Salta avanti di 4 battiti"/>
-                    <Button Style="{StaticResource StripBtn}" Content="8▶" MinWidth="26" Padding="3,0" Margin="0" Command="{Binding BeatJumpCommand}" CommandParameter="8" local:Shortcut.Action="jumpfwd8" ToolTip="Salta avanti di 8 battiti"/>
+                    <Button Style="{StaticResource StripBtn}" Content="◀8" MinWidth="26" Height="36" Padding="3,0" Command="{Binding BeatJumpCommand}" CommandParameter="-8" local:Shortcut.Action="jumpback8" ToolTip="Salta indietro di 8 battiti"/>
+                    <Button Style="{StaticResource StripBtn}" Content="◀4" MinWidth="26" Height="36" Padding="3,0" Command="{Binding BeatJumpCommand}" CommandParameter="-4" local:Shortcut.Action="jumpback4" ToolTip="Salta indietro di 4 battiti"/>
+                    <Button Style="{StaticResource StripBtn}" Content="4▶" MinWidth="26" Height="36" Padding="3,0" Command="{Binding BeatJumpCommand}" CommandParameter="4" local:Shortcut.Action="jumpfwd4" ToolTip="Salta avanti di 4 battiti"/>
+                    <Button Style="{StaticResource StripBtn}" Content="8▶" MinWidth="26" Height="36" Padding="3,0" Margin="0" Command="{Binding BeatJumpCommand}" CommandParameter="8" local:Shortcut.Action="jumpfwd8" ToolTip="Salta avanti di 8 battiti"/>
                 </StackPanel>
                 <ItemsControl ItemsSource="{Binding HotCues}">
                     <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="8"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Button Content="{Binding Label}" Tag="{Binding Index}" Click="HotCue_Click" MouseRightButtonUp="HotCue_Right" Height="26" Padding="0" FontSize="10" FontWeight="Medium" Margin="0,0,3,0"
+                            <!--
+                              Pad, non bottoncini. Si colpiscono al buio, spesso senza guardare, e a 26 px si
+                              sbagliava bersaglio: 36 è l'altezza di un pad vero. Un cue impostato è un quadrato
+                              pieno del suo colore, che è lo stesso della bandierina sull'onda: il pad e il punto
+                              dove salta si riconoscono come la stessa cosa.
+                            -->
+                            <Button Content="{Binding Label}" Tag="{Binding Index}" Click="HotCue_Click" MouseRightButtonUp="HotCue_Right" Height="36" Padding="0" FontSize="12" FontWeight="SemiBold" Margin="0,0,3,0"
                                     ToolTip="Hot cue: vuoto → imposta qui · pieno → salta lì. Tasto destro: cancella.">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource SmallButton}">
                                         <Setter Property="MinWidth" Value="0"/>
                                         <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+                                        <Setter Property="Background" Value="{StaticResource InnerPanelBrush}"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding HasCue}" Value="True">
                                                 <Setter Property="Background" Value="{Binding Color}"/>
                                                 <Setter Property="Foreground" Value="Black"/>
+                                                <Setter Property="FontWeight" Value="Bold"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>

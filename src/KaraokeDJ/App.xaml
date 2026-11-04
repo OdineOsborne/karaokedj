@@ -164,12 +164,16 @@
             </Setter>
         </Style>
 
-        <!-- barra strumenti: solo icone, descrizione nel tooltip -->
+        <!--
+          Barra strumenti: solo icone, descrizione nel tooltip. Stretta apposta. Sono comandi che si usano
+          prima della serata (cartelle, impostazioni, studio): mentre si suona non si toccano, quindi non
+          meritano la fascia più visibile della finestra. Lo spazio che lasciano va alle onde.
+        -->
         <Style x:Key="ToolIcon" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="FontSize" Value="17"/>
-            <Setter Property="Padding" Value="9,4"/>
-            <Setter Property="MinWidth" Value="42"/>
-            <Setter Property="Margin" Value="0,0,6,4"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Padding" Value="7,2"/>
+            <Setter Property="MinWidth" Value="34"/>
+            <Setter Property="Margin" Value="0,0,4,3"/>
             <Setter Property="ToolTipService.InitialShowDelay" Value="250"/>
             <Setter Property="ToolTipService.ShowDuration" Value="20000"/>
         </Style>
