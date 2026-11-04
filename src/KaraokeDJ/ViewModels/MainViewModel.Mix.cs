@@ -330,7 +330,19 @@ public sealed partial class MainViewModel
         if (p == null || p.Done) return;
         if (!p.Out.IsPlaying && p.T < 0) { AbortMix("il brano in uscita si è fermato"); return; }
         if (!p.In.IsPlaying) { AbortMix("il brano in arrivo si è fermato"); return; }
-        p.T += dt;
+        // L'orologio del passaggio è il brano in uscita, non il timer della finestra: quel timer gira a 40 ms e a
+        // priorità Input, quindi con la finestra occupata (forme d'onda, proiettore, testi) un taglio o uno scambio
+        // di bassi arrivava decine di millisecondi dopo il battere — ed è proprio ciò che si sente come "passaggio
+        // entrato in ritardo". La posizione del deck invece è l'orologio della musica.
+        // Il guinzaglio: se la posizione non è d'accordo col tempo trascorso (il DJ ha saltato, c'è un loop
+        // sull'uscita, il brake l'ha fermato) si torna al tempo dell'orologio, altrimenti il passaggio
+        // tornerebbe indietro o resterebbe inchiodato.
+        if (p.Out.IsPlaying)
+        {
+            double tAudio = (p.Out.Deck.PositionSec - p.OutStartSec) / Math.Max(0.5, p.Out.Deck.Tempo);
+            p.T = Math.Abs(tAudio - (p.T + dt)) <= 0.25 ? tAudio : p.T + dt;
+        }
+        else p.T += dt;
         if (p.T < 0) { PhaseLock(p); return; } // attesa del battere: teniamo comunque la fase
 
         double prog = Math.Clamp(p.T / p.LenSec, 0, 1);

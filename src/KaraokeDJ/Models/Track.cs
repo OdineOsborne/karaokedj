@@ -55,6 +55,9 @@ public sealed class Track
     public string Composer { get; set; } = "";
     /// <summary>Versione dei metadati letti: se inferiore a LibraryService.TagsVersion il file viene riletto alla scansione.</summary>
     public int TagsVersion { get; set; }
+
+    /// <summary>Versione della griglia: se inferiore a AudioAnalyzer.GridVersion viene corretta al caricamento della libreria.</summary>
+    public int GridVersion { get; set; }
     [JsonIgnore] public string YearLabel => Year > 0 ? Year.ToString() : "";
     /// <summary>"80s", "2000s"… vuoto se anno sconosciuto.</summary>
     [JsonIgnore] public string Decade => Year <= 0 ? "" : (Year < 2000 ? (Year / 10 * 10 % 100).ToString("00") : (Year / 10 * 10).ToString()) + "s";

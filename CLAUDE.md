@@ -32,6 +32,8 @@ KaraokeDJ.exe --layouttest      # niente fuori dalla finestra sui portatili da 1
 KaraokeDJ.exe --preflight       # controllo pre-serata (audio, cuffia, mic, proiettore, licenza, disco…)
 KaraokeDJ.exe --audiotest       # EQ, filtro, fader, trim cambiano davvero il suono
 KaraokeDJ.exe --gridtest 20     # la griglia dei battiti sta sui colpi veri
+KaraokeDJ.exe --clicktest       # la griglia in millisecondi su brani finti a battito noto (non serve la libreria)
+KaraokeDJ.exe --seektest        # i salti escono dal punto giusto (si costruisce un mp3 a 48 kHz da sola)
 KaraokeDJ.exe --structtest 20   # la struttura dei brani (intro/ritornelli/finale) vale qualcosa
 KaraokeDJ.exe --suggesttest "titolo"   # cosa verrebbe proposto dopo quel brano, e perché
 KaraokeDJ.exe --midiwatch 15    # ascolta la console senza eseguire niente

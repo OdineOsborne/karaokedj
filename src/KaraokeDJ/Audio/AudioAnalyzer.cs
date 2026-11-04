@@ -37,12 +37,48 @@ public static class AudioAnalyzer
     /// Serve a verificare la griglia dei battiti: l'onda "fine" (50 colonne al secondo) è troppo grossa per quello.
     /// </summary>
     /// <summary>Inviluppo degli attacchi (flusso spettrale) e passo temporale: base per battiti e griglia fluida.</summary>
-    public static (double[] Flux, double HopSec) FluxEnvelope(string path, double maxSeconds, CancellationToken ct = default)
+    /// <summary>
+    /// L'inviluppo degli attacchi del brano, in due risoluzioni perché servono a due cose diverse:
+    /// il flusso spettrale a ~11,6 ms <b>trova</b> i battiti (regge il rumore e vede gli attacchi anche negli
+    /// acuti), l'inviluppo fine a ~1 ms li <b>mette al punto giusto</b>.
+    /// In entrambi, l'istante del campione numero <c>i</c> è <c>Origin + i * Hop</c>: l'origine non è zero e
+    /// dimenticarla è il difetto che <c>--clicktest</c> misurava come 27 ms di anticipo su tutta la griglia.
+    /// </summary>
+    public readonly record struct OnsetEnvelope(double[] Flux, double HopSec, double FluxOriginSec,
+                                                double[] Attack, double AttackHopSec, double AttackOriginSec)
+    {
+        public bool Usable => Flux.Length > 0;
+    }
+
+    /// <summary>Campioni di un passo dell'inviluppo fine: 44 campioni = 0,9977 ms, <b>non</b> 1 ms (vedi <see cref="LocalGrid"/>).</summary>
+    private const int AttackPer = 44;
+
+    /// <summary>
+    /// Versione del modo di calcolare la griglia. Da alzare quando cambia il calcolo: le griglie salvate con
+    /// una versione più bassa vengono rimesse a posto al caricamento della libreria, senza rianalizzare.
+    /// </summary>
+    public const int GridVersion = 1;
+
+    /// <summary>
+    /// Di quanto erano in anticipo le griglie della versione 0: mezza finestra d'analisi. L'errore era una
+    /// costante uguale per ogni brano (misurata da <c>--clicktest</c>: 27 ms, di cui questi 23 sono la parte
+    /// sistematica), quindi si recupera con una somma invece di rifare l'analisi di una libreria intera.
+    /// </summary>
+    public const double GridV0LagSec = Fft / 2.0 / SourceFactory.SampleRate;
+
+    public static OnsetEnvelope FluxEnvelope(string path, double maxSeconds, CancellationToken ct = default)
     {
         var (reader, provider) = SourceFactory.Open(path);
         using (reader)
         {
             int fs = SourceFactory.SampleRate;
+            // un frame del flusso copre Fft campioni a partire da frame*Hop: il suo istante è il CENTRO della finestra
+            double fluxOrigin = Fft / 2.0 / fs;
+            double attackHop = AttackPer / (double)fs;
+            // la salita del passo i è misurata contro il passo i-4: è avvenuta in mezzo, cioè al passo i-2
+            double attackOrigin = -1.5 * attackHop;
+            var empty = new OnsetEnvelope(Array.Empty<double>(), (double)Hop / fs, fluxOrigin,
+                                          Array.Empty<double>(), attackHop, attackOrigin);
             int want = (int)(maxSeconds * fs);
             var x = new float[want];
             int got = 0;
@@ -55,7 +91,7 @@ public static class AudioAnalyzer
                 for (int i = 0; i + 1 < n && got < want; i += 2) x[got++] = 0.5f * (buf[i] + buf[i + 1]);
             }
             int frames = (got - Fft) / Hop;
-            if (frames < 50) return (Array.Empty<double>(), (double)Hop / fs);
+            if (frames < 50) return empty;
 
             var flux = new double[frames];
             var prevMag = new double[Fft / 2];
@@ -79,7 +115,31 @@ public static class AudioAnalyzer
                 }
                 flux[fr] = fl;
             }
-            return (flux, (double)Hop / fs);
+            // inviluppo fine: bassi (la cassa) e resto separati, e solo le salite. Costa poco accanto alle FFT
+            // e si fa nella stessa lettura: rileggere il file per averlo raddoppierebbe il tempo dell'analisi.
+            var attack = Array.Empty<double>();
+            int bins = got / AttackPer;
+            if (bins > 16)
+            {
+                var low = new double[bins]; var high = new double[bins];
+                double lp = 0, a = 1 - Math.Exp(-2 * Math.PI * 150.0 / fs);
+                for (int i = 0; i < bins; i++)
+                {
+                    if ((i & 1023) == 0) ct.ThrowIfCancellationRequested();
+                    double sl = 0, sh = 0;
+                    for (int j = 0; j < AttackPer; j++)
+                    {
+                        double v = x[i * AttackPer + j];
+                        lp += a * (v - lp);
+                        sl += Math.Abs(lp); sh += Math.Abs(v - lp);
+                    }
+                    low[i] = sl / AttackPer; high[i] = sh / AttackPer;
+                }
+                attack = new double[bins];
+                for (int i = 4; i < bins; i++)
+                    attack[i] = Math.Max(0, low[i] - low[i - 4]) * 2 + Math.Max(0, high[i] - high[i - 4]);
+            }
+            return new OnsetEnvelope(flux, (double)Hop / fs, fluxOrigin, attack, attackHop, attackOrigin);
         }
     }
 
@@ -206,8 +266,13 @@ public static class AudioAnalyzer
             double[] beats = Array.Empty<double>();
             try
             {
-                var (flux, hopSec) = FluxEnvelope(path, Math.Min(total + 1, 900), ct);
-                if (flux.Length > 0) beats = BeatTracker.Track(flux, hopSec, core.Bpm);
+                var onsetEnv = FluxEnvelope(path, Math.Min(total + 1, 900), ct);
+                if (onsetEnv.Usable)
+                {
+                    beats = BeatTracker.Track(onsetEnv.Flux, onsetEnv.HopSec, onsetEnv.FluxOriginSec, core.Bpm);
+                    // trovati col passo grosso, messi a posto col passo fine
+                    beats = BeatTracker.Refine(beats, onsetEnv.Attack, onsetEnv.AttackHopSec, onsetEnv.AttackOriginSec);
+                }
             }
             catch (OperationCanceledException) { throw; }
             catch { }
@@ -323,7 +388,7 @@ public static class AudioAnalyzer
         double centroid = centroidN > 0 ? centroidSum / centroidN : 0;
         double brightness = Math.Clamp((centroid - 700) / 2800, 0.02, 1);
         // aggancio della griglia: qui abbiamo il flusso spettrale a ~12 ms, molto più preciso dell'onda a 20 ms
-        double anchor = bpm > 0 ? EstimateAnchor(flux, (double)Hop / fs, startSec, bpm) : -1;
+        double anchor = bpm > 0 ? EstimateAnchor(flux, (double)Hop / fs, Fft / 2.0 / fs, startSec, bpm) : -1;
         return new AnalysisResult(bpm, key, camelot, conf, 0, 0, Array.Empty<byte>(), energy, brightness, anchor);
     }
 
@@ -332,7 +397,7 @@ public static class AudioAnalyzer
     /// Si prova ogni fase possibile e si tiene quella su cui si accumula più "attacco"; poi si sceglie,
     /// fra i quattro battiti, quello che fa da "1" della battuta.
     /// </summary>
-    private static double EstimateAnchor(double[] flux, double hopSec, double startSec, double bpm)
+    private static double EstimateAnchor(double[] flux, double hopSec, double originSec, double startSec, double bpm)
     {
         double beat = 60.0 / bpm;
         const int Steps = 96;
@@ -342,7 +407,7 @@ public static class AudioAnalyzer
             double sum = 0;
             for (int i = 0; i < flux.Length; i++)
             {
-                double t = startSec + i * hopSec;
+                double t = startSec + originSec + i * hopSec;
                 double ph = ((t - off) / period) % 1.0; if (ph < 0) ph += 1;
                 double d = Math.Min(ph, 1 - ph) * period;
                 if (d <= Tol) sum += flux[i];

@@ -76,6 +76,10 @@ public partial class App : Application
         if (lgIdx >= 0 && lgIdx + 1 < e.Args.Length) RunLocalGridTest(e.Args[lgIdx + 1]);
         int studioIdx = Array.IndexOf(e.Args, "--studiotest");
         if (studioIdx >= 0 && studioIdx + 1 < e.Args.Length) RunStudioTest(e.Args[studioIdx + 1], e.Args.Contains("spezzoni"));
+        // --clicktest: quanto è precisa la griglia su colpi a istanti noti (brani finti, non serve la libreria)
+        if (e.Args.Contains("--clicktest")) RunClickTest();
+        // --seektest: il salto a un punto esce davvero da quel punto? (mp3 a 48 kHz costruito dalla prova)
+        if (e.Args.Contains("--seektest")) RunSeekTest();
         // --gridtest [quanti]: quanto la griglia dei battiti sta davvero sui colpi del brano
         int gridIdx = Array.IndexOf(e.Args, "--gridtest");
         if (gridIdx >= 0) RunGridTest(gridIdx + 1 < e.Args.Length && int.TryParse(e.Args[gridIdx + 1], out var gn) ? gn : 20);
@@ -403,6 +407,31 @@ public partial class App : Application
         catch (Exception ex) { res = "grid: FAIL " + ex.Message; }
         Console.Error.WriteLine(res);
         try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-grid.log"), res); } catch { }
+        Shutdown(0);
+    }
+
+    /// <summary>
+    /// --clicktest: la precisione della griglia misurata in millisecondi su brani finti a battito noto.
+    /// Non tocca la libreria e non suona niente, quindi si può lanciare sempre.
+    /// </summary>
+    private async void RunClickTest()
+    {
+        string res;
+        try { res = await System.Threading.Tasks.Task.Run(KaraokeDJ.Services.ClickTest.Run); }
+        catch (Exception ex) { res = "click: FAIL " + ex.Message; }
+        Console.Error.WriteLine(res);
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-click.log"), res); } catch { }
+        Shutdown(0);
+    }
+
+    /// <summary>--seektest: la precisione dei salti, sul caso peggiore (mp3 a 48 kHz). Silenzioso.</summary>
+    private async void RunSeekTest()
+    {
+        string res;
+        try { res = await System.Threading.Tasks.Task.Run(KaraokeDJ.Services.SeekTest.Run); }
+        catch (Exception ex) { res = "seek: FAIL " + ex.Message; }
+        Console.Error.WriteLine(res);
+        try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "mixfonia-seek.log"), res); } catch { }
         Shutdown(0);
     }
 

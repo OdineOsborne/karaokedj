@@ -13,8 +13,12 @@ public static class BeatTracker
     /// <summary>Quanto costa allontanarsi dal periodo atteso: più alto = griglia più rigida.</summary>
     private const double Tightness = 8.0;
 
-    /// <summary>Istanti dei battiti (secondi). Vuoto se non c'è abbastanza materiale.</summary>
-    public static double[] Track(double[] flux, double hopSec, double bpm)
+    /// <summary>
+    /// Istanti dei battiti (secondi). Vuoto se non c'è abbastanza materiale.
+    /// <paramref name="originSec"/> è l'istante del primo campione dell'inviluppo: non è zero, perché un frame
+    /// del flusso vale per il centro della sua finestra (vedi <see cref="AudioAnalyzer.OnsetEnvelope"/>).
+    /// </summary>
+    public static double[] Track(double[] flux, double hopSec, double originSec, double bpm)
     {
         int n = flux.Length;
         if (n < 32 || bpm <= 0 || hopSec <= 0) return Array.Empty<double>();
@@ -56,7 +60,7 @@ public static class BeatTracker
         var beats = new List<double>();
         for (int t = start; t >= 0; t = back[t])
         {
-            beats.Add(t * hopSec);
+            beats.Add(originSec + t * hopSec);
             if (back[t] < 0) break;
         }
         beats.Reverse();
@@ -66,6 +70,31 @@ public static class BeatTracker
         double firstGap = beats[1] - beats[0];
         for (double t = beats[0] - firstGap; t > 0.05; t -= firstGap) beats.Insert(0, t);
         return beats.ToArray();
+    }
+
+    /// <summary>
+    /// Rimette ogni battito sull'attacco vero, al millisecondo. Il flusso spettrale ha un passo di ~11,6 ms:
+    /// anche col suo istante giusto, un battito può restare mezzo passo fuori, e mezzo passo è l'1 % di un
+    /// battito a 120 BPM — abbastanza perché un passaggio entri sporco. Ogni battito cerca l'attacco più forte
+    /// entro <paramref name="maxShiftSec"/> e ci si appoggia; dove non c'è nessun attacco che si distingua dal
+    /// resto (un passaggio tenuto, un coro) resta dov'era, perché inseguire una sbavatura è peggio.
+    /// </summary>
+    public static double[] Refine(double[] beats, double[] attack, double hopSec, double originSec, double maxShiftSec = 0.015)
+    {
+        if (beats.Length == 0 || attack.Length < 16 || hopSec <= 0) return beats;
+        double mean = attack.Average();
+        if (mean <= 0) return beats;
+        int half = Math.Max(1, (int)Math.Round(maxShiftSec / hopSec));
+        var tuned = new double[beats.Length];
+        for (int b = 0; b < beats.Length; b++)
+        {
+            int c = (int)Math.Round((beats[b] - originSec) / hopSec);
+            int lo = Math.Max(0, c - half), hi = Math.Min(attack.Length - 1, c + half);
+            int best = -1; double bestV = 0;
+            for (int i = lo; i <= hi; i++) if (attack[i] > bestV) { bestV = attack[i]; best = i; }
+            tuned[b] = best >= 0 && bestV > mean * 1.5 ? originSec + best * hopSec : beats[b];
+        }
+        return tuned;
     }
 
     /// <summary>BPM medio della griglia (utile come etichetta) e quanto "respira" il tempo.</summary>

@@ -44,6 +44,31 @@ public sealed class LibraryService
             }
         }
         foreach (var t in rows) _byPath[t.FilePath] = t;
+        MigrateGrids(rows);
+    }
+
+    /// <summary>
+    /// Le griglie salvate prima della correzione dell'istante del frame stavano tutte in anticipo della stessa
+    /// quantità (vedi <see cref="AudioAnalyzer.GridV0LagSec"/>): si rimettono a posto sommandola, perché
+    /// rianalizzare migliaia di brani all'avvio vorrebbe dire ore di CPU proprio quando serve la macchina.
+    /// Le griglie corrette a mano dal DJ non si toccano: quelle le ha messe lui a orecchio, erano già giuste.
+    /// </summary>
+    private void MigrateGrids(IEnumerable<Track> rows)
+    {
+        var done = new List<Track>();
+        foreach (var t in rows)
+        {
+            if (t.GridVersion >= AudioAnalyzer.GridVersion) continue;
+            if (!t.BeatManual)
+            {
+                if (t.Beats is { Length: > 0 })
+                    for (int i = 0; i < t.Beats.Length; i++) t.Beats[i] += (float)AudioAnalyzer.GridV0LagSec;
+                if (t.BeatOffsetSec >= 0) t.BeatOffsetSec = Math.Round(t.BeatOffsetSec + AudioAnalyzer.GridV0LagSec, 3);
+            }
+            t.GridVersion = AudioAnalyzer.GridVersion;
+            done.Add(t);
+        }
+        if (done.Count > 0) _db.UpsertAll(done);
     }
 
     /// <summary>Salva tutta la libreria (dopo scansioni o modifiche di massa).</summary>

@@ -1431,6 +1431,7 @@ public sealed partial class MainViewModel : ObservableObject
                 if (gbpm > 0 && Math.Abs(gbpm - track.Bpm) / track.Bpm < 0.06) track.Bpm = Math.Round(gbpm, 1);
                 track.BeatDriftPercent = Math.Round(drift, 1);
             }
+            track.GridVersion = AudioAnalyzer.GridVersion;   // calcolata col modo nuovo: non va più corretta al caricamento
             if (r.Sections is { Count: > 1 }) { track.Sections = r.Sections; track.SectionsScore = Math.Round(r.SectionsScore, 2); }
             track.Analyzed = true;
             if (r.Waveform.Length > 0) WaveformStore.Save(track.Id, r.Waveform);
