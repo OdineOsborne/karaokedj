@@ -61,9 +61,17 @@
     </UserControl.Resources>
 
     <!-- si può trascinare qui un brano dalla libreria: il bordo si illumina e al rilascio il brano viene caricato -->
-    <Border Style="{StaticResource Panel}" BorderBrush="{Binding Accent, ElementName=Root}" BorderThickness="1" Padding="8"
+    <!--
+      Il colore del deck era tutto il contorno del pannello. Due rettangoli colorati grandi come mezza finestra
+      tirano l'occhio dove non serve e si prendono l'attenzione che deve andare all'onda; e quando poi un bordo
+      colorato vuole dire qualcosa (il deck sta per finire, il trascinamento), non si distingue più dal normale.
+      Ora il colore sta in una barra sopra: dice di chi è il deck restando zitta.
+    -->
+    <Border Style="{StaticResource Panel}" BorderBrush="{StaticResource BorderSoftBrush}" BorderThickness="1" Padding="0"
             AllowDrop="True" DragOver="Deck_DragOver" DragLeave="Deck_DragLeave" Drop="Deck_Drop">
-        <Grid>
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Height="3" Background="{Binding Accent, ElementName=Root}" CornerRadius="2,2,0,0"/>
+        <Grid Margin="8">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>   <!-- 0 intestazione -->
                 <RowDefinition Height="Auto"/>   <!-- 1 anteprima karaoke -->
@@ -452,5 +460,6 @@
                 </StackPanel>
             </DockPanel>
         </Grid>
+      </DockPanel>
     </Border>
 </UserControl>

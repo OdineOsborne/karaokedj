@@ -4,25 +4,31 @@
              xmlns:conv="clr-namespace:KaraokeDJ.Converters"
              ShutdownMode="OnMainWindowClose">
     <Application.Resources>
-        <!-- ═══════════ palette "urban" ═══════════ -->
-        <!-- palette Mixfonia: viola primario, cyan secondario, rosa accento karaoke -->
+        <!-- ═══════════ palette ═══════════ -->
+        <!--
+          I colori sono di Mixfonia (viola, cyan, arancio, rosa karaoke): sono l'identità e non si toccano.
+          Quello che è cambiato è la MATERIA attorno, presa dai lettori DJ: fondo quasi nero, pannelli piatti
+          che si distinguono per un gradino di luminosità e non per un bordo, angoli quasi vivi.
+          Il motivo non è estetico: in sala buia i bordi chiari e gli angoli tondi fanno rumore visivo, e in
+          una serata l'occhio deve cadere sull'onda e sui pochi comandi accesi, non sulla cornice.
+        -->
         <Color x:Key="AccentColor">#FF2DB4E8</Color>
         <Color x:Key="VioletColor">#FF8B5CF6</Color>
         <Color x:Key="AccentAColor">#FF2DB4E8</Color>
         <Color x:Key="AccentBColor">#FFF29A3C</Color>
         <Color x:Key="MagentaColor">#FFEC4899</Color>
-        <SolidColorBrush x:Key="BgBrush" Color="#FF0E0E10"/>
+        <SolidColorBrush x:Key="BgBrush" Color="#FF08080A"/>
         <SolidColorBrush x:Key="VioletBrush" Color="{StaticResource VioletColor}"/>
-        <SolidColorBrush x:Key="PanelBrush" Color="#FF17181B"/>
-        <SolidColorBrush x:Key="PanelAltBrush" Color="#FF202126"/>
-        <!-- pannello interno (dentro deck/mixer): vetro più scuro -->
-        <SolidColorBrush x:Key="InnerPanelBrush" Color="#FF111214"/>
-        <SolidColorBrush x:Key="BorderBrush" Color="#FF2B2C32"/>
-        <SolidColorBrush x:Key="BorderSoftBrush" Color="#FF232429"/>
-        <SolidColorBrush x:Key="GlassBrush" Color="#FF202126"/>
-        <SolidColorBrush x:Key="GlassHoverBrush" Color="#FF2C2D34"/>
-        <SolidColorBrush x:Key="TextBrush" Color="#FFE2E3E7"/>
-        <SolidColorBrush x:Key="MutedBrush" Color="#FF8C9097"/>
+        <SolidColorBrush x:Key="PanelBrush" Color="#FF141519"/>
+        <SolidColorBrush x:Key="PanelAltBrush" Color="#FF1C1D22"/>
+        <!-- pannello interno (dentro deck/mixer): incassato, più scuro del pannello che lo contiene -->
+        <SolidColorBrush x:Key="InnerPanelBrush" Color="#FF0B0B0D"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#FF26272D"/>
+        <SolidColorBrush x:Key="BorderSoftBrush" Color="#FF1A1B1F"/>
+        <SolidColorBrush x:Key="GlassBrush" Color="#FF1E1F24"/>
+        <SolidColorBrush x:Key="GlassHoverBrush" Color="#FF2B2C33"/>
+        <SolidColorBrush x:Key="TextBrush" Color="#FFE6E7EB"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#FF868A92"/>
         <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
         <SolidColorBrush x:Key="AccentABrush" Color="{StaticResource AccentAColor}"/>
         <SolidColorBrush x:Key="AccentBBrush" Color="{StaticResource AccentBColor}"/>
@@ -30,17 +36,16 @@
         <SolidColorBrush x:Key="DangerBrush" Color="#FFF25F5F"/>
         <SolidColorBrush x:Key="WarnBrush" Color="#FFF2C94C"/>
 
-        <!-- sfondo finestra: notte con due bagliori (viola in alto a sinistra, rosa in basso a destra) -->
-        <LinearGradientBrush x:Key="WindowBgBrush" StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#FF121214" Offset="0"/>
-            <GradientStop Color="#FF0C0C0E" Offset="1"/>
-        </LinearGradientBrush>
-        <SolidColorBrush x:Key="PanelGradient" Color="#FF17181B"/>
-        <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="0,1">
-            <GradientStop Color="#FF7A55E6" Offset="0"/>
-            <GradientStop Color="#FF6242C8" Offset="1"/>
-        </LinearGradientBrush>
-        <SolidColorBrush x:Key="ButtonGradient" Color="#FF25262B"/>
+        <!--
+          Niente sfumature, da qui in giù. Una sfumatura verticale su un fondo nero si vede solo come una
+          sporcizia che cambia da sopra a sotto, e fa sembrare due pannelli uguali di colore diverso a seconda
+          di dove stanno nella finestra. I nomi restano "…Gradient" perché li usano decine di file: cambiarli
+          sarebbe stato un rinominare a tappeto per niente.
+        -->
+        <SolidColorBrush x:Key="WindowBgBrush" Color="#FF08080A"/>
+        <SolidColorBrush x:Key="PanelGradient" Color="#FF141519"/>
+        <SolidColorBrush x:Key="AccentGradient" Color="#FF7A55E6"/>
+        <SolidColorBrush x:Key="ButtonGradient" Color="#FF1E1F24"/>
 
         <FontFamily x:Key="BrandFont">pack://application:,,,/Assets/Fonts/#Montserrat</FontFamily>
         <FontFamily x:Key="UiFont">pack://application:,,,/Assets/Fonts/#Barlow</FontFamily>
@@ -505,15 +510,17 @@
             <Setter Property="IsReadOnly" Value="True"/>
             <Setter Property="CanUserAddRows" Value="False"/>
             <Setter Property="SelectionMode" Value="Single"/>
+            <!-- la libreria non passa di qui: altezza riga e corpo del testo se li sceglie l'utente con la rotella -->
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="RowHeight" Value="28"/>
         </Style>
         <Style TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#FF15151C"/>
+            <Setter Property="Background" Value="#FF131318"/>
             <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+            <Setter Property="FontFamily" Value="{StaticResource LabelFont}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Padding" Value="8,7"/>
+            <Setter Property="Padding" Value="8,5"/>
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
         </Style>
@@ -536,9 +543,9 @@
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="#22FFFFFF"/>
                 </Trigger>
-                <!-- riga selezionata: blu pieno, ben visibile anche sul vetro (dichiarato dopo l'hover per avere la precedenza) -->
+                <!-- riga selezionata: viola Mixfonia e non il blu di sistema (dichiarato dopo l'hover per avere la precedenza) -->
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#C03B6FD6"/>
+                    <Setter Property="Background" Value="#CC6D4ACF"/>
                     <Setter Property="Foreground" Value="White"/>
                 </Trigger>
             </Style.Triggers>
@@ -607,13 +614,18 @@
         </Style>
 
         <!-- ═══════════ pannelli ═══════════ -->
+        <!--
+          Il pannello non è più una scheda che galleggia: è un riquadro di strumentazione. Angolo da 12 a 3,
+          bordo tenue invece che marcato (a separare basta il gradino di luminosità), e 4 px di padding in meno
+          che su un portatile da 13" sono due righe di libreria in più.
+        -->
         <Style x:Key="Panel" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource PanelGradient}"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoftBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="12"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Padding" Value="8"/>
         </Style>
     </Application.Resources>
 </Application>

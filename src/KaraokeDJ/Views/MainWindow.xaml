@@ -11,7 +11,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d">
     <!-- L'interfaccia si rimpicciolisce da sola quando la finestra è più piccola del formato di riferimento
          (portatili 13", schermi scalati al 125/150 %): vedi MainWindow.ApplyUiScale. -->
-    <Grid x:Name="Root" Margin="10">
+    <Grid x:Name="Root" Margin="6">
         <Grid.LayoutTransform>
             <ScaleTransform x:Name="UiScale" ScaleX="1" ScaleY="1"/>
         </Grid.LayoutTransform>
@@ -26,7 +26,7 @@
         </Grid.RowDefinitions>
 
         <!-- ═══════════ barra strumenti ═══════════ -->
-        <DockPanel Grid.Row="0" Margin="0,0,0,10" LastChildFill="True">
+        <DockPanel Grid.Row="0" Margin="0,0,0,6" LastChildFill="True">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,0">
                 <!-- master in orizzontale: VU stereo con il volume sopra, cuffia e mic, e il tasto per le manopole del mixer -->
                 <Border Background="{StaticResource InnerPanelBrush}" CornerRadius="4" Padding="8,2" Margin="0,0,12,0" VerticalAlignment="Center">
@@ -83,7 +83,7 @@
         </DockPanel>
 
         <!-- ═══════════ vista di mixaggio: onde sovrapposte ═══════════ -->
-        <Border Grid.Row="1" Style="{StaticResource Panel}" Padding="4" Margin="0,0,0,8" Visibility="{Binding MixViewVisible, Converter={StaticResource BoolToVis}}">
+        <Border Grid.Row="1" Style="{StaticResource Panel}" Padding="4" Margin="0,0,0,4" Visibility="{Binding MixViewVisible, Converter={StaticResource BoolToVis}}">
             <v:MixWaveView Height="112"
                            DataA="{Binding DeckA.FineWaveform}" DataB="{Binding DeckB.FineWaveform}"
                            BandsA="{Binding DeckA.BandWaveform}" BandsB="{Binding DeckB.BandWaveform}"
@@ -97,7 +97,7 @@
         </Border>
 
         <!-- ═══════════ deck + mixer ═══════════ -->
-        <Grid Grid.Row="2" Margin="0,0,0,8">
+        <Grid Grid.Row="2" Margin="0,0,0,4">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="276"/>
@@ -106,7 +106,7 @@
 
             <v:DeckControl Grid.Column="0" DataContext="{Binding DeckA}" Accent="{StaticResource AccentABrush}"/>
 
-            <Border Grid.Column="1" Style="{StaticResource Panel}" Margin="10,0">
+            <Border Grid.Column="1" Style="{StaticResource Panel}" Margin="4,0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -189,7 +189,7 @@
         <!-- ═══════════ libreria + coda ═══════════ -->
 
         <!-- ═══════════ barra LIVE: automix, microfono, cuffia, riempimento (sotto i deck, come i comandi di un mixer) ═══════════ -->
-        <Border Grid.Row="3" Style="{StaticResource Panel}" Padding="10,6" Margin="0,0,0,8">
+        <Border Grid.Row="3" Style="{StaticResource Panel}" Padding="10,5" Margin="0,0,0,4">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -361,7 +361,7 @@
                 </StackPanel>
             </Grid>
         </Border>
-        <Grid Grid.Row="4" Margin="0,0,0,10">
+        <Grid Grid.Row="4" Margin="0,0,0,6">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="3*"/>
                 <ColumnDefinition Width="2*"/>
@@ -639,9 +639,9 @@
                          la coda (e quindi la scaletta dell'automix) restava alta zero -->
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="3*" MinHeight="130"/>
+                        <RowDefinition Height="3*" MinHeight="104"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="2*" MinHeight="96" MaxHeight="290"/>
+                        <RowDefinition Height="2*" MinHeight="76" MaxHeight="290"/>
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="0" Margin="0,0,0,8">
                     <DockPanel>
