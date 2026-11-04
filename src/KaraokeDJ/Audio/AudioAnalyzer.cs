@@ -197,7 +197,10 @@ public static class AudioAnalyzer
                 for (int j = Math.Max(0, i - w); j < Math.Min(frames, i + w); j++) { sum += flux[j]; n2++; }
                 double local = sum / Math.Max(1, n2);
                 if (flux[i] < local * 1.6) continue;
-                double t = i * frameSec;
+                // come in FluxEnvelope: il frame vale per il CENTRO della finestra, non per il suo inizio.
+                // Questi colpi sono il metro con cui --gridtest giudica la griglia: un metro storto di mezza
+                // finestra (27,5 ms, due terzi della tolleranza) boccia proprio le griglie giuste.
+                double t = Fft / 2.0 / fs + i * frameSec;
                 if (lastT >= 0 && t - lastT < 0.09) continue;
                 onsets.Add(t); lastT = t;
             }

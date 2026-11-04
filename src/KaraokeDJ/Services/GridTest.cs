@@ -21,6 +21,8 @@ public static class GridTest
         if (tracks.Count == 0) return "grid: nessun brano analizzato";
         var lines = new List<string>();
         double totOk = 0; int counted = 0, wrongBpm = 0;
+        // tenuti da parte per la prova dello scorrimento, in fondo: i colpi costano una lettura del file
+        var fluid = new List<(List<double> Onsets, float[] Beats)>();
 
         foreach (var t in tracks)
         {
@@ -46,6 +48,7 @@ public static class GridTest
                 var (bb, bo, bl) = BestGrid(onsets);
                 var (sbpm, drift) = Audio.BeatTracker.Summary(t.Beats.Select(x => (double)x).ToArray());
                 totOk += lf; counted++;
+                fluid.Add((onsets, t.Beats));
                 lines.Add($"  x{lf,4:0.0} ({hf,4:P0})  {sbpm,6:0.0} BPM fluida ({t.Beats.Length} battiti, respiro {drift:0.0}%)  {t.Display}" +
                           $"   [migliore possibile: x{bl:0.0} a {bb:0.0} BPM agg. {bo:0.00}s]");
                 continue;
@@ -70,7 +73,58 @@ public static class GridTest
         return $"grid: i colpi cadono sul battito x{avg:0.0} rispetto al caso, su {counted} brani" +
                (wrongBpm > 0 ? $" · {wrongBpm} con BPM probabilmente doppio/metà" : "") +
                (avg >= 2 ? " → griglia attendibile" : avg >= 1.4 ? " → griglia così così" : " → griglia da rivedere") +
+               Bias(fluid) +
                "\n" + string.Join("\n", lines);
+    }
+
+    /// <summary>
+    /// Su musica vera il battito giusto non lo conosce nessuno, e il conteggio qui sopra non serve a misurarlo:
+    /// con ±40 ms di tolleranza un anticipo di 27 ms ci sta dentro e il conto resta identico. Quello che si può
+    /// misurare è la distanza dei colpi dal battito più vicino: se la griglia è in anticipo, i colpi cadono
+    /// sistematicamente DOPO. Si prende la mediana — non la media — perché mezzo brano è fatto di colpi fuori
+    /// battito (rullanti, sillabe) che sposterebbero una media senza dire niente sulla griglia.
+    /// La controprova la fa il programma stesso: rimette la griglia di prima e il conto deve peggiorare di
+    /// quella mezza finestra, altrimenti non sta misurando quello che diciamo.
+    /// </summary>
+    private static string Bias(List<(List<double> Onsets, float[] Beats)> fluid)
+    {
+        double now = MedianBias(fluid, 0);
+        if (double.IsNaN(now)) return "";
+        double before = MedianBias(fluid, -AudioAnalyzer.GridV0LagSec);
+        string verdict = Math.Abs(now) <= 0.005 ? "sul battito"
+            : $"{(now > 0 ? "in anticipo" : "in ritardo")} di {Math.Abs(now) * 1000:0} ms";
+        return $"\n  distanza dei colpi dal battito: {now * 1000:+0.0;-0.0;0.0} ms su {fluid.Count} brani"
+             + $" (sopra zero = griglia in anticipo) → {verdict}"
+             + (double.IsNaN(before) ? ""
+                : $"\n  controprova, con la griglia di prima: {before * 1000:+0.0;-0.0;0.0} ms");
+    }
+
+    /// <summary>Mediana delle mediane: un brano vale uno, così un pezzo pieno di colpi non decide per tutti.</summary>
+    private static double MedianBias(List<(List<double> Onsets, float[] Beats)> fluid, double shiftSec)
+    {
+        // ±60 ms: abbastanza largo da far vedere un anticipo di 27 ms senza tagliarlo via (sarebbe come
+        // misurare l'errore con un metro che esclude gli errori), abbastanza stretto da non prendere il
+        // battito accanto: a 128 BPM i battiti distano 469 ms.
+        const double Near = 0.06;
+        var per = new List<double>();
+        foreach (var f in fluid)
+        {
+            if (f.Beats.Length < 2) continue;
+            var d = new List<double>();
+            foreach (var o in f.Onsets)
+            {
+                double at = o - shiftSec;
+                int lo = 0, hi = f.Beats.Length - 1;
+                while (lo < hi) { int mid = (lo + hi) / 2; if (f.Beats[mid] < at) lo = mid + 1; else hi = mid; }
+                double delta = at - f.Beats[lo];
+                if (lo > 0 && Math.Abs(at - f.Beats[lo - 1]) < Math.Abs(delta)) delta = at - f.Beats[lo - 1];
+                if (Math.Abs(delta) <= Near) d.Add(delta);
+            }
+            if (d.Count >= 10) { d.Sort(); per.Add(d[d.Count / 2]); }
+        }
+        if (per.Count < 3) return double.NaN;
+        per.Sort();
+        return per[per.Count / 2];
     }
 
     /// <summary>Colpi: colonne dove l'energia dei bassi sale di scatto (picco locale sopra la media).</summary>
@@ -111,16 +165,18 @@ public static class GridTest
     }
 
     /// <summary>Quota di colpi entro la tolleranza da un battito della griglia fluida, e quanto è meglio del caso.</summary>
-    private static (double Rate, double Lift) HitsBeats(List<double> onsets, float[] beats)
+    private static (double Rate, double Lift) HitsBeats(List<double> onsets, float[] beats, double shiftSec = 0)
     {
         if (beats.Length < 2 || onsets.Count == 0) return (0, 0);
         int ok = 0;
         foreach (var o in onsets)
         {
+            // spostare la griglia in avanti di shiftSec equivale a cercare il colpo altrettanto più indietro
+            double at = o - shiftSec;
             int lo = 0, hi = beats.Length - 1;
-            while (lo < hi) { int mid = (lo + hi) / 2; if (beats[mid] < o) lo = mid + 1; else hi = mid; }
-            double d = Math.Abs(beats[lo] - o);
-            if (lo > 0) d = Math.Min(d, Math.Abs(beats[lo - 1] - o));
+            while (lo < hi) { int mid = (lo + hi) / 2; if (beats[mid] < at) lo = mid + 1; else hi = mid; }
+            double d = Math.Abs(beats[lo] - at);
+            if (lo > 0) d = Math.Min(d, Math.Abs(beats[lo - 1] - at));
             if (d <= Tol) ok++;
         }
         double span = beats[^1] - beats[0];
